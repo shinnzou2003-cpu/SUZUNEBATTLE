@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CHRONO FIGHT — SUZUNE × AOI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Shippori+Mincho+B1:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --dusk:#1c1433; --dusk-2:#2c1d48; --coral:#ff8a6a; --gold:#ffc24a; --cyan:#5cc8ff; --paper:#fff4ea; --muted:rgba(255,244,234,.66);
+  --serif:'Shippori Mincho B1','Hiragino Mincho ProN','Yu Mincho',serif; --tech:'Chakra Petch','Hiragino Sans','Noto Sans JP',system-ui,sans-serif;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --dusk:#1c1433; --paper:#fff4ea; } }
+:root[data-theme="dark"]{ --dusk:#1c1433; --paper:#fff4ea; }
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;overscroll-behavior:none;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;background:var(--dusk);color:var(--paper);font-family:var(--tech);overflow:hidden;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none;display:grid;place-items:center}
+#game{display:block;max-width:100%}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.screen{position:fixed;inset:0;display:none;padding:max(14px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));z-index:5}
+.screen.on{display:flex}
+
+/* title: two slanted portraits crossing */
+#title{align-items:flex-end;justify-content:space-between;gap:24px}
+.duo{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.duo img{position:absolute;top:0;height:100%;width:62%;object-fit:cover;filter:saturate(1.08)}
+.duo .l{left:0;clip-path:polygon(0 0,100% 0,72% 100%,0 100%);object-position:60% 30%}
+.duo .r{right:0;clip-path:polygon(28% 0,100% 0,100% 100%,0 100%);object-position:60% 35%}
+.duo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(28,20,51,.1) 30%,rgba(28,20,51,.92) 88%)}
+.duo .seam{position:absolute;left:50%;top:-10%;width:6px;height:120%;background:linear-gradient(var(--gold),#fff,var(--cyan));transform:translateX(-50%) rotate(12deg);box-shadow:0 0 30px 8px rgba(255,220,180,.55)}
+.brand{position:relative;max-width:min(560px,58vw)}
+.brand h1{font-family:var(--serif);font-weight:800;font-size:clamp(40px,8.4vw,104px);line-height:.92;margin:0;letter-spacing:-.01em;
+  background:linear-gradient(100deg,var(--gold) 0%,#fff 48%,var(--cyan) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 18px rgba(0,0,0,.6))}
+.brand p{margin:.5em 0 0;font-size:clamp(13px,1.6vw,17px);color:var(--muted);line-height:1.5}
+.menu{position:relative;display:flex;flex-direction:column;gap:10px;min-width:min(300px,38vw)}
+.mbtn{display:flex;justify-content:space-between;align-items:baseline;gap:18px;padding:clamp(10px,1.8vh,16px) 20px;border:0;border-left:4px solid var(--gold);
+  background:rgba(22,14,40,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);text-align:left;font-family:var(--serif);font-weight:800;font-size:clamp(16px,2.2vw,22px);transition:transform .12s,background .12s}
+.mbtn small{font-family:var(--tech);font-weight:600;font-size:13px;color:var(--muted)}
+.mbtn:nth-child(2){border-left-color:var(--coral)} .mbtn:nth-child(3){border-left-color:var(--cyan)}
+.mbtn:hover,.mbtn:active{transform:translateX(-6px);background:rgba(40,26,70,.85)}
+.util{display:flex;gap:8px;margin-top:4px}
+.chip{border:1px solid rgba(255,244,234,.3);background:rgba(22,14,40,.6);padding:7px 12px;font-size:13px;border-radius:999px}
+.keys{font-size:12px;color:var(--muted);line-height:1.6;margin-top:10px}
+@media (pointer:coarse){.keys{display:none}}
+
+/* select */
+#select{flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,2vh,18px);background:radial-gradient(ellipse at 50% 120%,rgba(255,138,106,.35),transparent 60%),rgba(20,13,38,.55)}
+#selPrompt{font-family:var(--serif);font-weight:800;font-size:clamp(18px,3vw,30px);margin:0}
+.cards{display:flex;gap:clamp(10px,2.4vw,28px);width:min(980px,100%);justify-content:center}
+.card{position:relative;flex:1;max-width:460px;aspect-ratio:2/1.15;border:0;padding:0;overflow:hidden;background:#000;transform:skewX(-6deg);transition:transform .15s}
+.card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:skewX(6deg) scale(1.12)}
+.card::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 35%,rgba(12,8,24,.92))}
+.card .info{position:absolute;left:8%;right:6%;bottom:9%;z-index:1;text-align:left;transform:skewX(6deg)}
+.card b{display:block;font-family:var(--serif);font-size:clamp(24px,4.2vw,44px);line-height:1}
+.card span{display:block;font-size:clamp(11px,1.5vw,14px);color:var(--muted);margin-top:4px;line-height:1.45}
+.card[data-char="suzune"]{box-shadow:inset 0 0 0 3px var(--gold)} .card[data-char="aoi"]{box-shadow:inset 0 0 0 3px var(--cyan)}
+.card:hover,.card:focus-visible{transform:skewX(-6deg) translateY(-4px)}
+.card.p1::before{content:"1P";position:absolute;top:8px;left:14px;z-index:2;background:var(--gold);color:#1c1433;font-weight:700;padding:2px 10px;transform:skewX(6deg)}
+.selrow{display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center}
+.seg{display:flex;border:1px solid rgba(255,244,234,.3);border-radius:999px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:7px 14px;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--paper);color:var(--dusk);font-weight:700}
+#selNote{font-size:13px;color:var(--muted);min-height:1em;margin:0}
+.ghost{border:0;background:none;color:var(--muted);font-size:14px;text-decoration:underline;text-underline-offset:4px}
+
+/* pause/result */
+#pause,#result{align-items:center;justify-content:center;flex-direction:column;gap:14px;background:rgba(14,9,28,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);text-align:center}
+#pause h2,#result h2{font-family:var(--serif);font-weight:800;font-size:clamp(34px,6vw,64px);margin:0}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.pbtn{border:0;padding:12px 22px;background:var(--paper);color:var(--dusk);font-weight:700;font-size:15px}
+.pbtn.alt{background:transparent;color:var(--paper);box-shadow:inset 0 0 0 1px rgba(255,244,234,.45)}
+#resImg{width:min(420px,60vw);aspect-ratio:2/1;object-fit:cover;clip-path:polygon(6% 0,100% 0,94% 100%,0 100%)}
+#resScore{font-size:26px;font-weight:700;margin:0}
+#resName{font-size:14px;color:var(--muted);margin:0}
+
+#pauseBtn{position:fixed;top:max(8px,env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(84px);z-index:4;display:none;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(14,9,28,.55);font-weight:700}
+#pauseBtn.on{display:block}
+
+/* touch controls: move / jump / attack / special */
+#touch{position:fixed;inset:0;z-index:3;pointer-events:none;display:none}
+#touch.on{display:block}
+.pad{position:absolute;bottom:calc(max(64px,13vh) + env(safe-area-inset-bottom,0px));display:flex;align-items:flex-end;pointer-events:none}
+.grp{display:grid;gap:10px;pointer-events:auto;align-items:end}
+.tb{--s:66px;--g:0%;width:var(--s);height:var(--s);border-radius:50%;border:1.5px solid rgba(255,255,255,.5);background:rgba(20,12,38,.42);font-weight:700;font-size:15px;
+  display:grid;place-items:center;touch-action:none;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);padding:0}
+.tb.press{background:rgba(255,255,255,.35);transform:scale(.93)}
+.mv{grid-template-columns:auto auto}
+.mv .tb{--s:74px;font-size:22px}
+.ac{grid-template-columns:auto auto;grid-template-areas:". jp" "sp atk"}
+.tb.jp{grid-area:jp;--s:56px;font-size:12px;justify-self:end}
+.tb.atk{grid-area:atk;--s:84px;font-size:18px;border-color:#fff}
+.tb.sp{grid-area:sp;--s:84px;font-size:17px;border:0;position:relative;
+  background:radial-gradient(circle,rgba(20,12,38,.55) 60%,transparent 61%),conic-gradient(var(--coral) var(--g),rgba(255,255,255,.28) 0)}
+.tb.sp b{font-weight:700}
+.tb.sp[data-lv="EX"]{background:radial-gradient(circle,rgba(255,138,106,.5) 60%,transparent 61%),conic-gradient(var(--coral) var(--g),rgba(255,255,255,.28) 0)}
+.tb.sp[data-lv="ULT"]{color:#1c1433;background:radial-gradient(circle,var(--gold) 60%,transparent 61%),conic-gradient(#fff 100%,#fff 0);animation:ready .6s ease-in-out infinite alternate}
+@keyframes ready{to{box-shadow:0 0 22px 6px rgba(255,194,74,.75)}}
+.hint{position:absolute;left:50%;bottom:calc(max(64px,13vh) + env(safe-area-inset-bottom,0px));transform:translateX(-50%);margin:0;font-size:11px;color:rgba(255,244,234,.55);white-space:nowrap}
+#touch[data-mode="cpu"] .pad[data-side="1"]{display:none}
+#touch[data-mode="cpu"] .pad[data-side="0"]{left:0;right:0;justify-content:space-between;padding:0 calc(max(36px,6vw) + env(safe-area-inset-right,0px)) 0 calc(max(36px,6vw) + env(safe-area-inset-left,0px))}
+#touch[data-mode="pvp"] .hint{display:none}
+#touch[data-mode="pvp"] .pad{flex-direction:column;align-items:flex-start;gap:8px}
+#touch[data-mode="pvp"] .pad[data-side="0"]{left:calc(max(28px,4vw) + env(safe-area-inset-left,0px))}
+#touch[data-mode="pvp"] .pad[data-side="1"]{right:calc(max(28px,4vw) + env(safe-area-inset-right,0px));align-items:flex-end}
+#touch[data-mode="pvp"] .ac{grid-template-columns:repeat(3,auto);grid-template-areas:"jp sp atk"}
+#touch[data-mode="pvp"] .tb{--s:50px;font-size:12px}
+#touch[data-mode="pvp"] .mv .tb{--s:54px;font-size:18px}
+#touch[data-mode="pvp"] .tb.sp,#touch[data-mode="pvp"] .tb.atk{--s:58px}
+@media (prefers-reduced-motion: reduce){.tb.sp[data-lv="ULT"]{animation:none}}
+
+
+/* select videos */
+.card video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:skewX(6deg) scale(1.12);object-position:70% 40%}
+.card[data-char="aoi"] video{object-position:78% 35%}
+.card .sv-confirm{opacity:0}
+.card.confirm .sv-confirm{opacity:1}
+.card.confirm .sv-intro{opacity:0}
+.card .sv-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:1}
+.card.confirm .sv-flash{animation:svflash .5s ease-out}
+@keyframes svflash{0%{opacity:.85}100%{opacity:0}}
+.card.confirm{transform:skewX(-6deg) scale(1.04);z-index:2;transition:transform .25s}
+.card.dim{filter:grayscale(.8) brightness(.45);transition:filter .3s}
+.card.confirm .info b{text-shadow:0 0 18px rgba(255,255,255,.8)}
+.card[data-char="suzune"].confirm{box-shadow:inset 0 0 0 3px var(--gold),0 0 40px 6px rgba(255,194,74,.55)}
+.card[data-char="aoi"].confirm{box-shadow:inset 0 0 0 3px var(--cyan),0 0 40px 6px rgba(92,200,255,.55)}
+
+/* EX movie (game pauses while it plays) */
+#exMovie{position:fixed;inset:0;z-index:8;display:none;align-items:center;justify-content:center;overflow:hidden;pointer-events:auto}
+#exMovie.on{display:flex}
+.ex-bg{position:absolute;inset:0;background:rgba(6,4,14,.82)}
+#exMovie.on .ex-bg{animation:exbg .25s ease-out}
+@keyframes exbg{from{opacity:0}}
+.ex-frame{position:relative;display:none;overflow:hidden}
+.ex-frame video{display:block;width:100%;height:100%;object-fit:cover}
+.ex-frame.on{display:block}
+.ex-frame[data-char="aoi"]{width:100%;height:100%}
+.ex-frame[data-char="suzune"]{height:100%;aspect-ratio:560/752;clip-path:polygon(12% 0,100% 0,88% 100%,0 100%);box-shadow:0 0 0 3px var(--gold)}
+.ex-frame.on{animation:exin .3s cubic-bezier(.2,1.3,.4,1)}
+@keyframes exin{from{transform:translateX(-30%) scale(1.15);opacity:0}}
+.ex-frame.alt video{filter:hue-rotate(150deg)}
+.ex-name{position:absolute;right:max(24px,5vw);bottom:max(20px,7vh);text-align:right;opacity:0;pointer-events:none}
+.ex-name small{display:block;font-family:var(--tech);font-weight:700;letter-spacing:.3em;font-size:clamp(11px,1.5vw,15px);color:var(--coral)}
+.ex-name b{display:block;font-family:var(--serif);font-weight:800;font-size:clamp(34px,7vw,84px);line-height:1;color:#fff;text-shadow:0 4px 20px rgba(0,0,0,.8)}
+#exMovie.on .ex-name{animation:exname .45s ease-out .35s forwards}
+@keyframes exname{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+#exMovie[data-char="suzune"] .ex-name{left:max(24px,5vw);right:auto;text-align:left}
+
+/* victory movie + telop */
+#winMovie{position:fixed;inset:0;z-index:9;display:none;background:#000;overflow:hidden}
+#winMovie.on{display:block;animation:wmin .4s ease-out}
+@keyframes wmin{from{opacity:0}}
+#winMovie video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+#winMovie video.on{display:block}
+.wm-bar{position:absolute;left:0;right:0;height:9vh;background:#000;z-index:1;transform:scaleY(0)}
+.wm-bar.top{top:0;transform-origin:top}.wm-bar.bot{bottom:0;transform-origin:bottom}
+#winMovie.on .wm-bar{animation:wmbar .5s cubic-bezier(.2,.9,.3,1) forwards}
+@keyframes wmbar{to{transform:none}}
+.wm-band{position:absolute;left:-20%;right:-20%;top:38%;height:22vh;background:linear-gradient(90deg,transparent,var(--wm1) 25%,var(--wm2) 75%,transparent);transform:rotate(-8deg) translateX(-120%);opacity:.85;z-index:1;mix-blend-mode:screen}
+#winMovie.on .wm-band{animation:wmband 1.1s cubic-bezier(.3,.8,.2,1) forwards}
+@keyframes wmband{55%{transform:rotate(-8deg) translateX(0)}100%{transform:rotate(-8deg) translateX(130%);opacity:0}}
+.wm-victory{position:absolute;inset:0;display:grid;place-items:center;z-index:2;pointer-events:none}
+.wm-victory span{grid-area:1/1;font-family:var(--tech);font-weight:700;font-style:italic;font-size:clamp(64px,15vw,200px);letter-spacing:.04em;color:#fff;line-height:1;opacity:0;transform:scale(2.4) skewX(-10deg)}
+.wm-victory .r{color:rgba(255,60,90,.8);mix-blend-mode:screen}
+.wm-victory .c{color:rgba(60,210,255,.8);mix-blend-mode:screen}
+.wm-victory .m{-webkit-text-stroke:2px rgba(10,6,20,.6);text-shadow:0 0 40px rgba(255,255,255,.6)}
+#winMovie.on .wm-victory .m{animation:wmslam 1.9s cubic-bezier(.2,1.2,.3,1) .15s forwards}
+#winMovie.on .wm-victory .r{animation:wmslamr 1.9s cubic-bezier(.2,1.2,.3,1) .15s forwards}
+#winMovie.on .wm-victory .c{animation:wmslamc 1.9s cubic-bezier(.2,1.2,.3,1) .15s forwards}
+@keyframes wmslam{0%{opacity:0;transform:scale(2.4) skewX(-10deg)}18%{opacity:1;transform:scale(1) skewX(-10deg)}70%{opacity:1;transform:scale(1.04) skewX(-10deg)}100%{opacity:0;transform:scale(1.3) skewX(-10deg);filter:blur(8px)}}
+@keyframes wmslamr{0%{opacity:0;transform:scale(2.4) skewX(-10deg)}18%{opacity:1;transform:translate(-10px,3px) skewX(-10deg)}70%{opacity:.8;transform:translate(-4px,1px) scale(1.04) skewX(-10deg)}100%{opacity:0;transform:scale(1.3) skewX(-10deg)}}
+@keyframes wmslamc{0%{opacity:0;transform:scale(2.4) skewX(-10deg)}18%{opacity:1;transform:translate(10px,-3px) skewX(-10deg)}70%{opacity:.8;transform:translate(4px,-1px) scale(1.04) skewX(-10deg)}100%{opacity:0;transform:scale(1.3) skewX(-10deg)}}
+.wm-plate{position:absolute;left:max(28px,5vw);bottom:calc(9vh + 22px);z-index:2;max-width:min(640px,70vw);padding-left:18px;border-left:5px solid var(--wm1);opacity:0}
+#winMovie.plate .wm-plate{animation:wmplate .5s cubic-bezier(.2,.9,.3,1) forwards}
+@keyframes wmplate{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
+.wm-kicker{display:block;font-family:var(--tech);font-weight:700;letter-spacing:.35em;font-size:clamp(11px,1.5vw,15px);color:var(--wm1);text-shadow:0 2px 8px rgba(0,0,0,.8)}
+.wm-kicker em{font-style:normal;letter-spacing:.1em;color:#fff;margin-left:.6em}
+.wm-name{margin:.05em 0 .15em;font-family:var(--serif);font-weight:800;font-size:clamp(46px,10vw,128px);line-height:.95;color:#fff;text-shadow:0 6px 28px rgba(0,0,0,.75)}
+.wm-name span{display:inline-block;opacity:0;transform:translateY(30%) skewX(-8deg)}
+#winMovie.plate .wm-name span{animation:wmch .45s cubic-bezier(.2,1.3,.4,1) forwards}
+@keyframes wmch{to{opacity:1;transform:none}}
+.wm-quote{margin:0;font-size:clamp(14px,2.2vw,22px);font-weight:600;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.9);min-height:1.4em}
+.wm-quote::after{content:"▍";color:var(--wm1);animation:blink .8s steps(1) infinite}
+.wm-stats{position:absolute;right:max(28px,5vw);top:calc(9vh + 18px);z-index:2;text-align:right;opacity:0}
+#winMovie.plate .wm-stats{animation:wmplate .5s ease-out .3s forwards}
+.wm-score{display:block;font-family:var(--tech);font-weight:700;font-size:clamp(26px,4.5vw,52px);color:#fff;text-shadow:0 3px 14px rgba(0,0,0,.8)}
+.wm-grade{display:inline-block;margin-top:4px;padding:3px 12px;font-family:var(--tech);font-weight:700;letter-spacing:.2em;font-size:clamp(11px,1.5vw,15px);background:var(--wm1);color:#140c24}
+.wm-tap{position:absolute;left:0;right:0;bottom:calc(9vh * .5 - .6em);z-index:3;text-align:center;font-size:13px;color:rgba(255,255,255,.75);opacity:0}
+#winMovie.tap .wm-tap{opacity:1;animation:blink 1.4s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){#winMovie *{animation-duration:.01s !important}}
+/* opening */
+#opening{padding:0;background:#000;align-items:center;justify-content:center;overflow:hidden;z-index:12}
+#opVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform-origin:50% 60%}
+#opening.logo #opVideo{animation:opzoom 3.4s ease-out forwards}
+@keyframes opzoom{to{transform:scale(1.09);filter:brightness(.7) saturate(1.15)}}
+.op-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+#opening.logo .op-flash{animation:opflash .9s ease-out forwards}
+@keyframes opflash{0%{opacity:.95}100%{opacity:0}}
+.op-logo{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.35em;opacity:0;pointer-events:none;text-align:center}
+#opening.logo .op-logo{opacity:1}
+.op-logo h1{margin:0;font-family:var(--serif);font-weight:800;line-height:.88;font-size:clamp(56px,13vw,170px);letter-spacing:-.01em;display:flex;flex-direction:column;
+  background:linear-gradient(100deg,var(--gold) 0%,#fff 46%,var(--cyan) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 6px 30px rgba(0,0,0,.7))}
+.op-logo h1 span{display:block;transform:scale(1.8);opacity:0;filter:blur(14px)}
+#opening.logo .op-logo h1 span{animation:opslam .55s cubic-bezier(.2,1.4,.4,1) forwards}
+#opening.logo .op-logo h1 span:nth-child(2){animation-delay:.12s}
+@keyframes opslam{to{transform:none;opacity:1;filter:none}}
+.op-kicker,.op-logo p{font-family:var(--tech);font-weight:700;letter-spacing:.3em;opacity:0;color:var(--paper);text-shadow:0 2px 12px rgba(0,0,0,.8)}
+.op-kicker{font-size:clamp(11px,1.5vw,16px)} .op-logo p{margin:0;font-size:clamp(14px,2.2vw,24px)} .op-logo p i{font-style:normal;color:var(--coral)}
+#opening.logo .op-kicker,#opening.logo .op-logo p{animation:opfade .6s ease-out .5s forwards}
+@keyframes opfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#opening.out{animation:opout .7s ease-in forwards}
+@keyframes opout{to{opacity:0}}
+.op-start{position:absolute;inset:0;border:0;background:radial-gradient(ellipse at center,rgba(10,6,20,.35),rgba(10,6,20,.8));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.op-start b{font-family:var(--serif);font-size:clamp(22px,4vw,40px);animation:blink 1.4s ease-in-out infinite}
+.op-start small{font-size:13px;color:var(--muted)}
+@keyframes blink{50%{opacity:.45}}
+.op-skip{position:absolute;top:max(14px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));border:1px solid rgba(255,255,255,.4);background:rgba(10,6,20,.45);padding:8px 14px;font-size:13px;border-radius:999px;z-index:2}
+@media (prefers-reduced-motion: reduce){.op-start b{animation:none}}
+#rotate{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--dusk);text-align:center;padding:24px}
+body.portrait:not(.rotate-dismissed) #rotate{display:flex}
+#rotate p{font-family:var(--serif);font-size:22px;margin:0;line-height:1.5}
+#loading{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:var(--dusk);font-family:var(--serif);font-size:20px}
+@media (prefers-reduced-motion: reduce){.mbtn,.card{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="対戦画面"></canvas>
+
+<section class="screen" id="opening" aria-label="オープニング">
+  <video id="opVideo" src="media/opening.mp4" poster="media/opening_poster.jpg" muted playsinline preload="auto"></video>
+  <div class="op-flash"></div>
+  <div class="op-logo" aria-hidden="true">
+    <span class="op-kicker">SZOU ORIGINAL</span>
+    <h1><span>CHRONO</span><span>FIGHT</span></h1>
+    <p>SUZUNE <i>×</i> AOI</p>
+  </div>
+  <button class="op-start" id="opStart"><b>タップしてスタート</b><small>音が出ます</small></button>
+  <button class="op-skip" id="opSkip" hidden>スキップ ▶▶</button>
+</section>
+
+<section class="screen" id="title" aria-label="タイトル">
+  <div class="duo"><img class="l" data-src="suci" alt=""><img class="r" data-src="aoci" alt=""><div class="seam"></div></div>
+  <div class="brand">
+    <h1>CHRONO<br>FIGHT</h1>
+    <p>SUZUNE と AOI、2029年の東京スカイデッキで。<br>攻撃と必殺、2つのボタンで戦う2ラウンド先取バトル。</p>
+    <div class="keys">ボタンは「攻撃」と「必殺」だけ。攻撃連打で自動コンボ、必殺はゲージで 強攻撃→EX→ULT に変化。<br>1P：A D 移動 / W ジャンプ / J 攻撃 / K 必殺　2P：矢印キー / , 攻撃 / . 必殺　相手と反対に押すとガード</div>
+  </div>
+  <nav class="menu" aria-label="モード選択">
+    <button class="mbtn" data-mode="cpu">CPUと対戦 <small>1人で遊ぶ</small></button>
+    <button class="mbtn" data-mode="pvp">2人で対戦 <small>同じ端末で</small></button>
+    <button class="mbtn" data-mode="watch">CPU同士を観戦 <small>演出を眺める</small></button>
+    <div class="util"><button class="chip" id="bgmBtn" aria-pressed="true">BGM オン</button><button class="chip" id="snd" aria-pressed="true">効果音 オン</button><button class="chip" id="opReplay">オープニング</button><button class="chip" id="fsBtn">全画面</button></div>
+  </nav>
+</section>
+
+<section class="screen" id="select" aria-label="キャラクター選択">
+  <p id="selPrompt">使うキャラを選んでください</p>
+  <div class="cards">
+    <button class="card" data-char="suzune"><img alt="SUZUNE"><video class="sv-intro" src="media/select_suzune_intro.mp4" poster="media/select_suzune_poster.jpg" muted playsinline preload="auto"></video><video class="sv-confirm" src="media/select_suzune_confirm.mp4" muted playsinline preload="auto"></video><span class="sv-flash"></span><div class="info"><b>SUZUNE</b><span>高速近接・連撃　EX 桜閃レール／ULT 桜花彗星</span></div></button>
+    <button class="card" data-char="aoi"><img alt="AOI"><video class="sv-intro" src="media/select_aoi_intro.mp4" poster="media/select_aoi_poster.jpg" muted playsinline preload="auto"></video><video class="sv-confirm" src="media/select_aoi_confirm.mp4" muted playsinline preload="auto"></video><span class="sv-flash"></span><div class="info"><b>AOI</b><span>ドローン・遠距離　EX ホーミング・ビット／ULT オービタル・レイ</span></div></button>
+  </div>
+  <p id="selNote"></p>
+  <div class="selrow">
+    <div class="seg" id="diffRow" role="group" aria-label="CPUの強さ"><button data-diff="0" aria-pressed="false">やさしい</button><button data-diff="1" aria-pressed="true">ふつう</button><button data-diff="2" aria-pressed="false">むずかしい</button></div>
+    <button class="ghost" id="selBack">戻る</button>
+  </div>
+</section>
+
+<section class="screen" id="pause" aria-label="一時停止">
+  <h2>一時停止中</h2>
+  <div class="row"><button class="pbtn" id="resume">対戦に戻る</button><button class="pbtn alt" id="quit">タイトルへ</button></div>
+</section>
+
+<section class="screen" id="result" aria-label="結果">
+  <img id="resImg" alt="">
+  <h2 id="resTitle">YOU WIN</h2>
+  <p id="resScore">2 — 0</p><p id="resName"></p>
+  <div class="row"><button class="pbtn" id="again">もう一度対戦</button><button class="pbtn alt" id="toSelect">キャラ選択へ</button><button class="pbtn alt" id="toTitle">タイトルへ</button></div>
+</section>
+
+<div id="exMovie" aria-hidden="true">
+  <div class="ex-bg"></div>
+  <div class="ex-frame" data-char="suzune"><video src="media/ex_suzune.mp4" muted playsinline preload="auto"></video></div>
+  <div class="ex-frame" data-char="aoi"><video src="media/ex_aoi.mp4" muted playsinline preload="auto"></video></div>
+  <div class="ex-name"><small>EX SKILL</small><b></b></div>
+</div>
+
+<div id="winMovie" aria-live="polite">
+  <video data-char="suzune" src="media/win_suzune.mp4" poster="media/win_suzune_poster.jpg" muted playsinline preload="auto"></video>
+  <video data-char="aoi" src="media/win_aoi.mp4" poster="media/win_aoi_poster.jpg" muted playsinline preload="auto"></video>
+  <div class="wm-bar top"></div><div class="wm-bar bot"></div>
+  <div class="wm-band"></div>
+  <div class="wm-victory"><span class="r">VICTORY</span><span class="c">VICTORY</span><span class="m">VICTORY</span></div>
+  <div class="wm-plate">
+    <span class="wm-kicker">WINNER <em>勝者</em></span>
+    <h2 class="wm-name"></h2>
+    <p class="wm-quote"></p>
+  </div>
+  <div class="wm-stats"><b class="wm-score"></b><span class="wm-grade"></span></div>
+  <div class="wm-tap">タップで次へ</div>
+</div>
+
+<button id="pauseBtn" aria-label="一時停止">Ⅱ</button>
+
+<div id="touch" data-mode="cpu">
+  <div class="pad" data-side="0">
+    <div class="grp mv"><button class="tb" data-k="l" aria-label="左">◀</button><button class="tb" data-k="r" aria-label="右">▶</button></div>
+    <div class="grp ac"><button class="tb jp" data-k="u" aria-label="ジャンプ">ジャンプ</button><button class="tb sp" data-k="s"><b>必殺</b></button><button class="tb atk" data-k="a">攻撃</button></div>
+  </div>
+  <div class="pad" data-side="1">
+    <div class="grp mv"><button class="tb" data-k="l" aria-label="左">◀</button><button class="tb" data-k="r" aria-label="右">▶</button></div>
+    <div class="grp ac"><button class="tb jp" data-k="u" aria-label="ジャンプ">ジャンプ</button><button class="tb sp" data-k="s"><b>必殺</b></button><button class="tb atk" data-k="a">攻撃</button></div>
+  </div>
+  <p class="hint">相手と反対に押し続けるとガード</p>
+</div>
+
+<div id="rotate"><p>スマホを横向きにすると<br>大きな画面で遊べます</p><button class="pbtn" id="rotateOk">このまま遊ぶ</button></div>
+<div id="loading">読み込み中… <span id="loadPct">0%</span></div>
+
+<script>window.ASSETS={"su": "assets/suzune.webp", "ao": "assets/aoi.webp", "drone": "assets/drone.webp", "suci": "assets/suzune_cutin.webp", "aoci": "assets/aoi_cutin.webp"};</script>
+<script src="game.js"></script>
+</body>
+</html>
