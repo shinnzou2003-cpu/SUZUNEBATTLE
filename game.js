@@ -343,9 +343,9 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => KEYS.delete(e.code));
 addEventListener('blur', () => KEYS.clear());
-const MAP1 = { l: ['KeyA'], r: ['KeyD'], u: ['KeyW'], d: ['KeyS'], a: ['KeyJ'], s: ['KeyK', 'KeyL'], dh: ['KeyI', 'ShiftLeft'] };
-const MAP1solo = { l: ['KeyA', 'ArrowLeft'], r: ['KeyD', 'ArrowRight'], u: ['KeyW', 'ArrowUp', 'Space'], d: ['KeyS', 'ArrowDown'], a: ['KeyJ', 'KeyZ'], s: ['KeyK', 'KeyX', 'KeyL'], dh: ['KeyC', 'KeyI', 'ShiftLeft', 'ShiftRight'] };
-const MAP2 = { l: ['ArrowLeft'], r: ['ArrowRight'], u: ['ArrowUp'], d: ['ArrowDown'], a: ['Comma', 'Numpad1'], s: ['Period', 'Numpad2'], dh: ['Slash', 'Numpad3', 'ShiftRight'] };
+const MAP1 = { l: ['KeyA'], r: ['KeyD'], u: ['KeyW'], d: ['KeyS'], a: ['KeyJ'], s: ['KeyK', 'KeyL'], dh: ['KeyI'] };
+const MAP1solo = { l: ['KeyA', 'ArrowLeft'], r: ['KeyD', 'ArrowRight'], u: ['KeyW', 'ArrowUp', 'Space'], d: ['KeyS', 'ArrowDown'], a: ['KeyJ', 'KeyZ'], s: ['KeyK', 'KeyX', 'KeyL'], dh: ['KeyC', 'KeyI'] };
+const MAP2 = { l: ['ArrowLeft'], r: ['ArrowRight'], u: ['ArrowUp'], d: ['ArrowDown'], a: ['Comma', 'Numpad1'], s: ['Period', 'Numpad2'], dh: ['Slash', 'Numpad3'] };
 const TOUCH = [{}, {}];
 function readHuman(side) {
   const map = G.mode === 'pvp' ? (side === 0 ? MAP1 : MAP2) : MAP1solo;
@@ -1246,12 +1246,6 @@ function drawFighter(f, reflect) {
     drawFrame(frameSrc(f2, f), f2, f2.ox * K, f2.oy * K, f2.w * K, f2.h * K, false); ctx.globalAlpha = a0;
   }
   if (f.whiteT > 0) { ctx.globalAlpha = Math.min(1, f.whiteT / 4); drawSolid(src, fr, bx, by, bw, bh, '#fff'); }
-  else {   // mecha scan line: a thin band of light sweeps up through the silhouette
-    const per = hotA ? 70 : 130, u = ((G.frame + f.side * 50) % per) / per, sy = by + bh * (1 - u) - 10;
-    ctx.save(); ctx.beginPath(); ctx.rect(bx - 20, sy, bw + 40, 20); ctx.clip();
-    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = (hotA ? .7 : .45) * Math.sin(u * Math.PI);
-    drawSolid(src, fr, bx, by, bw, bh, `rgb(${arg})`); ctx.restore();
-  }
   ctx.restore(); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   drawGuardShield(f);
 }
