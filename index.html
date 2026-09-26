@@ -77,7 +77,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 #resScore{font-size:26px;font-weight:700;margin:0}
 #resName{font-size:14px;color:var(--muted);margin:0}
 
-#pauseBtn{position:fixed;top:max(8px,env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(84px);z-index:4;display:none;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(14,9,28,.55);font-weight:700}
+#pauseBtn{position:fixed;top:max(10px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));left:auto;transform:none;z-index:4;display:none;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(14,9,28,.55);font-weight:700}
 #pauseBtn.on{display:block}
 
 /* touch controls: move / jump / attack / special */
@@ -138,7 +138,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 .ex-frame video{display:block;width:100%;height:100%;object-fit:cover}
 .ex-frame.on{display:block}
 .ex-frame[data-char="aoi"]{width:100%;height:100%}
-.ex-frame[data-char="suzune"]{height:100%;aspect-ratio:560/752;clip-path:polygon(12% 0,100% 0,88% 100%,0 100%);box-shadow:0 0 0 3px var(--gold)}
+.ex-frame[data-char="suzune"]{height:auto;width:min(100vw,calc(100vh * 560 / 752));aspect-ratio:560/752;clip-path:polygon(12% 0,100% 0,88% 100%,0 100%);box-shadow:0 0 0 3px var(--gold)}
 .ex-frame.on{animation:exin .3s cubic-bezier(.2,1.3,.4,1)}
 @keyframes exin{from{transform:translateX(-30%) scale(1.15);opacity:0}}
 .ex-frame.alt video{filter:hue-rotate(150deg)}
@@ -148,6 +148,15 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 #exMovie.on .ex-name{animation:exname .45s ease-out .35s forwards}
 @keyframes exname{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
 #exMovie[data-char="suzune"] .ex-name{left:max(24px,5vw);right:auto;text-align:left}
+/* portrait phones: show the whole wide clip (letterboxed) instead of cropping it */
+@media (orientation: portrait){
+  .ex-frame[data-char="aoi"]{width:100%;height:auto;aspect-ratio:16/9;border-top:3px solid var(--cyan);border-bottom:3px solid var(--cyan)}
+  .ex-frame[data-char="aoi"] video{object-fit:contain}
+  .ex-frame[data-char="suzune"]{clip-path:none}
+  .ex-name{bottom:max(28px,10vh)}
+  .ex-name b{font-size:clamp(30px,9vw,60px)}
+  #winMovie video{object-fit:contain}
+}
 
 /* victory movie + telop */
 #winMovie{position:fixed;inset:0;z-index:9;display:none;background:#000;overflow:hidden}
@@ -191,6 +200,19 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 .wm-tap{position:absolute;left:0;right:0;bottom:calc(9vh * .5 - .6em);z-index:3;text-align:center;font-size:13px;color:rgba(255,255,255,.75);opacity:0}
 #winMovie.tap .wm-tap{opacity:1;animation:blink 1.4s ease-in-out infinite}
 @media (prefers-reduced-motion: reduce){#winMovie *{animation-duration:.01s !important}}
+/* round-win cinematic */
+#rwMovie{position:fixed;inset:0;z-index:9;display:none;background:#0b0816;overflow:hidden}
+#rwMovie.on{display:block;animation:rwin .35s ease-out}
+#rwMovie.out{animation:rwout .45s ease-in forwards}
+@keyframes rwin{from{opacity:0}} @keyframes rwout{to{opacity:0}}
+#rwMovie video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.rw-plate{position:absolute;left:max(26px,5vw);bottom:max(22px,8vh);opacity:0;border-left:4px solid var(--rw,#5cc8ff);padding-left:14px}
+#rwMovie.on .rw-plate{animation:wmplate .5s cubic-bezier(.2,.9,.3,1) .6s forwards}
+.rw-kicker{display:block;font-family:var(--tech);font-weight:700;letter-spacing:.3em;font-size:clamp(11px,1.5vw,15px);color:var(--rw,#5cc8ff);text-shadow:0 2px 8px rgba(0,0,0,.8)}
+.rw-name{display:block;font-family:var(--serif);font-weight:800;font-size:clamp(40px,8vw,96px);line-height:1;color:#fff;text-shadow:0 6px 24px rgba(0,0,0,.75)}
+@media (orientation: portrait){#rwMovie video{object-fit:contain}}
+#game{will-change:transform}
+.stage-vid{position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1}
 /* opening */
 #opening{padding:0;background:#000;align-items:center;justify-content:center;overflow:hidden;z-index:12}
 #opVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform-origin:50% 60%}
@@ -227,6 +249,9 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 </style>
 </head>
 <body>
+<!-- battle stages (drawn into the canvas; kept "visible" at 1px so every browser keeps decoding frames) -->
+<video id="stage-suzune" class="stage-vid" src="media/stage_suzune.mp4" muted loop playsinline preload="auto"></video>
+<video id="stage-aoi" class="stage-vid" src="media/stage_aoi.mp4" muted loop playsinline preload="auto"></video>
 <canvas id="game" aria-label="対戦画面"></canvas>
 
 <section class="screen" id="opening" aria-label="オープニング">
@@ -283,9 +308,9 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 
 <div id="exMovie" aria-hidden="true">
   <div class="ex-bg"></div>
-  <div class="ex-frame" data-char="suzune"><video src="media/ex_suzune.mp4" muted playsinline preload="auto"></video></div>
-  <div class="ex-frame" data-char="aoi"><video src="media/ex_aoi.mp4" muted playsinline preload="auto"></video></div>
-  <div class="ex-name"><small>EX SKILL</small><b></b></div>
+  <div class="ex-frame" data-char="suzune"><video src="media/ex_suzune.mp4" poster="media/ex_suzune_poster.jpg" muted playsinline preload="auto"></video></div>
+  <div class="ex-frame" data-char="aoi"><video src="media/ex_aoi.mp4" poster="media/ex_aoi_poster.jpg" muted playsinline preload="auto"></video></div>
+  <div class="ex-name"><small>ULTIMATE</small><b></b></div>
 </div>
 
 <div id="winMovie" aria-live="polite">
@@ -301,6 +326,11 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
   </div>
   <div class="wm-stats"><b class="wm-score"></b><span class="wm-grade"></span></div>
   <div class="wm-tap">タップで次へ</div>
+</div>
+
+<div id="rwMovie" aria-live="polite">
+  <video data-char="aoi" src="media/roundwin_aoi.mp4" poster="media/roundwin_aoi_poster.jpg" muted playsinline preload="auto"></video>
+  <div class="rw-plate"><small class="rw-kicker"></small><b class="rw-name"></b></div>
 </div>
 
 <button id="pauseBtn" aria-label="一時停止">Ⅱ</button>
