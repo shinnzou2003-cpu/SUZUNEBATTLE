@@ -77,7 +77,7 @@ async function buildAssets() {
 const ANIMS = {};
 const frameCount = (id, n) => ANIMS[id] && ANIMS[id].a[n] ? ANIMS[id].a[n].length : 0;
 // visual size balance between characters (SUZUNE's source video was framed larger)
-const CHAR_SCALE = { suzune: .92, aoi: 1 };
+const CHAR_SCALE = { suzune: .92, aoi: 1.07 };   // AOI stands taller; SUZUNE fights from a low crouch
 const LOAD = { done: 0, total: 0 };
 function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = document.getElementById('loadPct'); if (el) el.textContent = Math.round(LOAD.done / Math.max(1, LOAD.total) * 100) + '%'; return v; }); }
 async function buildAnims() {
@@ -93,6 +93,7 @@ async function buildAnims() {
       const ais = an.atlases.map(p => { if (!(p in idx)) { idx[p] = AN.atlases.length; AN.atlases.push(null); jobs.push(track(loadImg(p)).then(im => { AN.atlases[idx[p]] = im; })); } return idx[p]; });
       AN.a[k] = an.frames.map(r => ({ ai: ais[r.a], sx: r.x, sy: r.y, w: r.w, h: r.h, ox: r.ox, oy: r.oy }));
     }
+    AN.cutBox = meta.cutinBox || [564, 420];
     ANIMS[id] = AN;
   }
   await Promise.all(jobs);
@@ -115,7 +116,7 @@ function pickFrame(f) {
   const a = AN.a;
   // returns { fr, fr2, mix } so two neighbouring frames can be cross-faded for smoother motion
   // cross-fade only the slow 12fps loops; 24fps clips are shown frame-accurate (sharper, no ghosting)
-  const LOOPS = { idle: 1, win: 1, ultCharge: 1 };
+  const LOOPS = { idle: 1, win: 1, ultCharge: 1, winPose: 1 };
   const smooth = n => !!LOOPS[n];
   const at = (n, i) => { const arr = a[n] || a.idle, L = arr.length, x = clamp(i, 0, L - 1), i0 = Math.floor(x); return { fr: arr[i0], fr2: arr[Math.min(L - 1, i0 + 1)], mix: smooth(n) ? x - i0 : 0 }; };
   const prog = (n, p) => at(n, clamp(p, 0, 1) * ((a[n] || a.idle).length - 1));
@@ -131,7 +132,15 @@ function pickFrame(f) {
     case 'air': return prog('air', t / 16);
     case 'down': return at('down', t < 6 ? 0 : 1);
     case 'getup': return prog('getup', t / 26);
-    case 'win': return t < 18 ? prog('winIn', t / 18) : loop('win', AN.fps.win || 12);
+    case 'win': {
+      if (a.winPose) {   // victory pose clip: stance -> rise -> pose, then a slow breathing ping-pong on its last frames
+        const n = a.winPose.length, i = t * (AN.fps.winPose || 24) / 60;
+        if (i < n - 1) return at('winPose', i);
+        const L = Math.min(8, n), per = 2 * L - 2, x = ((i - (n - 1)) * .4) % per, k = x < L - 1 ? x : per - x;
+        return at('winPose', n - 1 - k);
+      }
+      return t < 18 ? prog('winIn', t / 18) : loop('win', AN.fps.win || 12);
+    }
     case 'atk': {
       const m = f.move, p = t / m.total;
       if (f.id === 'aoi') {
@@ -204,7 +213,7 @@ function bgmPlay(offset = 0) {
   if (!buf || !SND.ac) return;
   bgmStop();
   const ac = SND.ac;
-  if (!BGM.gain) { BGM.gain = ac.createGain(); BGM.gain.connect(ac.destination); }
+  if (!BGM.gain) { BGM.gain = ac.createGain(); BGM.gain.connect(duckNode(ac)); }
   BGM.gain.gain.setValueAtTime(BGM.on ? BGM.vol : 0, ac.currentTime);
   const s = ac.createBufferSource(); s.buffer = buf; s.loop = true; s.loopStart = battle ? 0 : BGM.loopStart; s.loopEnd = buf.duration - .05;
   s.connect(BGM.gain); s.start(ac.currentTime + .02, offset); BGM.src = s;
@@ -231,6 +240,12 @@ const VOICE_MAP = {
     getup: ['ao_10'], ko: ['ao_11'], ex: ['ao_12'], ult: ['ao_13'], select: ['ao_14'], round: ['ao_15'], winMovie: ['ao_16'], win: ['ao_17'], lose: ['ao_18'] }
 };
 const VOICE = { buf: {}, gain: null, last: {} };
+// BGM ducking bus: music dips while a character is speaking so lines cut through
+function duckNode(ac) { if (!SND.duck) { SND.duck = ac.createGain(); SND.duck.connect(ac.destination); } return SND.duck; }
+function duckFor(t0, dur) {
+  const ac = SND.ac, g = duckNode(ac).gain; g.cancelScheduledValues(t0); g.setValueAtTime(g.value, t0);
+  g.linearRampToValueAtTime(.42, t0 + .08); g.setValueAtTime(.42, t0 + dur); g.linearRampToValueAtTime(1, t0 + dur + .45);
+}
 async function loadVoices() {
   if (!SND.ac) return;
   const ids = new Set(); Object.values(VOICE_MAP).forEach(m => Object.values(m).forEach(l => l.forEach(i => ids.add(i))));
@@ -250,10 +265,16 @@ function voice(who, key, opts = {}) {
   const slot = typeof who === 'string' ? 'ui_' + id : 'f' + who.side;
   if (opts.cd && VOICE.last[slot + key] && G.frame - VOICE.last[slot + key] < opts.cd) return;
   VOICE.last[slot + key] = G.frame;
-  if (!VOICE.gain) { VOICE.gain = ac.createGain(); VOICE.gain.gain.value = 1.15; VOICE.gain.connect(ac.destination); }
+  if (!VOICE.gain) {   // character lines: 2x louder, with a limiter so the boost never clips
+    VOICE.gain = ac.createGain(); VOICE.gain.gain.value = 2.3;
+    const c = ac.createDynamicsCompressor(); c.threshold.value = -9; c.knee.value = 4; c.ratio.value = 14; c.attack.value = .002; c.release.value = .16;
+    const mk = ac.createGain(); mk.gain.value = 1.05; VOICE.gain.connect(c); c.connect(mk); mk.connect(ac.destination);
+  }
   const prev = VOICE['src_' + slot]; if (prev) { try { prev.stop(); } catch (e) { } }
-  const s = ac.createBufferSource(); s.buffer = VOICE.buf[avail[Math.floor(Math.random() * avail.length)]]; s.connect(VOICE.gain);
+  const s = ac.createBufferSource(); s.buffer = VOICE.buf[avail[Math.floor(Math.random() * avail.length)]];
+  if (id === 'sys') { if (!VOICE.sys) { VOICE.sys = ac.createGain(); VOICE.sys.gain.value = 1.15; VOICE.sys.connect(ac.destination); } s.connect(VOICE.sys); } else s.connect(VOICE.gain);
   s.start(ac.currentTime + (opts.delay || 0)); VOICE['src_' + slot] = s;
+  if (id !== 'sys') duckFor(ac.currentTime + (opts.delay || 0), s.buffer.duration);
   s.onended = () => { if (VOICE['src_' + slot] === s) VOICE['src_' + slot] = null; };
 }
 
@@ -354,6 +375,32 @@ function fxPetals(x, y, n = 10, pw = 1) { for (let i = 0; i < n; i++) addFx({ k:
 function fxDust(x, y, n = 8, pw = 1) { for (let i = 0; i < n; i++) addFx({ k: 'dust', x: x + rnd(-30, 30), y: y - 4, vx: rnd(-5, 5) * pw, vy: rnd(-2.5, -.2) * pw, life: rnd(22, 40), t: 0, r: rnd(10, 26) * pw }); }
 function fxText(x, y, txt, rgb, size = 40, life = 50) { addFx({ k: 'text', x, y, txt, rgb, size, life, t: 0 }); }
 function fxHex(x, y, rgb, face) { addFx({ k: 'hex', x, y, rgb, face, life: 18, t: 0 }); }
+/* SF-mecha energy colours: SUZUNE gold / AOI blue (mirror-match colour swaps keep their own palette) */
+const AURA = { suzune: { rgb: '255,196,64', hot: '255,244,200' }, aoi: { rgb: '64,168,255', hot: '205,240,255' } };
+const auraRgb = f => f.alt ? f.col.rgb : AURA[f.id].rgb;
+const auraHot = f => f.alt ? '255,255,255' : AURA[f.id].hot;
+function fxBolt(x0, y0, x1, y1, rgb, life = 9) {
+  const pts = [], n = 9; for (let i = 0; i <= n; i++) { const u = i / n; pts.push([lerp(x0, x1, u) + (i && i < n ? rnd(-22, 22) : 0), lerp(y0, y1, u) + (i && i < n ? rnd(-22, 22) : 0)]); }
+  addFx({ k: 'bolt', pts, rgb, life, t: 0 });
+}
+// big-impact package: anamorphic flare, light pillar, radial spikes, hex/diamond shards, arcs of lightning
+function fxBig(x, y, rgb, hot, pw = 2, dir = 1) {
+  const q = Math.min(1.6, pw / 2);
+  addFx({ k: 'flare', x, y, rgb, hot, life: 22 + 8 * q, t: 0, len: 520 + 520 * q });
+  addFx({ k: 'pillar', x, y: Math.min(GROUND, y + 140), rgb, hot, life: 26 + 10 * q, t: 0, w: 70 + 50 * q });
+  addFx({ k: 'rays', x, y, rgb, hot, life: 16 + 6 * q, t: 0, n: 14, r: 200 + 160 * q, rot: rnd(0, TAU) });
+  for (let i = 0; i < 10 + 10 * q; i++) { const a = dir > 0 ? rnd(-1.3, 1.3) : Math.PI + rnd(-1.3, 1.3), sp = rnd(8, 24) * (.8 + q * .4);
+    addFx({ k: 'shard', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - rnd(2, 7), rot: rnd(0, TAU), vr: rnd(-.4, .4), s: rnd(6, 15), rgb, hot, life: rnd(28, 48), t: 0 }); }
+  for (let i = 0; i < 2 + 2 * q; i++) { const a = rnd(0, TAU), r = rnd(120, 240) * (.8 + q * .3); fxBolt(x, y, x + Math.cos(a) * r, y + Math.sin(a) * r * .7, rgb, 8 + rnd(0, 6)); }
+  fxRing(x, y, rgb, 30, 240 + 120 * q, 22 + 6 * q, 12, .45); fxRing(x, y, hot, 10, 160 + 80 * q, 16, 6);
+}
+// ULT / EX power-up burst around a fighter
+function fxPowerUp(f, big) {
+  const rgb = auraRgb(f), hot = auraHot(f);
+  addFx({ k: 'pillar', x: f.x, y: GROUND, rgb, hot, life: big ? 46 : 26, t: 0, w: big ? 170 : 100 });
+  fxRing(f.x, GROUND - 4, rgb, 20, big ? 320 : 200, big ? 30 : 20, 10, .22); fxRing(f.x, f.y - 170, hot, 20, big ? 260 : 150, 20, 6);
+  if (big) { addFx({ k: 'rays', x: f.x, y: f.y - 170, rgb, hot, life: 28, t: 0, n: 18, r: 420, rot: rnd(0, TAU) }); for (let i = 0; i < 4; i++) fxBolt(f.x + rnd(-40, 40), f.y - rnd(40, 320), f.x + rnd(-200, 200), f.y - rnd(0, 360), rgb, 12); }
+}
 function shake(v) { G.cam.shake = Math.max(G.cam.shake, v); }
 // whole-screen quake: the game canvas itself jolts (on top of the in-world camera shake)
 const QUAKE = { amp: 0, t0: 0, dur: 1 };
@@ -382,7 +429,19 @@ function updateFx(dt) {
     else if (f.k === 'dust') { f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= Math.pow(.92, dt); }
     else if (f.k === 'text') { f.y -= .8 * dt; }
     else if (f.k === 'ember') { f.x += f.vx * dt; f.y += f.vy * dt; f.vy -= .05 * dt; }
+    else if (f.k === 'bit') { f.y += f.vy * dt; f.x += Math.sin((f.t + f.ph) * .15) * .4 * dt; }
+    else if (f.k === 'shard') { f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= Math.pow(.95, dt); f.vy = f.vy * Math.pow(.95, dt) + .45 * dt; f.rot += f.vr * dt; }
     if (f.t >= f.life) arr.splice(i, 1);
+  }
+  // SF-mecha aura: rising energy bits / data flecks around each fighter
+  if (G.fighters) for (const f of G.fighters) {
+    if (f.hidden || !AURA[f.id]) continue;
+    const hot = f.gauge >= 100 || f.state === 'win' || (f.state === 'atk' && f.move && (f.move.key === 'ult' || f.move.key === 'ex'));
+    f._bitAcc = (f._bitAcc || 0) + dt * (hot ? .9 : .38);
+    while (f._bitAcc >= 1) {
+      f._bitAcc -= 1;
+      arr.push({ k: 'bit', x: f.x + rnd(-80, 80), y: f.y - rnd(0, 300), vy: -rnd(1.6, 4.2) * (hot ? 1.4 : 1), len: rnd(8, 26), w: Math.random() < .3 ? 3 : 1.6, sq: Math.random() < .35, ph: rnd(0, 60), rgb: auraRgb(f), life: rnd(26, 50), t: 0 });
+    }
   }
   if (arr.length > 700) arr.splice(0, arr.length - 700);
 }
@@ -405,6 +464,41 @@ function drawFx(layer) {
         ctx.strokeStyle = `rgba(255,255,255,${a * .7})`; ctx.lineWidth = f.w * a * .35 + .3; ctx.stroke();
       } else if (f.k === 'arc') { drawArcRibbon(f, p); }
       else if (f.k === 'ember') { ctx.fillStyle = `rgba(${f.rgb},${a})`; ctx.fillRect(f.x, f.y, 3, 3); }
+      else if (f.k === 'bit') {
+        const al = Math.min(1, f.t / 6) * a;
+        if (f.sq) { ctx.fillStyle = `rgba(${f.rgb},${al})`; ctx.fillRect(f.x - 2, f.y - 2, 4, 4); ctx.fillStyle = `rgba(255,255,255,${al * .8})`; ctx.fillRect(f.x - 1, f.y - 1, 2, 2); }
+        else { const g = ctx.createLinearGradient(0, f.y, 0, f.y + f.len); g.addColorStop(0, `rgba(255,255,255,${al})`); g.addColorStop(.3, `rgba(${f.rgb},${al * .9})`); g.addColorStop(1, `rgba(${f.rgb},0)`); ctx.fillStyle = g; ctx.fillRect(f.x - f.w / 2, f.y, f.w, f.len); }
+      } else if (f.k === 'bolt') {
+        const al = a * (Math.random() < .25 ? .35 : 1);
+        ctx.lineJoin = 'miter'; ctx.beginPath(); f.pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+        ctx.strokeStyle = `rgba(${f.rgb},${al * .55})`; ctx.lineWidth = 9; ctx.stroke();
+        ctx.strokeStyle = `rgba(255,255,255,${al})`; ctx.lineWidth = 2.2; ctx.stroke();
+      } else if (f.k === 'flare') {
+        const e = 1 - Math.pow(1 - Math.min(1, p * 3), 2), L = f.len * (.4 + .6 * e), th = 16 * a + 2;
+        let g = ctx.createLinearGradient(f.x - L, 0, f.x + L, 0);
+        g.addColorStop(0, `rgba(${f.rgb},0)`); g.addColorStop(.42, `rgba(${f.rgb},${a * .8})`); g.addColorStop(.5, `rgba(${f.hot},${a})`); g.addColorStop(.58, `rgba(${f.rgb},${a * .8})`); g.addColorStop(1, `rgba(${f.rgb},0)`);
+        ctx.fillStyle = g; ctx.fillRect(f.x - L, f.y - th / 2, L * 2, th); ctx.fillRect(f.x - L * .6, f.y - th * .15, L * 1.2, th * .3);
+        g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, 120 * (1 + p)); g.addColorStop(0, `rgba(255,255,255,${a})`); g.addColorStop(.3, `rgba(${f.hot},${a * .7})`); g.addColorStop(1, `rgba(${f.rgb},0)`);
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(f.x, f.y, 120 * (1 + p), 0, TAU); ctx.fill();
+        ctx.fillStyle = `rgba(${f.hot},${a * .6})`; ctx.fillRect(f.x - 2, f.y - L * .35, 4, L * .7);
+      } else if (f.k === 'pillar') {
+        const w = f.w * (1 - p * .6) * (p < .1 ? p / .1 : 1), top = -80;
+        const g = ctx.createLinearGradient(f.x - w, 0, f.x + w, 0);
+        g.addColorStop(0, `rgba(${f.rgb},0)`); g.addColorStop(.35, `rgba(${f.rgb},${a * .5})`); g.addColorStop(.5, `rgba(${f.hot},${a * .95})`); g.addColorStop(.65, `rgba(${f.rgb},${a * .5})`); g.addColorStop(1, `rgba(${f.rgb},0)`);
+        ctx.fillStyle = g; ctx.fillRect(f.x - w, top, w * 2, f.y - top);
+        for (let j = 0; j < 5; j++) { const yy = f.y - ((f.t * 22 + j * 140) % (f.y - top)); ctx.fillStyle = `rgba(255,255,255,${a * .5})`; ctx.fillRect(f.x - w * .8, yy, w * 1.6, 2); }
+      } else if (f.k === 'rays') {
+        const r = f.r * (0.5 + p * .7);
+        ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.rot + p * .5);
+        for (let j = 0; j < f.n; j++) { const L = r * (j % 2 ? .6 : 1), wv = (j % 2 ? .05 : .08);
+          ctx.rotate(TAU / f.n); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L, -L * wv); ctx.lineTo(L * 1.05, 0); ctx.lineTo(L, L * wv); ctx.closePath();
+          ctx.fillStyle = `rgba(${j % 2 ? f.hot : f.rgb},${a * .7})`; ctx.fill(); }
+        ctx.restore();
+      } else if (f.k === 'shard') {
+        ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.rot); const s2 = f.s * (1 - p * .4);
+        ctx.beginPath(); ctx.moveTo(0, -s2); ctx.lineTo(s2 * .45, 0); ctx.lineTo(0, s2); ctx.lineTo(-s2 * .45, 0); ctx.closePath();
+        ctx.fillStyle = `rgba(${f.rgb},${a * .85})`; ctx.fill(); ctx.strokeStyle = `rgba(${f.hot},${a})`; ctx.lineWidth = 1.2; ctx.stroke(); ctx.restore();
+      }
       else if (f.k === 'hex') {
         ctx.save(); ctx.translate(f.x, f.y); ctx.scale(f.face, 1);
         const s = 1 + p * .25; ctx.strokeStyle = `rgba(${f.rgb},${a})`; ctx.lineWidth = 3;
@@ -482,7 +576,7 @@ function startMove(f, key) {
   if (key === 'a' && f.state === 'atk' && f.move && f.move.key === 'a') f.chain++; else f.chain = 0;
   f.state = 'atk'; f.t = -1; f.move = { key, ...m, total: m.st + m.act + m.rec, id: Math.random() }; f.hitIds.clear();
   if (key === 'ult') { startUlt(f); voice(f, 'ult'); }
-  if (key === 'ex') { sfx.special(); voice(f, 'ex'); f.inv = f.id === 'suzune' ? 30 : 0; sfx.charge(); }
+  if (key === 'ex') { fxPowerUp(f, false); sfx.special(); voice(f, 'ex'); f.inv = f.id === 'suzune' ? 30 : 0; sfx.charge(); }
   if (key === 'a') voice(f, 'a' + Math.min(2, f.chain), { p: f.chain === 2 ? 1 : .75 });
   if (key === 'b') voice(f, 'b');
   if (f.id === 'suzune') { if (key === 'b') sfx.heavyKick(); else if (key === 'a') f.chain === 2 ? sfx.kick() : sfx.swing(); }
@@ -492,7 +586,7 @@ function startMove(f, key) {
 function startUlt(f) {
   sfx.ultimate(); f.inv = 999;
   if (!exMovieStart(f)) { G.freeze = 78; G.cutin = { f, t: 0 }; flash(.6, f.col.rgb); }   // fallback: in-canvas cut-in
-  G.tintA = .55; G.tintC = f.col.rgb;
+  G.tintA = .55; G.tintC = auraRgb(f); fxPowerUp(f, true);
 }
 
 function hitTarget(att, tgt, o) {
@@ -522,7 +616,7 @@ function hitTarget(att, tgt, o) {
   fxRing(hx, hy, att.col.rgb, 10, 60 + 60 * pw, 14 + 6 * pw, 5 + 3 * pw);
   if (att.id === 'suzune') fxPetals(hx, hy, 3 + 4 * pw, pw); else fxHex(hx, hy, att.col.rgb, fromDir);
   G.hitstop = Math.max(G.hitstop, o.hitstop || (4 + 4 * pw)); shake(4 + 7 * pw);
-  if (pw >= 1.4 || o.launch) quake(3 + 5 * pw, .28 + .12 * pw, pw >= 2 ? 60 : 25);
+  if (pw >= 1.4 || o.launch) { quake(3 + 5 * pw, .28 + .12 * pw, pw >= 2 ? 60 : 25); fxBig(hx, hy, auraRgb(att), auraHot(att), Math.max(1.4, pw), fromDir); }
   if (pw >= 2) flash(.35 * pw / 2, '255,230,200');
   sfx.hit(pw);
   if (tgt.combo >= 2) fxText(att.x, att.y - 340, `${tgt.combo} HITS`, att.col.rgb, 30, 40);
@@ -672,6 +766,7 @@ function drawProj() {
 
 function onKO(att, tgt) {
   tgt.state = 'air'; tgt.vy = Math.min(tgt.vy, -15); tgt.vx = Math.sign(tgt.x - att.x) * 11; tgt.ko = true;
+  fxBig(tgt.x, tgt.y - 170, auraRgb(att), auraHot(att), 3.2, Math.sign(tgt.x - att.x) || 1);
   G.phase = 'ko'; G.phaseT = 0; slowmo(.22, 80); flash(1); shake(24); zoomKick(.14); sfx.ko(); quake(34, 1.4, [120, 60, 220]);
   G.banner = { txt: 'K.O.', t: 0, big: true }; voice('sys', 'ko', { delay: .45 });
   att.wins++;
@@ -751,7 +846,8 @@ function stepFighter(f, o, inp, dt) {
     if (f.t > (ANIMS[f.id] ? 26 : 16)) { f.state = 'idle'; f.land = 8; fxDust(f.x, f.y, 5, .6); }
   } else if (f.state === 'win') {
     f.vx *= .8;
-    if (onGround(f) && (f.t | 0) % 48 === 0) { f.vy = -9; f.sy = .82; if (f.id === 'suzune') fxPetals(f.x, f.y - 200, 8, 1); else fxRing(f.x, f.y - 160, f.col.rgb, 30, 180, 20, 5); }
+    if (ANIMS[f.id] && ANIMS[f.id].a.winPose) { const m = 250, tx = clamp(f.x, m, STAGE_W - m); f.x += (tx - f.x) * Math.min(1, .16 * dt); }   // keep the whole pose on screen
+    if (!(ANIMS[f.id] && ANIMS[f.id].a.winPose) && onGround(f) && (f.t | 0) % 48 === 0) { f.vy = -9; f.sy = .82; if (f.id === 'suzune') fxPetals(f.x, f.y - 200, 8, 1); else fxRing(f.x, f.y - 160, f.col.rgb, 30, 180, 20, 5); }
   }
 
   // physics
@@ -804,7 +900,7 @@ function poseOf(f) {
     case 'air': P.rot = -.4 - Math.min(1, f.t / 28) * .9; P.top = -20; P.bot = 20; P.wave = 18; break;
     case 'down': P.rot = -1.38; P.sy = .92; P.wave = 2; break;
     case 'getup': { const q = Math.min(1, f.t / 16); P.rot = -1.38 * (1 - q) * (1 - q); P.sy = 1 + Math.sin(q * Math.PI) * .08; P.top = -10 * (1 - q); break; }
-    case 'win': P.sy = 1.03 + br * .015; P.top = -6 + br * 3; P.wave = 8; break;
+    case 'win': if (ANIMS[f.id] && ANIMS[f.id].a.winPose) { P.wave = 3; break; } P.sy = 1.03 + br * .015; P.top = -6 + br * 3; P.wave = 8; break;
     case 'atk': {
       const m = f.move, wind = f.t < m.st, act = f.t >= m.st && f.t < m.st + m.act, key = m.key;
       P.wave = 10;
@@ -899,7 +995,7 @@ function startRound() {
   for (const f of G.fighters) {
     const w = f.wins; Object.assign(f, makeFighter(f.id, f.side, f.alt)); f.wins = w;
   }
-  G.resultShown = false; G.victory = null; G.fx = []; G.proj = []; G.timer = 99; G.timerF = 0; G.phase = 'intro'; G.phaseT = 0; G.cutin = null; G.freeze = 0; G.tintA = 0; G.slow = 1;
+  G.resultShown = false; G.victory = null; G.fx = []; G.proj = []; G.timer = 99; G.timerF = 0; G.phase = 'intro'; G.phaseT = 0; G.cutin = null; G.rwCut = null; G.freeze = 0; G.tintA = 0; G.slow = 1;
   G.cam.x = STAGE_W / 2;
   for (const f of G.fighters) { f.x -= f.face * 400; f.vx = f.face * 28; f.state = 'dashin'; }
   G.banner = null;
@@ -926,15 +1022,16 @@ function updateFlow(dt) {
       G.resultShown = true;
       const [a, b] = G.fighters, winner = a.hp > b.hp ? a : b.hp > a.hp ? b : null;
       if (winner && winner.wins >= 2 && winMovieStart(winner)) { G.winMovie = true; }
-      else if (winner && winner.wins < 2 && rwStart(winner)) { G.rwMovie = true; }
+      else if (winner && winner.wins < 2 && ANIMS[winner.id] && ANIMS[winner.id].a.cutin) { const AN = ANIMS[winner.id], t0 = -Math.round(AN.a.winPose.length / (AN.fps.winPose || 24) * 60 + 6); G.rwCut = { f: winner, t: t0, t0, len: 100 }; }
       else if (winner && winner.wins >= 2 && VICT[winner.id]) { const V = VICT[winner.id]; G.victory = { f: winner, t: 0, len: V.frames.length / V.fps * 60 }; sfx.cutin(); }
       if (winner && !G.winMovie) voice(winner, 'win', { delay: .2 });
       if (winner) { winner.state = 'win'; winner.t = 0; winner.move = null; winner.hidden = false; G.banner = { txt: `${winner.ch.name} WINS`, t: 0, rgb: winner.col.rgb }; }
       else G.banner = { txt: 'DRAW', t: 0 };
     }
     if (G.winMovie || G.rwMovie) return;
-    if (G.phaseT > (G.victory ? 130 + G.victory.len + 70 : 250)) {
-      G.resultShown = false; G.victory = null;
+    if (G.rwCut) { const c = G.rwCut; c.t += dt; if (c.t >= 0 && !c.go) { c.go = true; sfx.cutin(); quake(5, .25); } }
+    if (G.phaseT > (G.victory ? 130 + G.victory.len + 70 : G.rwCut ? (G.rwCut.t >= G.rwCut.len + 10 ? 0 : 1e9) : 250)) {
+      G.resultShown = false; G.victory = null; G.rwCut = null;
       const [a, b] = G.fighters;
       if (a.wins >= 2 || b.wins >= 2) endMatch(a.wins >= 2 ? a : b);
       else { G.round++; startRound(); }
@@ -1096,14 +1193,18 @@ function drawFighter(f, reflect) {
     if (!gh.fr) continue;
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .42 * (1 - gh.t / 16);
     setT(gh.x, gh.y, gh.face, gh.rot, gh.sx, gh.sy);
-    drawSolid(frameSrc(gh.fr, f), gh.fr, gh.fr.ox * K, gh.fr.oy * K, gh.fr.w * K, gh.fr.h * K, f.col.c1);
+    drawSolid(frameSrc(gh.fr, f), gh.fr, gh.fr.ox * K, gh.fr.oy * K, gh.fr.w * K, gh.fr.h * K, `rgb(${auraRgb(f)})`);
     ctx.restore();
   }
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  const arg = auraRgb(f), ahot = auraHot(f), hotA = f.gauge >= 100 || f.state === 'win' || (f.state === 'atk' && f.move && (f.move.key === 'ult' || f.move.key === 'ex'));
+  drawHoloBase(f, arg, ahot, hotA);
   ctx.save(); setT(f.x + f.ox, f.y, f.face, f.rot, f.sx, f.sy);
-  const pulse = f.gauge >= 100 ? .8 + .2 * Math.sin(G.frame * .2) : f.state === 'atk' ? .65 : .38;
+  const beat = .5 + .5 * Math.sin(G.frame * .09 + f.side * 2);
+  const pulse = f.gauge >= 100 ? .85 + .15 * Math.sin(G.frame * .2) : f.state === 'atk' ? .75 : .45 + .15 * beat;
   ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = pulse;
-  drawGlow(src, fr, bx, by, bw, bh, f.col.rgb);
+  drawGlow(src, fr, bx, by, bw, bh, arg);
+  if (hotA) { ctx.globalAlpha = .35 + .2 * beat; drawGlow(src, fr, bx - 6, by - 6, bw + 12, bh + 12, ahot); }
   ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = f.inv > 0 && f.inv < 900 && f.state !== 'atk' && f.state !== 'getup' ? (G.frame % 6 < 3 ? .5 : 1) : 1;
   drawFrame(src, fr, bx, by, bw, bh, f.glitch > 0);
   if (pf.fr2 !== pf.fr && pf.mix > .04) {
@@ -1111,8 +1212,29 @@ function drawFighter(f, reflect) {
     drawFrame(frameSrc(f2, f), f2, f2.ox * K, f2.oy * K, f2.w * K, f2.h * K, false); ctx.globalAlpha = a0;
   }
   if (f.whiteT > 0) { ctx.globalAlpha = Math.min(1, f.whiteT / 4); drawSolid(src, fr, bx, by, bw, bh, '#fff'); }
-  ctx.restore(); ctx.globalAlpha = 1;
+  else {   // mecha scan line: a thin band of light sweeps up through the silhouette
+    const per = hotA ? 70 : 130, u = ((G.frame + f.side * 50) % per) / per, sy = by + bh * (1 - u) - 10;
+    ctx.save(); ctx.beginPath(); ctx.rect(bx - 20, sy, bw + 40, 20); ctx.clip();
+    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = (hotA ? .7 : .45) * Math.sin(u * Math.PI);
+    drawSolid(src, fr, bx, by, bw, bh, `rgb(${arg})`); ctx.restore();
+  }
+  ctx.restore(); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   drawGuardShield(f);
+}
+// holographic emitter rings at the fighter's feet
+function drawHoloBase(f, rgb, hot, hotA) {
+  const air = Math.max(0, GROUND - f.y), k = Math.max(0, 1 - air / 260); if (k <= 0) return;
+  const x = f.x, y = GROUND + 2, R0 = 120, a0 = (hotA ? .95 : .6) * k, rot = G.frame * .02 * (f.side ? -1 : 1);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(x, y); ctx.scale(1, .2);
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R0 * 1.15); g.addColorStop(0, `rgba(${rgb},${.3 * a0})`); g.addColorStop(.7, `rgba(${rgb},${.1 * a0})`); g.addColorStop(1, `rgba(${rgb},0)`);
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R0 * 1.15, 0, TAU); ctx.fill();
+  ctx.lineWidth = 5; ctx.strokeStyle = `rgba(${rgb},${.75 * a0})`;
+  for (let i = 0; i < 3; i++) { const s0 = rot + i * TAU / 3; ctx.beginPath(); ctx.arc(0, 0, R0, s0, s0 + 1.5); ctx.stroke(); }
+  ctx.lineWidth = 2.5; ctx.strokeStyle = `rgba(${hot},${.8 * a0})`;
+  for (let i = 0; i < 4; i++) { const s0 = -rot * 1.6 + i * TAU / 4; ctx.beginPath(); ctx.arc(0, 0, R0 * .72, s0, s0 + .9); ctx.stroke(); }
+  for (let i = 0; i < 24; i++) { const an = rot * .5 + i * TAU / 24, r1 = R0 * 1.06, r2 = R0 * (i % 3 ? 1.12 : 1.2);
+    ctx.beginPath(); ctx.moveTo(Math.cos(an) * r1, Math.sin(an) * r1); ctx.lineTo(Math.cos(an) * r2, Math.sin(an) * r2); ctx.strokeStyle = `rgba(${rgb},${.6 * a0})`; ctx.lineWidth = 2; ctx.stroke(); }
+  ctx.restore();
 }
 function drawGuardShield(f) {
   if (f.state !== 'guard') return;
@@ -1187,6 +1309,43 @@ function drawSpeedLines(n) {
   }
   ctx.restore();
 }
+/* round-win cut-in: keyed bust-up clip inside a slanted band (screen space) */
+function drawRwCut() {
+  const c = G.rwCut; if (!c || c.t < 0) return;
+  const f = c.f, AN = ANIMS[f.id], fr = AN && AN.a.cutin; if (!fr) return;
+  const t = c.t, T = c.len, inE = Math.min(1, t / 9), out = t > T - 12 ? (t - (T - 12)) / 12 : 0;
+  const dir = f.side === 0 ? 1 : -1, rgb = f.col.rgb, bandH = 420;
+  const slide = 1 - Math.pow(1 - inE, 3) - out * 1.3;
+  ctx.save();
+  ctx.fillStyle = `rgba(6,4,14,${.45 * Math.min(1, t / 8) * (1 - out)})`; ctx.fillRect(0, 0, W, H);
+  ctx.translate(W / 2 - dir * (1 - slide) * W, H / 2 - 10); ctx.rotate(-.09 * dir);
+  ctx.beginPath(); ctx.rect(-W, -bandH / 2, W * 2, bandH); ctx.clip();
+  const bg = ctx.createLinearGradient(0, -bandH / 2, 0, bandH / 2);
+  bg.addColorStop(0, 'rgba(10,6,22,.96)'); bg.addColorStop(.5, `rgba(${rgb},.55)`); bg.addColorStop(1, 'rgba(10,6,22,.96)');
+  ctx.fillStyle = bg; ctx.fillRect(-W, -bandH / 2, W * 2, bandH);
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 22; i++) { const y = ((i * 53) % bandH) - bandH / 2, x = ((i * 131 + t * 38 * dir) % (W * 2) + W * 2) % (W * 2) - W; ctx.fillStyle = `rgba(${rgb},${.12 + (i % 4) * .06})`; ctx.fillRect(x, y, 140 + (i % 5) * 70, 2 + (i % 3)); }
+  ctx.globalCompositeOperation = 'source-over';
+  // the clip itself (24fps, holds on its last frame)
+  const i = Math.min(fr.length - 1, Math.floor(t * (AN.fps.cutin || 24) / 60)), q = fr[i], box = AN.cutBox;
+  const sc = (bandH + 60) / box[1], bw = box[0] * sc, bh = box[1] * sc, drift = t * .5 * dir;
+  const bx = dir * 170 - bw / 2 + drift, by = -bh / 2 + 20;
+  ctx.drawImage(frameSrc(q, f), q.sx, q.sy, q.w, q.h, bx + q.ox * sc, by + q.oy * sc, q.w * sc, q.h * sc);
+  const lg = ctx.createLinearGradient(-W / 2, 0, W / 2, 0);
+  if (dir > 0) { lg.addColorStop(0, 'rgba(10,6,22,.92)'); lg.addColorStop(.38, 'rgba(10,6,22,0)'); } else { lg.addColorStop(.62, 'rgba(10,6,22,0)'); lg.addColorStop(1, 'rgba(10,6,22,.92)'); }
+  ctx.fillStyle = lg; ctx.fillRect(-W, -bandH / 2, W * 2, bandH);
+  ctx.fillStyle = `rgb(${rgb})`; ctx.fillRect(-W, -bandH / 2, W * 2, 5); ctx.fillRect(-W, bandH / 2 - 5, W * 2, 5);
+  ctx.globalAlpha = .5; ctx.fillStyle = '#fff'; ctx.fillRect(-W, -bandH / 2 + 9, W * 2, 1.5); ctx.fillRect(-W, bandH / 2 - 10, W * 2, 1.5); ctx.globalAlpha = 1;
+  ctx.restore();
+  if (t > 10) {
+    const tt = Math.min(1, (t - 10) / 8), s = 1.6 - tt * .6, x = dir > 0 ? W * .25 : W * .75;
+    ctx.save(); ctx.translate(x, H / 2 + 40); ctx.rotate(-.09 * dir); ctx.scale(s, s); ctx.globalAlpha = tt * (1 - out); ctx.textAlign = 'center';
+    ctx.font = `700 26px 'Chakra Petch', sans-serif`; ctx.fillStyle = `rgb(${rgb})`; ctx.fillText(`ROUND ${G.round} WIN`, 0, -64);
+    ctx.font = `800 84px 'Shippori Mincho B1', serif`; ctx.lineWidth = 10; ctx.strokeStyle = 'rgba(12,6,22,.9)'; ctx.strokeText(f.ch.name, 0, 10);
+    ctx.fillStyle = '#fff'; ctx.shadowColor = `rgb(${rgb})`; ctx.shadowBlur = 24; ctx.fillText(f.ch.name, 0, 10);
+    ctx.restore();
+  }
+}
 function drawCutin() {
   const ci = G.cutin; if (!ci) return;
   const f = ci.f, t = ci.t, T = 78, img = f.gfx.ci;
@@ -1220,7 +1379,7 @@ function drawCutin() {
   }
 }
 function drawBanner() {
-  const b = G.banner; if (!b) return;
+  const b = G.banner; if (!b || (G.rwCut && G.rwCut.t > 0)) return;
   const t = b.t, life = b.big ? 70 : 64; if (t > life) { G.banner = null; return; }
   const inT = Math.min(1, t / 7), s = (b.big ? 2.6 : 1.8) - inT * (b.big ? 1.6 : .8), a = t > life - 12 ? (life - t) / 12 : 1;
   ctx.save(); ctx.translate(W / 2, H / 2 - 20); ctx.scale(s, s); ctx.globalAlpha = a * inT;
@@ -1296,7 +1455,7 @@ function render() {
   // vignette
   const vg = ctx.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, H * .95); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(8,4,18,.55)');
   ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
-  if (G.victory) drawVictory(); else { drawHUD2(); drawCutin(); drawBanner(); }
+  if (G.victory) drawVictory(); else { drawHUD2(); drawCutin(); drawBanner(); drawRwCut(); }
   if (G.flash > 0) { ctx.fillStyle = `rgba(${G.flashCol},${Math.min(1, G.flash)})`; ctx.fillRect(0, 0, W, H); }
   ctx.font = `600 12px 'Chakra Petch', sans-serif`; ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fillText('© SZOU', W - 14, H - 8);
 }
@@ -1355,7 +1514,8 @@ function updateCamera() {
   const c = G.cam, [a, b] = G.fighters;
   if (a && b) {
     const vis = [a, b].filter(f => !f.hidden);
-    const mid = vis.length ? vis.reduce((s, f) => s + f.x, 0) / vis.length : c.x;
+    let mid = vis.length ? vis.reduce((s, f) => s + f.x, 0) / vis.length : c.x;
+    const wf = vis.find(f => f.state === 'win'); if (wf) mid = wf.x;
     const d = vis.length === 2 ? Math.abs(a.x - b.x) : 300;
     c.z = 1;
     const half = W / 2 / c.z;
