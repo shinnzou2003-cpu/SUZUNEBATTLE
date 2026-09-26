@@ -90,8 +90,12 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 .tb.press{background:rgba(255,255,255,.35);transform:scale(.93)}
 .mv{grid-template-columns:auto auto}
 .mv .tb{--s:74px;font-size:22px}
-.ac{grid-template-columns:auto auto;grid-template-areas:". jp" "sp atk"}
+.ac{grid-template-columns:auto auto;grid-template-areas:"dh jp" "sp atk"}
 .tb.jp{grid-area:jp;--s:56px;font-size:12px;justify-self:end}
+.tb.dh{grid-area:dh;--s:60px;font-size:13px;letter-spacing:.04em;justify-self:start;border:0;color:#1c1433;font-weight:800;
+  background:radial-gradient(circle,rgba(255,200,80,.92) 60%,transparent 61%),conic-gradient(#fff var(--g,100%),rgba(255,255,255,.2) 0)}
+.tb.dh.cool{color:rgba(255,255,255,.7);background:radial-gradient(circle,rgba(20,12,38,.6) 60%,transparent 61%),conic-gradient(#ffc24a var(--g,100%),rgba(255,255,255,.2) 0)}
+.tb.dh[hidden]{display:none}
 .tb.atk{grid-area:atk;--s:84px;font-size:18px;border-color:#fff}
 .tb.sp{grid-area:sp;--s:84px;font-size:17px;border:0;position:relative;
   background:radial-gradient(circle,rgba(20,12,38,.55) 60%,transparent 61%),conic-gradient(var(--coral) var(--g),rgba(255,255,255,.28) 0)}
@@ -106,7 +110,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 #touch[data-mode="pvp"] .pad{flex-direction:column;align-items:flex-start;gap:8px}
 #touch[data-mode="pvp"] .pad[data-side="0"]{left:calc(max(28px,4vw) + env(safe-area-inset-left,0px))}
 #touch[data-mode="pvp"] .pad[data-side="1"]{right:calc(max(28px,4vw) + env(safe-area-inset-right,0px));align-items:flex-end}
-#touch[data-mode="pvp"] .ac{grid-template-columns:repeat(3,auto);grid-template-areas:"jp sp atk"}
+#touch[data-mode="pvp"] .ac{grid-template-columns:repeat(4,auto);grid-template-areas:"dh jp sp atk"}
 #touch[data-mode="pvp"] .tb{--s:50px;font-size:12px}
 #touch[data-mode="pvp"] .mv .tb{--s:54px;font-size:18px}
 #touch[data-mode="pvp"] .tb.sp,#touch[data-mode="pvp"] .tb.atk{--s:58px}
@@ -271,7 +275,7 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
   <div class="brand">
     <h1>CHRONO<br>FIGHT</h1>
     <p>SUZUNE と AOI、2029年の東京スカイデッキで。<br>攻撃と必殺、2つのボタンで戦う2ラウンド先取バトル。</p>
-    <div class="keys">ボタンは「攻撃」と「必殺」だけ。攻撃連打で自動コンボ、必殺はゲージで 強攻撃→EX→ULT に変化。<br>1P：A D 移動 / W ジャンプ / J 攻撃 / K 必殺　2P：矢印キー / , 攻撃 / . 必殺　相手と反対に押すとガード</div>
+    <div class="keys">ボタンは「攻撃」と「必殺」だけ。攻撃連打で自動コンボ、必殺はゲージで 強攻撃→EX→ULT に変化。<br>1P：A D 移動 / W ジャンプ / J 攻撃 / K 必殺　2P：矢印キー / , 攻撃 / . 必殺　相手と反対に押すとガード<br>SUZUNEのみ：ダッシュ（1P I / Shift・2P / ・左右2回押しでもOK）ダッシュ中は一瞬無敵</div>
   </div>
   <nav class="menu" aria-label="モード選択">
     <button class="mbtn" data-mode="cpu">CPUと対戦 <small>1人で遊ぶ</small></button>
@@ -337,11 +341,11 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 <div id="touch" data-mode="cpu">
   <div class="pad" data-side="0">
     <div class="grp mv"><button class="tb" data-k="l" aria-label="左">◀</button><button class="tb" data-k="r" aria-label="右">▶</button></div>
-    <div class="grp ac"><button class="tb jp" data-k="u" aria-label="ジャンプ">ジャンプ</button><button class="tb sp" data-k="s"><b>必殺</b></button><button class="tb atk" data-k="a">攻撃</button></div>
+    <div class="grp ac"><button class="tb dh" data-k="dh" aria-label="ダッシュ">DASH</button><button class="tb jp" data-k="u" aria-label="ジャンプ">ジャンプ</button><button class="tb sp" data-k="s"><b>必殺</b></button><button class="tb atk" data-k="a">攻撃</button></div>
   </div>
   <div class="pad" data-side="1">
     <div class="grp mv"><button class="tb" data-k="l" aria-label="左">◀</button><button class="tb" data-k="r" aria-label="右">▶</button></div>
-    <div class="grp ac"><button class="tb jp" data-k="u" aria-label="ジャンプ">ジャンプ</button><button class="tb sp" data-k="s"><b>必殺</b></button><button class="tb atk" data-k="a">攻撃</button></div>
+    <div class="grp ac"><button class="tb dh" data-k="dh" aria-label="ダッシュ">DASH</button><button class="tb jp" data-k="u" aria-label="ジャンプ">ジャンプ</button><button class="tb sp" data-k="s"><b>必殺</b></button><button class="tb atk" data-k="a">攻撃</button></div>
   </div>
   <p class="hint">相手と反対に押し続けるとガード</p>
 </div>

@@ -127,6 +127,7 @@ function pickFrame(f) {
     case 'walk': return loop('walk', AN.fps.walk || 12);
     case 'guard': return at('guard', 0);
     case 'jump': return f.vy < -8 && f.t < 10 ? at('jump', 0) : at('jump', 1);
+    case 'dash': return f.dashDir === f.face ? at('ex', 99) : at('guard', 0);
     case 'dashin': return f.id === 'aoi' ? loop('walk', (AN.fps.walk || 12) * 1.2) : at('ex', 99);
     case 'hit': return prog('hit', t / (t + Math.max(1, f.stun)));
     case 'air': return prog('air', t / 16);
@@ -342,9 +343,9 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => KEYS.delete(e.code));
 addEventListener('blur', () => KEYS.clear());
-const MAP1 = { l: ['KeyA'], r: ['KeyD'], u: ['KeyW'], d: ['KeyS'], a: ['KeyJ'], s: ['KeyK', 'KeyL'] };
-const MAP1solo = { l: ['KeyA', 'ArrowLeft'], r: ['KeyD', 'ArrowRight'], u: ['KeyW', 'ArrowUp', 'Space'], d: ['KeyS', 'ArrowDown'], a: ['KeyJ', 'KeyZ'], s: ['KeyK', 'KeyX', 'KeyL'] };
-const MAP2 = { l: ['ArrowLeft'], r: ['ArrowRight'], u: ['ArrowUp'], d: ['ArrowDown'], a: ['Comma', 'Numpad1'], s: ['Period', 'Numpad2'] };
+const MAP1 = { l: ['KeyA'], r: ['KeyD'], u: ['KeyW'], d: ['KeyS'], a: ['KeyJ'], s: ['KeyK', 'KeyL'], dh: ['KeyI', 'ShiftLeft'] };
+const MAP1solo = { l: ['KeyA', 'ArrowLeft'], r: ['KeyD', 'ArrowRight'], u: ['KeyW', 'ArrowUp', 'Space'], d: ['KeyS', 'ArrowDown'], a: ['KeyJ', 'KeyZ'], s: ['KeyK', 'KeyX', 'KeyL'], dh: ['KeyC', 'KeyI', 'ShiftLeft', 'ShiftRight'] };
+const MAP2 = { l: ['ArrowLeft'], r: ['ArrowRight'], u: ['ArrowUp'], d: ['ArrowDown'], a: ['Comma', 'Numpad1'], s: ['Period', 'Numpad2'], dh: ['Slash', 'Numpad3', 'ShiftRight'] };
 const TOUCH = [{}, {}];
 function readHuman(side) {
   const map = G.mode === 'pvp' ? (side === 0 ? MAP1 : MAP2) : MAP1solo;
@@ -772,10 +773,25 @@ function onKO(att, tgt) {
   att.wins++;
 }
 
+/* SUZUNE's short step-dash: brief invulnerability (slips through AOI's shots), short cooldown */
+const DASH = { len: 15, speed: 26, inv: 10, cd: 44, cancel: 8 };
+function startDash(f, d) {
+  f.state = 'dash'; f.t = 0; f.move = null; f.dashDir = d; f.vx = d * DASH.speed; f.inv = DASH.inv; f.dashCd = DASH.cd;
+  f.sx = 1.14; f.sy = .9; sfx.dash(); playS('whoosh_punch2', .7, 1.2);
+  const rgb = auraRgb(f), fwd = d === (Math.sign(G.fighters[1 - f.side].x - f.x) || f.face);
+  fxRing(f.x, f.y - 4, rgb, 10, 150, 16, 6, .22); fxDust(f.x, f.y, 6, 1);
+  fxArc(f.x + d * 30, f.y - 150, 120, fwd ? -.6 : 2.5, fwd ? .6 : 3.7, rgb, f.face, 12, 12);
+  for (let i = 0; i < 6; i++) addFx({ k: 'streak', x: f.x + rnd(-30, 30), y: f.y - rnd(20, 260), vx: -d * rnd(14, 26), vy: 0, life: rnd(8, 14), t: 0, rgb, w: rnd(1.5, 3) });
+}
 const spPick = f => f.gauge >= 100 ? 'ult' : f.gauge >= 50 ? 'ex' : 'b';
 function stepFighter(f, o, inp, dt) {
   const pr = k => inp[k] && !f.prev[k];
-  for (const k of ['a', 'b', 'ex', 'ult', 'u', 's']) if (pr(k)) f.buf[k] = 9; else if (f.buf[k] > 0) f.buf[k] -= dt;
+  for (const k of ['a', 'b', 'ex', 'ult', 'u', 's', 'dh']) if (pr(k)) f.buf[k] = 9; else if (f.buf[k] > 0) f.buf[k] -= dt;
+  // SUZUNE step-dash: dash button, or double-tap left/right
+  if (f.id === 'suzune') {
+    for (const [k, d] of [['l', -1], ['r', 1]]) if (pr(k)) { if (f.tapD === d && G.frame - f.tapF < 14) { f.buf.dh = 9; f.dashReq = d; f.tapD = 0; } else { f.tapD = d; f.tapF = G.frame; } }
+    if (f.dashCd > 0) f.dashCd -= dt;
+  } else f.buf.dh = 0;
   f.prev = { ...inp };
   if (f.inv > 0 && f.inv < 900) f.inv -= dt;
   if (f.whiteT > 0) f.whiteT -= dt;
@@ -791,7 +807,8 @@ function stepFighter(f, o, inp, dt) {
     if (grounded) f.face = Math.sign(o.x - f.x) || f.face;
     if (canAct) {
       const want = k => f.buf[k] > 0;
-      if (want('s')) { f.buf.s = 0; startMove(f, spPick(f)); }
+      if (want('dh') && grounded && f.id === 'suzune' && !(f.dashCd > 0)) { f.buf.dh = 0; startDash(f, f.dashReq || dirIn || (Math.sign(o.x - f.x) || f.face)); f.dashReq = 0; }
+      else if (want('s')) { f.buf.s = 0; startMove(f, spPick(f)); }
       else if (want('ult') && f.gauge >= 100) { f.buf.ult = 0; startMove(f, 'ult'); }
       else if (want('ex') && f.gauge >= 50) { f.buf.ex = 0; startMove(f, 'ex'); }
       else if (want('b')) { f.buf.b = 0; startMove(f, 'b'); }
@@ -814,6 +831,18 @@ function stepFighter(f, o, inp, dt) {
       else if (f.buf.ex > 0 && f.gauge >= 50) { f.buf.ex = 0; f.flip = false; f.rot = 0; startMove(f, 'ex'); }
       f.vx = lerp(f.vx, dirIn * f.ch.speed * 1.15, .04);
     }
+  } else if (f.state === 'dash') {
+    f.vx *= Math.pow(.885, dt);
+    if (G.frame % 2 === 0) { f.trail.push(1); f.rail.push({ x: f.x - f.dashDir * 20, y: f.y - 10, t: G.frame }); }
+    if (G.frame % 3 === 0) fxDust(f.x - f.dashDir * 40, f.y, 1, .6);
+    // dash-cancel: attacks come out of the back half of the dash so it leads straight into close range
+    if (canAct && f.t >= DASH.cancel) {
+      f.face = Math.sign(o.x - f.x) || f.face;
+      if (f.buf.s > 0) { f.buf.s = 0; startMove(f, spPick(f)); }
+      else if (f.buf.a > 0) { f.buf.a = 0; startMove(f, 'a'); }
+      else if (f.buf.u > 0) { f.buf.u = 0; f.state = 'jump'; f.vy = f.ch.jump; f.vx = f.dashDir * f.ch.speed * 1.4; sfx.jump(); }
+    }
+    if (f.state === 'dash' && f.t >= DASH.len) { f.state = 'idle'; f.land = 6; f.vx *= .3; fxDust(f.x, f.y, 4, .7); }
   } else if (f.state === 'dashin') {
     f.vx *= Math.pow(.93, dt); if (G.frame % 2 === 0) { f.trail.push(1); f.rail.push({ x: f.x - f.face * 20, y: f.y - 10, t: G.frame }); }
     if (Math.abs(f.vx) < 2.5) { f.state = 'idle'; f.land = 10; fxDust(f.x, f.y, 10, 1.1); fxRing(f.x, f.y - 4, f.col.rgb, 10, 180, 20, 6, .25); }
@@ -867,7 +896,7 @@ function stepFighter(f, o, inp, dt) {
   }
   const sep = W / G.cam.z - 150;
   f.x = clamp(f.x, 70, STAGE_W - 70);
-  if (Math.abs(f.x - o.x) > sep && !f.hidden && !o.hidden && f.state !== 'dashin' && o.state !== 'dashin') f.x = o.x + Math.sign(f.x - o.x) * sep;
+  if (Math.abs(f.x - o.x) > sep && !f.hidden && !o.hidden && f.state !== 'dashin' && o.state !== 'dashin' && f.state !== 'dash') f.x = o.x + Math.sign(f.x - o.x) * sep;
   if (f.trail.length) { f.trail.length = 0; f.ghosts = f.ghosts || []; { const pf = pickFrame(f); f.ghosts.push({ x: f.x, y: f.y, face: f.face, rot: f.rot, sx: f.sx, sy: f.sy, top: f.top, bot: f.bot, t: 0, fr: pf && pf.fr }); } }
   if (f.ghosts) { for (const g of f.ghosts) g.t += dt; f.ghosts = f.ghosts.filter(g => g.t < 16); }
   f.rail = f.rail.filter(r => G.frame - r.t < 40);
@@ -896,6 +925,7 @@ function poseOf(f) {
     case 'guard': P.top = -18; P.bot = 4; P.sx = .95; P.sy = .96; P.wave = 3; break;
     case 'jump': if (f.vy < -4) { P.sy = 1.08; P.sx = .93; P.bot = -24; P.top = 6; } else { P.sy = .98; P.bot = 14; P.top = -6; } P.wave = 14; break;
     case 'dashin': P.top = 40; P.sx = 1.18; P.sy = .9; P.wave = 16; P.rot = .08; break;
+    case 'dash': if (f.dashDir === f.face) { P.top = 44; P.sx = 1.2; P.sy = .9; P.rot = .1; } else { P.top = -24; P.sx = .94; P.rot = -.06; } P.wave = 16; break;
     case 'hit': P.top = -30; P.bot = 6; P.sx = .95; P.rot = -.1; P.ox = Math.sin(f.t * 2.2) * 4; P.wave = 12; break;
     case 'air': P.rot = -.4 - Math.min(1, f.t / 28) * .9; P.top = -20; P.bot = 20; P.wave = 18; break;
     case 'down': P.rot = -1.38; P.sy = .92; P.wave = 2; break;
@@ -963,6 +993,10 @@ function aiInput(f, o) {
   const d = o.x - f.x, ad = Math.abs(d), dir = Math.sign(d) || 1, toward = dir > 0 ? 'r' : 'l', away = dir > 0 ? 'l' : 'r';
   const threatened = (o.state === 'atk' && ad < 320) || G.proj.some(p => p.owner === o && Math.abs(p.x - f.x) < 360);
   const set = (h, n) => { ai.hold = h; ai.holdT = n; };
+  if (f.id === 'suzune' && !(f.dashCd > 0) && onGround(f)) {   // slip through AOI's shots / close the gap
+    const shot = G.proj.some(p => p.owner === o && Math.abs(p.x - f.x) < 300 && Math.sign(p.vx) === -dir);
+    if ((shot && Math.random() < .35 + D.guard * .5) || (ad > 520 && Math.random() < .22)) { set({ [toward]: true }, 6); ai.press = 'dh'; return out; }
+  }
   if (threatened && Math.random() < D.guard) { set({ d: true }, 14 + (Math.random() * 10 | 0)); return out; }
   if (f.gauge >= 100 && Math.random() < .5 && (f.id === 'aoi' || ad < 700)) { ai.press = 'ult'; return out; }
   if (f.id === 'suzune') {
@@ -1205,7 +1239,7 @@ function drawFighter(f, reflect) {
   ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = pulse;
   drawGlow(src, fr, bx, by, bw, bh, arg);
   if (hotA) { ctx.globalAlpha = .35 + .2 * beat; drawGlow(src, fr, bx - 6, by - 6, bw + 12, bh + 12, ahot); }
-  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = f.inv > 0 && f.inv < 900 && f.state !== 'atk' && f.state !== 'getup' ? (G.frame % 6 < 3 ? .5 : 1) : 1;
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = f.inv > 0 && f.inv < 900 && f.state !== 'atk' && f.state !== 'getup' && f.state !== 'dash' ? (G.frame % 6 < 3 ? .5 : 1) : 1;
   drawFrame(src, fr, bx, by, bw, bh, f.glitch > 0);
   if (pf.fr2 !== pf.fr && pf.mix > .04) {
     const f2 = pf.fr2, a0 = ctx.globalAlpha; ctx.globalAlpha = a0 * pf.mix;
@@ -1536,6 +1570,10 @@ function updateTouchLabels() {
     if (b.dataset.lv !== lv) { b.dataset.lv = lv; b.querySelector('b').textContent = lv; }
     b.style.setProperty('--g', (f.gauge | 0) + '%');
   });
+  document.querySelectorAll('#touch .tb.dh').forEach(b => {
+    const f = G.fighters[+b.closest('[data-side]').dataset.side]; if (!f || b.hidden) return;
+    const r = f.dashCd > 0 ? 1 - f.dashCd / DASH.cd : 1; b.style.setProperty('--g', (r * 100 | 0) + '%'); b.classList.toggle('cool', r < 1);
+  });
 }
 function loop(ts) {
   applyQuake();
@@ -1678,6 +1716,7 @@ function setTouch(on) {
   t.dataset.mode = G.mode;
   $('#pauseBtn').classList.toggle('on', on);
   TOUCH[0] = {}; TOUCH[1] = {};
+  document.querySelectorAll('#touch .tb.dh').forEach(b => { const f = G.fighters[+b.closest('[data-side]').dataset.side]; b.hidden = !(f && f.id === 'suzune'); });
 }
 function bindTouch() {
   const t = $('#touch');
