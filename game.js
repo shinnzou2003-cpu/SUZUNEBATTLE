@@ -52,18 +52,22 @@ function recolor(img, test, shift) {
 
 const CHARS = {
   suzune: { id: 'suzune', name: 'SUZUNE', role: '高速近接・連撃', c1: '#ffc24a', c2: '#ff3350', rgb: '255,190,90', rgb2: '255,70,90', speed: 6.4, jump: -18.5, anchor: .6, exName: '桜閃レール', ultName: '桜花彗星' },
-  aoi: { id: 'aoi', name: 'AOI', role: 'ドローン・遠距離', c1: '#5cc8ff', c2: '#a970ff', rgb: '110,195,255', rgb2: '170,110,255', speed: 5.2, jump: -17.5, anchor: .58, exName: 'ホーミング・ビット', ultName: 'オービタル・レイ' }
+  aoi: { id: 'aoi', name: 'AOI', role: 'ドローン・遠距離', c1: '#5cc8ff', c2: '#a970ff', rgb: '110,195,255', rgb2: '170,110,255', speed: 5.2, jump: -17.5, anchor: .58, exName: 'ホーミング・ビット', ultName: 'オービタル・レイ' },
+  // ARCA-07 rides the four-legged MAGITEK ARSENAL: big, heavy, long reach, magic artillery
+  arca: { id: 'arca', name: 'ARCA-07', role: '魔道兵器・重砲撃', c1: '#2ee6c8', c2: '#e0405a', rgb: '46,230,200', rgb2: '235,80,100', speed: 4.3, jump: -15.5, anchor: .55, h: 500, hurtW: 125, hurtH: 440, exName: 'ルーン・ミサイル', ultName: 'アーセナル・ノヴァ' }
 };
 const ALT = {
   suzune: { c1: '#7fd8ff', c2: '#4f7bff', rgb: '130,215,255', rgb2: '90,120,255', test: (h, s, l) => (h > 33 && h < 64 && s > .3) || ((h < 12 || h > 340) && s > .55), shift: 175 },
-  aoi: { c1: '#ff7aa8', c2: '#ffb347', rgb: '255,120,170', rgb2: '255,180,80', test: (h, s, l) => h > 175 && h < 300 && s > .25, shift: 150 }
+  aoi: { c1: '#ff7aa8', c2: '#ffb347', rgb: '255,120,170', rgb2: '255,180,80', test: (h, s, l) => h > 175 && h < 300 && s > .25, shift: 150 },
+  arca: { c1: '#ffb347', c2: '#5a8cff', rgb: '255,180,70', rgb2: '90,140,255', test: (h, s, l) => (h < 16 || h > 335) && s > .35 && l > .12, shift: 215 }
 };
 const GFX = {};
 async function buildAssets() {
   const A = window.ASSETS;
-  const [su, ao, drone, suci, aoci] = await Promise.all([A.su, A.ao, A.drone, A.suci, A.aoci].map(p => track(loadImg(p))));
-  const base = { suzune: { img: su, ci: suci }, aoi: { img: ao, ci: aoci } };
-  for (const id of ['suzune', 'aoi']) {
+  const [su, ao, drone, suci, aoci, ar, arci, arp] = await Promise.all([A.su, A.ao, A.drone, A.suci, A.aoci, A.ar, A.arci, A.arp].map(p => track(loadImg(p))));
+  const base = { suzune: { img: su, ci: suci }, aoi: { img: ao, ci: aoci }, arca: { img: ar, ci: arci } };
+  GFX.arcaPilot = arp;
+  for (const id of ['suzune', 'aoi', 'arca']) {
     const ch = CHARS[id], al = ALT[id];
     const make = (img, ci, c1, rgb) => ({ img, ci, white: silhouette(img, '#fff'), tint: silhouette(img, c1), glow: glowOf(img, `rgb(${rgb})`) });
     GFX[id] = [make(base[id].img, base[id].ci, ch.c1, ch.rgb), null];
@@ -77,12 +81,12 @@ async function buildAssets() {
 const ANIMS = {};
 const frameCount = (id, n) => ANIMS[id] && ANIMS[id].a[n] ? ANIMS[id].a[n].length : 0;
 // visual size balance between characters (SUZUNE's source video was framed larger)
-const CHAR_SCALE = { suzune: .92, aoi: 1.07 };   // AOI stands taller; SUZUNE fights from a low crouch
+const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 500 / 318 };   // AOI stands taller; SUZUNE fights from a low crouch
 const LOAD = { done: 0, total: 0 };
 function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = document.getElementById('loadPct'); if (el) el.textContent = Math.round(LOAD.done / Math.max(1, LOAD.total) * 100) + '%'; return v; }); }
 async function buildAnims() {
   const jobs = [];
-  for (const id of ['suzune', 'aoi']) {
+  for (const id of ['suzune', 'aoi', 'arca']) {
     let meta;
     try { meta = await (await fetch('anim/' + id + '.json')).json(); } catch (e) { continue; }
     const AN = { k: DH / meta.storeH * (CHAR_SCALE[id] || 1), a: {}, fps: {}, atlases: [], alt: [], altBusy: false };
@@ -140,10 +144,17 @@ function pickFrame(f) {
         const L = Math.min(8, n), per = 2 * L - 2, x = ((i - (n - 1)) * .4) % per, k = x < L - 1 ? x : per - x;
         return at('winPose', n - 1 - k);
       }
-      return t < 18 ? prog('winIn', t / 18) : loop('win', AN.fps.win || 12);
+      const wl = f.id === 'arca' ? 105 : 18;
+      return t < wl ? prog('winIn', t / wl) : loop('win', AN.fps.win || 12);
     }
     case 'atk': {
       const m = f.move, p = t / m.total;
+      if (f.id === 'arca') {
+        if (m.key === 'a') return prog(f.chain >= 2 ? 'a3' : 'a', p);
+        if (m.key === 'b') return prog('b', p);
+        if (m.key === 'ex') return prog('ex', p);
+        if (m.key === 'ult') { const u = t - m.st; if (u < 45) return loop('ultCharge', AN.fps.ultCharge || 8); return prog('ultFire', (u - 45) / 14); }
+      }
       if (f.id === 'aoi') {
         if (m.key === 'a') return prog('a', p);
         if (m.key === 'b') return prog('b', p);
@@ -236,6 +247,8 @@ function bgmVolume(v, sec = .6) { BGM.vol = v; if (!BGM.gain || !SND.ac) return;
 const VOICE_MAP = {
   suzune: { a0: ['su_01', 'su_03'], a1: ['su_02'], a2: ['su_04'], b: ['su_05'], jump: ['su_06'], guard: ['su_07'], hit: ['su_08'], hitBig: ['su_09'],
     getup: ['su_10'], ko: ['su_11'], ex: ['su_12'], ult: ['su_13'], select: ['su_14'], round: ['su_15'], winMovie: ['su_16'], win: ['su_17'], lose: ['su_18'] },
+  arca: { a0: ['ar_01', 'ar_03'], a1: ['ar_02'], a2: ['ar_04'], b: ['ar_05'], jump: ['ar_06'], guard: ['ar_07'], hit: ['ar_08'], hitBig: ['ar_09'],
+    getup: ['ar_10'], ko: ['ar_11'], ex: ['ar_12'], ult: ['ar_13'], select: ['ar_14'], round: ['ar_15'], winMovie: ['ar_16'], win: ['ar_17'], lose: ['ar_18'] },
   sys: { r1: ['sys_01'], r2: ['sys_02'], final: ['sys_03'], fight: ['sys_04'], ko: ['sys_05'], timeup: ['sys_06'] },
   aoi: { a0: ['ao_01', 'ao_03'], a1: ['ao_02'], a2: ['ao_04'], b: ['ao_05'], jump: ['ao_06'], guard: ['ao_07'], hit: ['ao_08'], hitBig: ['ao_09'],
     getup: ['ao_10'], ko: ['ao_11'], ex: ['ao_12'], ult: ['ao_13'], select: ['ao_14'], round: ['ao_15'], winMovie: ['ao_16'], win: ['ao_17'], lose: ['ao_18'] }
@@ -282,7 +295,8 @@ function voice(who, key, opts = {}) {
 /* ---------- sampled sound effects (media/sfx/*.mp3); synth versions below are the fallback ---------- */
 const SFXB = { buf: {}, gain: null };
 const SFX_FILES = ['whoosh_punch', 'whoosh_punch2', 'whoosh_kick', 'whoosh_kick_heavy', 'hit_light', 'hit_mid', 'hit_heavy', 'guard', 'impact_big',
-  'laser_shot', 'laser_homing', 'beam', 'charge', 'special_start', 'ult_start', 'dash', 'jump', 'land'];
+  'laser_shot', 'laser_homing', 'beam', 'charge', 'special_start', 'ult_start', 'dash', 'jump', 'land',
+  'arca_saw', 'arca_stomp', 'arca_rail', 'arca_missile', 'arca_step', 'arca_armor', 'arca_boot'];
 async function loadSfx() {
   if (!SND.ac) return;
   await Promise.all(SFX_FILES.map(async n => {
@@ -377,7 +391,7 @@ function fxDust(x, y, n = 8, pw = 1) { for (let i = 0; i < n; i++) addFx({ k: 'd
 function fxText(x, y, txt, rgb, size = 40, life = 50) { addFx({ k: 'text', x, y, txt, rgb, size, life, t: 0 }); }
 function fxHex(x, y, rgb, face) { addFx({ k: 'hex', x, y, rgb, face, life: 18, t: 0 }); }
 /* SF-mecha energy colours: SUZUNE gold / AOI blue (mirror-match colour swaps keep their own palette) */
-const AURA = { suzune: { rgb: '255,196,64', hot: '255,244,200' }, aoi: { rgb: '64,168,255', hot: '205,240,255' } };
+const AURA = { suzune: { rgb: '255,196,64', hot: '255,244,200' }, aoi: { rgb: '64,168,255', hot: '205,240,255' }, arca: { rgb: '46,230,200', hot: '215,255,245' } };
 const auraRgb = f => f.alt ? f.col.rgb : AURA[f.id].rgb;
 const auraHot = f => f.alt ? '255,255,255' : AURA[f.id].hot;
 function fxBolt(x0, y0, x1, y1, rgb, life = 9) {
@@ -551,7 +565,7 @@ function makeFighter(id, side, alt) {
   };
 }
 const onGround = f => f.y >= GROUND - .01;
-function hurt(f) { return { x0: f.x - 58, x1: f.x + 58, y0: f.y - 280, y1: f.y }; }
+function hurt(f) { const w = f.ch.hurtW || 58, h = f.ch.hurtH || 280; return { x0: f.x - w, x1: f.x + w, y0: f.y - h, y1: f.y }; }
 function overlap(a, b) { return a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0; }
 function box(f, x0, x1, y0, y1) { const a = f.x + f.face * x0, b = f.x + f.face * x1; return { x0: Math.min(a, b), x1: Math.max(a, b), y0: f.y + y0, y1: f.y + y1 }; }
 
@@ -560,6 +574,12 @@ const MOVES = {
     a: { st: 4, act: 4, rec: 11, cost: 0 },
     b: { st: 8, act: 11, rec: 16, cost: 0 },
     ex: { st: 10, act: 26, rec: 18, cost: 50 },
+    ult: { st: 0, act: 150, rec: 30, cost: 100 }
+  },
+  arca: {
+    a: { st: 9, act: 5, rec: 15, cost: 0 },
+    b: { st: 12, act: 4, rec: 22, cost: 0 },
+    ex: { st: 14, act: 24, rec: 20, cost: 50 },
     ult: { st: 0, act: 150, rec: 30, cost: 100 }
   },
   aoi: {
@@ -581,6 +601,7 @@ function startMove(f, key) {
   if (key === 'a') voice(f, 'a' + Math.min(2, f.chain), { p: f.chain === 2 ? 1 : .75 });
   if (key === 'b') voice(f, 'b');
   if (f.id === 'suzune') { if (key === 'b') sfx.heavyKick(); else if (key === 'a') f.chain === 2 ? sfx.kick() : sfx.swing(); }
+  else if (f.id === 'arca') { if (key === 'a') f.chain >= 2 ? playS('arca_stomp', 1) : playS('arca_saw', .9); else if (key === 'b') playS('arca_rail', 1); }
   else if (key === 'b') sfx.heavySwing();
   return true;
 }
@@ -620,6 +641,8 @@ function hitTarget(att, tgt, o) {
   if (pw >= 1.4 || o.launch) { quake(3 + 5 * pw, .28 + .12 * pw, pw >= 2 ? 60 : 25); fxBig(hx, hy, auraRgb(att), auraHot(att), Math.max(1.4, pw), fromDir); }
   if (pw >= 2) flash(.35 * pw / 2, '255,230,200');
   sfx.hit(pw);
+  if (tgt.id === 'arca') playS('arca_armor', .55, rnd(.9, 1.1));         // the ARSENAL's armour rings when struck
+  else if (att.id === 'arca' && pw >= .9) playS('arca_armor', .3, 1.3);   // steel-on-body crunch for its blade hits
   if (tgt.combo >= 2) fxText(att.x, att.y - 340, `${tgt.combo} HITS`, att.col.rgb, 30, 40);
   if (tgt.hp <= 0) { voice(tgt, 'ko'); onKO(att, tgt); }
   else if (launch) voice(tgt, 'hitBig', { cd: 30 });
@@ -660,7 +683,8 @@ function updateMove(f, o, dt) {
       if (first(m.act)) { fxArc(f.x, f.y - 140, 170, -Math.PI, Math.PI, f.col.rgb, f.face, 26, 26); fxRing(f.x, f.y - 140, f.col.rgb, 60, 220, 26, 8); }
       if (t >= m.st + m.act) f.vx *= Math.pow(.8, dt);
     } else if (k === 'ult') updateSuzuneUlt(f, o, at, dt, first);
-  } else {
+  } else if (f.id === 'arca') updateArcaMove(f, o, m, t, k, act, at, dt, first);
+  else {
     const dx = f.droneX, dy = f.droneY;
     if (k === 'a') {
       if (t < m.st) f.charge = t / m.st;
@@ -679,6 +703,37 @@ function updateMove(f, o, dt) {
   }
 }
 
+// ARCA-07 / MAGITEK ARSENAL: crushing blade legs, rune railgun, rune missiles, magic-circle nova beam
+function arcaMuzzle(f) { return { x: f.x + f.face * 256, y: f.y - 352 }; }
+function updateArcaMove(f, o, m, t, k, act, at, dt, first) {
+  const rgb = f.col.rgb, mz = arcaMuzzle(f);
+  if (k === 'a') {
+    const fin = f.chain >= 2;
+    if (t < m.st) f.vx *= .8;
+    if (first(0)) {
+      f.vx = f.face * (fin ? 9 : 5); shake(fin ? 8 : 4); fxDust(f.x + f.face * 150, f.y, 6, 1);
+      fxArc(f.x + f.face * 150, f.y - 200, fin ? 210 : 175, fin ? -2.2 : -1.2, fin ? 1.2 : .9, rgb, f.face, 14, fin ? 44 : 30);
+      fxRing(f.x + f.face * 170, f.y - 4, rgb, 10, fin ? 190 : 120, 16, 6, .22);
+    }
+    if (act) tryHit(f, o, box(f, 30, 330, -380, -20), { dmg: fin ? 8 : 5, kb: fin ? 13 : 5, stun: fin ? 22 : 17, power: fin ? 1.6 : .9, launch: fin ? -10 : 0, hy: 150 });
+  } else if (k === 'b') {
+    if (t < m.st) { f.vx *= .7; f.charge = t / m.st; if ((t | 0) % 2 === 0) fxSpark(mz.x, mz.y, rgb, 2, .4); }
+    if (first(0)) {
+      const ang = Math.atan2((o.y - 150) - mz.y, Math.max(200, Math.abs(o.x - mz.x))); G.proj.push({ owner: f, x: mz.x, y: mz.y, vx: f.face * 30 * Math.cos(ang), vy: 30 * Math.sin(ang), dmg: 8, type: 'rail', pw: 1.3, kb: 11, life: 70, t: 0, trail: [], rgb });
+      f.vx = -f.face * 8; f.charge = 0; shake(7); quake(5, .2);
+      fxCore(mz.x, mz.y, rgb, 110, 12); for (let i = 0; i < 3; i++) fxRing(mz.x + f.face * i * 26, mz.y, i ? rgb : '255,255,255', 6, 50 + i * 16, 14, 5, 2.4);
+      fxSpark(mz.x, mz.y, rgb, 12, 1, f.face);
+    }
+  } else if (k === 'ex') {
+    if (t < m.st) { f.vx = 0; f.charge = t / m.st; if ((t | 0) % 2 === 0) fxSpark(f.x - f.face * 150, f.y - 330, f.col.rgb2, 2, .4); }
+    if (first(0) || first(4) || first(8) || first(12) || first(16) || first(20)) {
+      const i = Math.round(at / 4), px = f.x - f.face * (190 + (i % 2) * 50), py = f.y - 425 - (i % 3) * 20;
+      G.proj.push({ owner: f, x: px, y: py, vx: f.face * rnd(3, 7), vy: rnd(-17, -11), dmg: 4.2, type: 'homing', life: 120, t: 0, trail: [], rgb: i % 2 ? rgb : f.col.rgb2 });
+      playS('arca_missile', .55, rnd(.9, 1.1)); if (i === 0) sfx.homing(); fxRing(px, py, rgb, 5, 60, 12, 5); fxCore(px, py, rgb, 50, 8); shake(3);
+    }
+    if (t >= m.st + m.act) f.charge = 0;
+  } else if (k === 'ult') updateAoiUlt(f, o, at, dt, first);   // same beam logic, fired from the ARSENAL's railgun
+}
 function updateSuzuneUlt(f, o, at, dt, first) {
   const m = f.move;
   if (first(0)) { sfx.jump(); f.vy = -34; f.vx = 0; fxRing(f.x, f.y - 4, f.col.rgb, 20, 260, 26, 10, .25); fxDust(f.x, f.y, 14, 1.4); fxPetals(f.x, f.y - 60, 16, 1.6); shake(10); }
@@ -743,11 +798,11 @@ function updateProj(dt) {
       p.vx = Math.cos(na) * sp; p.vy = Math.sin(na) * sp;
     }
     p.x += p.vx * dt; p.y += p.vy * dt;
-    p.trail.push({ x: p.x, y: p.y }); if (p.trail.length > (p.type === 'homing' ? 16 : 7)) p.trail.shift();
+    p.trail.push({ x: p.x, y: p.y }); if (p.trail.length > (p.type === 'homing' ? 16 : p.type === 'rail' ? 10 : 7)) p.trail.shift();
     let dead = p.t > p.life || p.x < -100 || p.x > STAGE_W + 100 || p.y > GROUND + 20;
     if (!dead && overlap({ x0: p.x - 16, x1: p.x + 16, y0: p.y - 16, y1: p.y + 16 }, hurt(o)) && o.inv <= 0 && o.state !== 'down' && o.state !== 'ko') {
       const f = p.owner, saveX = f.x; f.x = p.x - Math.sign(p.vx) * 40;
-      hitTarget(f, o, { dmg: p.dmg, kb: 5, stun: 16, power: p.type === 'homing' ? 1.1 : .8, hy: o.y - p.y }); f.x = saveX; dead = true;
+      hitTarget(f, o, { dmg: p.dmg, kb: p.kb || 5, stun: 16, power: p.pw || (p.type === 'homing' ? 1.1 : .8), hy: o.y - p.y }); f.x = saveX; dead = true;
     }
     if (dead) { fxCore(p.x, p.y, p.rgb, 50, 8); G.proj.splice(i, 1); }
   }
@@ -758,7 +813,7 @@ function drawProj() {
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     for (let pass = 0; pass < 2; pass++) {
       ctx.beginPath(); tr.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y));
-      ctx.strokeStyle = pass ? 'rgba(255,255,255,.95)' : `rgba(${p.rgb},.8)`; ctx.lineWidth = pass ? 4 : (p.type === 'homing' ? 14 : 16); ctx.stroke();
+      ctx.strokeStyle = pass ? 'rgba(255,255,255,.95)' : `rgba(${p.rgb},.8)`; ctx.lineWidth = pass ? (p.type === 'rail' ? 8 : 4) : (p.type === 'homing' ? 14 : p.type === 'rail' ? 28 : 16); ctx.stroke();
     }
     const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 34); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(.3, `rgba(${p.rgb},.8)`); g.addColorStop(1, `rgba(${p.rgb},0)`);
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, 34, 0, TAU); ctx.fill();
@@ -774,7 +829,7 @@ function onKO(att, tgt) {
 }
 
 /* SUZUNE's short step-dash: brief invulnerability (slips through AOI's shots), short cooldown */
-const DASH = { len: 15, speed: 26, inv: 10, cd: 44, cancel: 8 };
+const DASH = { len: 30, speed: 26, inv: 20, cd: 62, cancel: 16 };
 function startDash(f, d) {
   f.state = 'dash'; f.t = 0; f.move = null; f.dashDir = d; f.vx = d * DASH.speed; f.inv = DASH.inv; f.dashCd = DASH.cd;
   f.sx = 1.14; f.sy = .9; sfx.dash(); playS('whoosh_punch2', .7, 1.2);
@@ -816,7 +871,7 @@ function stepFighter(f, o, inp, dt) {
       else if (inp.d && grounded) { f.state = 'guard'; f.vx *= .6; }
       else if (want('u') && grounded) {
         f.buf.u = 0; f.vy = f.ch.jump; f.state = 'jump'; f.vx = dirIn * f.ch.speed * 1.15; sfx.jump(); voice(f, 'jump', { p: .45, cd: 90 }); fxDust(f.x, f.y, 5, .7);
-        f.flip = dirIn !== 0 && dirIn !== away; f.flipT = 0; f.sy = .8; f.sx = 1.1;
+        f.flip = f.id !== 'arca' && dirIn !== 0 && dirIn !== away; f.flipT = 0; f.sy = .8; f.sx = 1.1;
         if (f.flip) fxArc(f.x, f.y - 160, 150, 2.4, -.4, f.col.rgb, f.face, 16, 16);
       }
       else if (dirIn) { if (f.state !== 'walk' && Math.sign(f.vx) !== dirIn) { f.sx = 1.06; f.sy = .94; } f.state = f.holdBack ? 'guard' : 'walk'; f.vx = dirIn * f.ch.speed * (f.holdBack ? .6 : 1); if (!f.holdBack && G.frame % 14 === 0) fxDust(f.x - dirIn * 30, f.y, 1, .5); }
@@ -832,7 +887,7 @@ function stepFighter(f, o, inp, dt) {
       f.vx = lerp(f.vx, dirIn * f.ch.speed * 1.15, .04);
     }
   } else if (f.state === 'dash') {
-    f.vx *= Math.pow(.885, dt);
+    f.vx *= Math.pow(.94, dt);
     if (G.frame % 2 === 0) { f.trail.push(1); f.rail.push({ x: f.x - f.dashDir * 20, y: f.y - 10, t: G.frame }); }
     if (G.frame % 3 === 0) fxDust(f.x - f.dashDir * 40, f.y, 1, .6);
     // dash-cancel: attacks come out of the back half of the dash so it leads straight into close range
@@ -876,7 +931,7 @@ function stepFighter(f, o, inp, dt) {
   } else if (f.state === 'win') {
     f.vx *= .8;
     if (ANIMS[f.id] && ANIMS[f.id].a.winPose) { const m = 250, tx = clamp(f.x, m, STAGE_W - m); f.x += (tx - f.x) * Math.min(1, .16 * dt); }   // keep the whole pose on screen
-    if (!(ANIMS[f.id] && ANIMS[f.id].a.winPose) && onGround(f) && (f.t | 0) % 48 === 0) { f.vy = -9; f.sy = .82; if (f.id === 'suzune') fxPetals(f.x, f.y - 200, 8, 1); else fxRing(f.x, f.y - 160, f.col.rgb, 30, 180, 20, 5); }
+    if (f.id !== 'arca' && !(ANIMS[f.id] && ANIMS[f.id].a.winPose) && onGround(f) && (f.t | 0) % 48 === 0) { f.vy = -9; f.sy = .82; if (f.id === 'suzune') fxPetals(f.x, f.y - 200, 8, 1); else fxRing(f.x, f.y - 160, f.col.rgb, 30, 180, 20, 5); }
   }
 
   // physics
@@ -900,6 +955,10 @@ function stepFighter(f, o, inp, dt) {
   if (f.trail.length) { f.trail.length = 0; f.ghosts = f.ghosts || []; { const pf = pickFrame(f); f.ghosts.push({ x: f.x, y: f.y, face: f.face, rot: f.rot, sx: f.sx, sy: f.sy, top: f.top, bot: f.bot, t: 0, fr: pf && pf.fr }); } }
   if (f.ghosts) { for (const g of f.ghosts) g.t += dt; f.ghosts = f.ghosts.filter(g => g.t < 16); }
   f.rail = f.rail.filter(r => G.frame - r.t < 40);
+  if (f.id === 'arca') {   // railgun muzzle is the "drone" point for the shared beam logic
+    const mz = arcaMuzzle(f); f.droneX = mz.x; f.droneY = f.y - 250; f.droneA += .05 * dt;
+    if (f.state === 'walk' && ((G.frame + f.side * 12) % 22) === 0) { playS('arca_step', .6, rnd(.92, 1.05)); fxDust(f.x + rnd(-120, 120), f.y, 2, .7); shake(1.5); }
+  }
   // drone follows
   if (f.id === 'aoi') {
     f.droneA += .05 * dt;
@@ -930,7 +989,7 @@ function poseOf(f) {
     case 'air': P.rot = -.4 - Math.min(1, f.t / 28) * .9; P.top = -20; P.bot = 20; P.wave = 18; break;
     case 'down': P.rot = -1.38; P.sy = .92; P.wave = 2; break;
     case 'getup': { const q = Math.min(1, f.t / 16); P.rot = -1.38 * (1 - q) * (1 - q); P.sy = 1 + Math.sin(q * Math.PI) * .08; P.top = -10 * (1 - q); break; }
-    case 'win': if (ANIMS[f.id] && ANIMS[f.id].a.winPose) { P.wave = 3; break; } P.sy = 1.03 + br * .015; P.top = -6 + br * 3; P.wave = 8; break;
+    case 'win': if (f.id === 'arca' || (ANIMS[f.id] && ANIMS[f.id].a.winPose)) { P.wave = 3; break; } P.sy = 1.03 + br * .015; P.top = -6 + br * 3; P.wave = 8; break;
     case 'atk': {
       const m = f.move, wind = f.t < m.st, act = f.t >= m.st && f.t < m.st + m.act, key = m.key;
       P.wave = 10;
@@ -968,6 +1027,7 @@ function poseOf(f) {
     else if (!(f.state === 'atk' && f.move && f.move.key === 'ult')) P.rot *= .25;
     P.top *= .22; P.bot *= .22; P.wave *= .3;
   }
+  if (f.id === 'arca' && ANIMS.arca) { P.rot = f.state === 'hit' ? P.rot * .3 : 0; P.sx = 1 + (P.sx - 1) * .35; P.sy = 1 + (P.sy - 1) * .35; P.top *= .3; P.bot *= .3; }
   return P;
 }
 
@@ -998,7 +1058,15 @@ function aiInput(f, o) {
     if ((shot && Math.random() < .35 + D.guard * .5) || (ad > 520 && Math.random() < .22)) { set({ [toward]: true }, 6); ai.press = 'dh'; return out; }
   }
   if (threatened && Math.random() < D.guard) { set({ d: true }, 14 + (Math.random() * 10 | 0)); return out; }
-  if (f.gauge >= 100 && Math.random() < .5 && (f.id === 'aoi' || ad < 700)) { ai.press = 'ult'; return out; }
+  if (f.gauge >= 100 && Math.random() < .5 && (f.id !== 'suzune' || ad < 700)) { ai.press = 'ult'; return out; }
+  if (f.id === 'arca') {
+    if (f.gauge >= 50 && Math.random() < .3) { ai.press = 'ex'; return out; }
+    if (ad < 290) { if (Math.random() < D.agg) ai.press = Math.random() < .25 ? 'b' : 'a'; else set({ [away]: true }, 12); }
+    else if (ad > 760) set({ [toward]: true }, 16);
+    else if (Math.random() < D.agg * .9) ai.press = 'b';
+    else set({ [Math.random() < .6 ? toward : away]: true }, 12);
+    return out;
+  }
   if (f.id === 'suzune') {
     if (f.gauge >= 50 && ad < 460 && Math.random() < .3) { ai.press = 'ex'; return out; }
     if (ad > 190) { if (Math.random() < .18) { set({ [toward]: true, u: true }, 6); } else set({ [toward]: true }, 10 + (Math.random() * 12 | 0)); }
@@ -1020,7 +1088,7 @@ function startMatch() {
   const alt2 = p1 === p2;
   G.fighters = [makeFighter(p1, 0, false), makeFighter(p2, 1, alt2)];
   G.round = 1; G.matchOver = false; G.winMovie = false; G.rwMovie = false;
-  setStage(G.picks[0]);
+  setStage(G.picks[0] === 'arca' ? 'aoi' : G.picks[0]);
   G.fighters.forEach(f => { if (f.alt) prepareAlt(f.id); });
   startRound();
   G.scene = 'game'; showScreen(null); setTouch(true); bgmTrack('battle', .5);
@@ -1031,11 +1099,15 @@ function startRound() {
   }
   G.resultShown = false; G.victory = null; G.fx = []; G.proj = []; G.timer = 99; G.timerF = 0; G.phase = 'intro'; G.phaseT = 0; G.cutin = null; G.rwCut = null; G.freeze = 0; G.tintA = 0; G.slow = 1;
   G.cam.x = STAGE_W / 2;
-  for (const f of G.fighters) { f.x -= f.face * 400; f.vx = f.face * 28; f.state = 'dashin'; }
+  for (const f of G.fighters) {
+    if (f.id === 'arca') { f.boarding = G.round === 1; f._boardFx = f._boardFx2 = f._bootSnd = false; f.state = 'idle'; continue; }
+    f.x -= f.face * 400; f.vx = f.face * 28; f.state = 'dashin';
+  }
   G.banner = null;
   const sp = G.fighters[(G.round + 1) % 2];
   const talk = G.round === 1 && VOICE_MAP[sp.id] && VOICE_MAP[sp.id].round.some(v => VOICE.buf[v]) && SND.on;
-  G.introA = talk ? 170 : 8;             // frame where "ROUND n" is announced
+  G.introA = talk ? 170 : 8;
+  if (G.round === 1 && G.fighters.some(f => f.id === 'arca')) G.introA = Math.max(G.introA, BOARD.lit + 10);             // frame where "ROUND n" is announced
   G.introF = G.introA + 95;              // frame where "FIGHT!" is called
   G.introDone = false; G.fightCalled = false;
   if (talk) voice(sp, 'round', { delay: .25 });
@@ -1232,21 +1304,26 @@ function drawFighter(f, reflect) {
   }
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   const arg = auraRgb(f), ahot = auraHot(f), hotA = f.gauge >= 100 || f.state === 'win' || (f.state === 'atk' && f.move && (f.move.key === 'ult' || f.move.key === 'ex'));
-  drawHoloBase(f, arg, ahot, hotA);
+  const bd = boardState(f), pwr = bd ? bd.power : 1;
+  if (pwr > .5) drawHoloBase(f, arg, ahot, hotA);
+  if (bd) drawBoarding(f, bd, false);
   ctx.save(); setT(f.x + f.ox, f.y, f.face, f.rot, f.sx, f.sy);
   const beat = .5 + .5 * Math.sin(G.frame * .09 + f.side * 2);
   const pulse = f.gauge >= 100 ? .85 + .15 * Math.sin(G.frame * .2) : f.state === 'atk' ? .75 : .45 + .15 * beat;
-  ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = pulse;
-  drawGlow(src, fr, bx, by, bw, bh, arg);
+  ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = pulse * pwr;
+  if (pwr > 0) drawGlow(src, fr, bx, by, bw, bh, arg);
   if (hotA) { ctx.globalAlpha = .35 + .2 * beat; drawGlow(src, fr, bx - 6, by - 6, bw + 12, bh + 12, ahot); }
   ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = f.inv > 0 && f.inv < 900 && f.state !== 'atk' && f.state !== 'getup' && f.state !== 'dash' ? (G.frame % 6 < 3 ? .5 : 1) : 1;
+  if (pwr < 1) ctx.filter = `brightness(${(.3 + .7 * pwr).toFixed(2)}) saturate(${(.5 + .5 * pwr).toFixed(2)})`;
   drawFrame(src, fr, bx, by, bw, bh, f.glitch > 0);
   if (pf.fr2 !== pf.fr && pf.mix > .04) {
     const f2 = pf.fr2, a0 = ctx.globalAlpha; ctx.globalAlpha = a0 * pf.mix;
     drawFrame(frameSrc(f2, f), f2, f2.ox * K, f2.oy * K, f2.w * K, f2.h * K, false); ctx.globalAlpha = a0;
   }
+  ctx.filter = 'none';
   if (f.whiteT > 0) { ctx.globalAlpha = Math.min(1, f.whiteT / 4); drawSolid(src, fr, bx, by, bw, bh, '#fff'); }
   ctx.restore(); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  if (bd) drawBoarding(f, bd, true);
   drawGuardShield(f);
 }
 // holographic emitter rings at the fighter's feet
@@ -1273,19 +1350,69 @@ function drawGuardShield(f) {
 }
 // fallback for characters without video frames (single still image)
 function drawFighterStill(f, reflect) {
-  const g = f.gfx, k = DH / g.img.height, bw = g.img.width * k, bh = DH, bx = -bw * f.ch.anchor, by = -DH;
+  const g = f.gfx, Hd = f.ch.h || DH, k = Hd / g.img.height, bw = g.img.width * k, bh = Hd, bx = -bw * f.ch.anchor, by = -Hd;
+  const bd = boardState(f), pw = bd ? bd.power : 1;
+  if (!reflect && AURA[f.id]) {
+    const hotA = f.gauge >= 100 || f.state === 'win' || (f.state === 'atk' && f.move && (f.move.key === 'ult' || f.move.key === 'ex'));
+    if (pw > .5) drawHoloBase(f, auraRgb(f), auraHot(f), hotA);
+    if (bd) drawBoarding(f, bd, false);
+  }
   ctx.save();
   if (reflect) { ctx.globalAlpha = .22; ctx.translate(f.x, GROUND); ctx.scale(1, -.55); ctx.translate(-f.x, -GROUND); }
-  setT(f.x + f.ox, f.y, f.face, f.rot, f.sx, f.sy);
-  ctx.drawImage(g.img, bx, by, bw, bh);
+  const bob = f.state === 'idle' ? Math.sin(G.frame * .06 + f.side) * 3 : f.state === 'walk' ? -Math.abs(Math.sin(G.frame * .14)) * 6 : 0;
+  setT(f.x + f.ox, f.y + bob, f.face, f.rot, f.sx, f.sy);
+  if (!reflect && g.glow && pw > 0) {
+    const beat = .5 + .5 * Math.sin(G.frame * .09 + f.side * 2), gk = k * (g.img.width + 96) / g.img.width;
+    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = pw * (f.gauge >= 100 ? .9 : f.state === 'atk' ? .75 : .4 + .15 * beat);
+    ctx.drawImage(g.glow, bx - 48 * k, by - 48 * k, (g.img.width + 96) * k, (g.img.height + 96) * k);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  }
+  if (!reflect && pw < 1) { ctx.filter = `brightness(${(.3 + .7 * pw).toFixed(2)}) saturate(${(.5 + .5 * pw).toFixed(2)})`; }
+  ctx.drawImage(g.img, bx, by, bw, bh); ctx.filter = 'none';
   if (!reflect && f.whiteT > 0) { ctx.globalAlpha = Math.min(1, f.whiteT / 4); ctx.drawImage(g.white, bx, by, bw, bh); }
   ctx.restore(); ctx.globalAlpha = 1;
+  if (!reflect && bd) drawBoarding(f, bd, true);
   if (!reflect) drawGuardShield(f);
 }
+/* ARCA-07 boards the ARSENAL at the start of the match: pilot leaps into the cockpit, the machine powers up */
+const BOARD = { jump: 34, arrive: 70, lit: 118 };
+function boardState(f) {
+  if (f.id !== 'arca' || !f.boarding || G.phase !== 'intro') return null;
+  const t = G.phaseT; if (t > BOARD.lit + 30) return null;
+  return { t, power: t < BOARD.arrive ? .0 : Math.min(1, (t - BOARD.arrive) / (BOARD.lit - BOARD.arrive)) };
+}
+function drawBoarding(f, bd, front) {
+  const t = bd.t, img = GFX.arcaPilot; if (!img) return;
+  const seatX = f.x + f.face * 74, seatY = f.y - 306, startX = f.x - f.face * 270, ph = 170, pw = img.width * ph / img.height;
+  if (front && t < BOARD.arrive) {
+    let x = startX, y = f.y, s = 1;
+    if (t >= BOARD.jump) { const u = (t - BOARD.jump) / (BOARD.arrive - BOARD.jump), e = u * u * (3 - 2 * u); x = lerp(startX, seatX, e); y = lerp(f.y, seatY + 70, e) - Math.sin(u * Math.PI) * 260; s = 1 - .35 * u; }
+    else { y = f.y + Math.sin(t * .2) * 2; }
+    ctx.save(); ctx.translate(x, y); ctx.scale(f.face * s, s);
+    ctx.drawImage(img, -pw / 2, -ph, pw, ph); ctx.restore();
+    if (t >= BOARD.jump && t < BOARD.jump + 2 && !f._bootSnd) { f._bootSnd = true; fxDust(startX, f.y, 5, .6); playS('jump', .5); playS('arca_boot', .9); }
+  }
+  if (!front && t < BOARD.arrive) {   // dormant core pulses while waiting for its pilot
+    const a = .25 + .2 * Math.sin(t * .3);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; const gr = ctx.createRadialGradient(seatX, seatY, 0, seatX, seatY, 90);
+    gr.addColorStop(0, `rgba(${f.col.rgb},${a})`); gr.addColorStop(1, `rgba(${f.col.rgb},0)`); ctx.fillStyle = gr; ctx.fillRect(seatX - 90, seatY - 90, 180, 180); ctx.restore();
+  }
+  if (front && t >= BOARD.arrive && !f._boardFx) {
+    f._boardFx = true; const rgb = auraRgb(f), hot = auraHot(f);
+    flash(.7, rgb); shake(14); quake(12, .5, 60); playS('ult_start', .6, 1.1);
+    fxCore(seatX, seatY, rgb, 180, 20); fxRing(seatX, seatY, hot, 10, 220, 22, 8); fxRing(f.x, GROUND - 4, rgb, 20, 320, 30, 10, .22);
+    addFx({ k: 'pillar', x: f.x, y: GROUND, rgb, hot, life: 40, t: 0, w: 150 });
+    for (let i = 0; i < 4; i++) fxBolt(seatX, seatY, seatX + rnd(-260, 260), seatY + rnd(-120, 220), rgb, 12);
+  }
+  if (front && t >= BOARD.lit && !f._boardFx2) { f._boardFx2 = true; fxRing(f.x, f.y - 200, auraHot(f), 20, 300, 24, 8); playS('charge', .5, 1.4); }
+}
 function drawDrone(f) {
-  if (f.id !== 'aoi' || f.hidden) return;
+  if ((f.id !== 'aoi' && f.id !== 'arca') || f.hidden) return;
+  const arca = f.id === 'arca';
+  if (arca && !(f.move && f.move.key === 'ult' && f.state === 'atk')) return;
   const img = f.alt ? GFX.droneAltLazy() : GFX.drone, x = f.droneX, y = f.droneY, s = 92;
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  if (arca) drawMagicCircle(x + f.face * 60, y, f, f.charge);
   const r = 80 + 60 * f.charge, g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(${f.col.rgb},${.55 + f.charge * .4})`); g.addColorStop(1, `rgba(${f.col.rgb},0)`);
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
   ctx.strokeStyle = `rgba(${f.col.rgb},.7)`; ctx.lineWidth = 2;
@@ -1302,7 +1429,21 @@ function drawDrone(f) {
     }
   }
   ctx.restore();
-  ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(f.droneA) * .1); ctx.drawImage(img, -s / 2, -s / 2, s, s); ctx.restore();
+  if (!arca) { ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(f.droneA) * .1); ctx.drawImage(img, -s / 2, -s / 2, s, s); ctx.restore(); }
+}
+// rune magic circle seen side-on in front of the railgun (three counter-rotating rings)
+function drawMagicCircle(x, y, f, c) {
+  const rgb = f.col.rgb, hot = auraHot(f);
+  for (let j = 0; j < 3; j++) {
+    const cx = x + f.face * j * 46, R0 = (70 + j * 40) * (.4 + .6 * c), rot = G.frame * .05 * (j % 2 ? -1 : 1);
+    ctx.save(); ctx.translate(cx, y); ctx.scale(.3, 1);
+    ctx.strokeStyle = `rgba(${j === 1 ? hot : rgb},${.35 + .55 * c})`; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.arc(0, 0, R0, 0, TAU); ctx.stroke();
+    ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, 0, R0 * .78, 0, TAU); ctx.stroke();
+    for (let i = 0; i < 6; i++) { const a = rot + i * TAU / 6; ctx.beginPath(); ctx.moveTo(Math.cos(a) * R0 * .78, Math.sin(a) * R0 * .78); ctx.lineTo(Math.cos(a + TAU / 3) * R0 * .78, Math.sin(a + TAU / 3) * R0 * .78); ctx.stroke(); }
+    for (let i = 0; i < 12; i++) { const a = -rot + i * TAU / 12; ctx.fillStyle = `rgba(${hot},${.5 + .5 * c})`; ctx.fillRect(Math.cos(a) * R0 * .89 - 3, Math.sin(a) * R0 * .89 - 3, 6, 6); }
+    ctx.restore();
+  }
 }
 function drawRail(f) {
   if (f.rail.length < 2) return;
@@ -1639,7 +1780,7 @@ function exMovieEnd() {
   EXM.f = null;
 }
 /* ---------- match victory movie + telop ---------- */
-const WINQ = { suzune: 'まだまだ、こんなもんじゃないッス！', aoi: '解析完了。――この勝負、わたしの勝ち。' };
+const WINQ = { suzune: 'まだまだ、こんなもんじゃないッス！', aoi: '解析完了。――この勝負、わたしの勝ち。', arca: '観測、完了です。……え、もう終わりですか？' };
 const WM = { w: null, timers: [], typing: null, ready: false };
 function winMovieStart(w) {
   const box = $('#winMovie'), v = box.querySelector(`video[data-char="${w.id}"]`);
@@ -1740,13 +1881,13 @@ function setupUI() {
   }
   // --- select-screen video: intro plays when the screen opens, confirm plays on pick ---
   let selBusy = false, selTimer = null, selNext = null;
-  const vplay = v => { try { v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(() => { }); } catch (e) { } };
+  const vplay = v => { if (!v) return; try { v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(() => { }); } catch (e) { } };
   function selReset(keepP1) {
     selBusy = false; clearTimeout(selTimer);
     document.querySelectorAll('.card').forEach(c => {
       c.classList.remove('confirm', 'dim');
       const keep = keepP1 && c.dataset.char === G.picks[0];
-      if (!keep) vplay(c.querySelector('.sv-intro'));
+      const iv = c.querySelector('.sv-intro'); if (!keep && iv) vplay(iv);
     });
   }
   window.selReset = selReset;
@@ -1754,7 +1895,7 @@ function setupUI() {
     if (!selNext) return; const go = selNext; selNext = null; clearTimeout(selTimer); go();
   }
   document.querySelectorAll('.card').forEach(c => {
-    c.querySelector('.sv-confirm').addEventListener('ended', () => { selTimer = setTimeout(selProceed, 250); });
+    const cv2 = c.querySelector('.sv-confirm'); if (cv2) cv2.addEventListener('ended', () => { selTimer = setTimeout(selProceed, 250); });
     c.addEventListener('click', () => {
       audioInit();
       if (selBusy) { selProceed(); return; }                // tap again to skip the confirm animation
@@ -1769,7 +1910,7 @@ function setupUI() {
         if (pickStep === 0) { pickStep = 1; updateSelect(); selReset(true); const p1 = document.querySelector(`.card[data-char="${G.picks[0]}"]`); if (p1 && G.picks[0]) { p1.classList.add('confirm'); } document.querySelectorAll('.card').forEach(o => o.classList.remove('dim')); }
         else startMatch();
       };
-      selTimer = setTimeout(selProceed, 3600);             // safety if 'ended' never fires
+      selTimer = setTimeout(selProceed, c.querySelector('.sv-confirm') ? 3600 : 1500);             // safety if 'ended' never fires
     });
   });
   $('#selBack').addEventListener('click', () => { if (pickStep === 1) { pickStep = 0; updateSelect(); selReset(false); } else { showScreen('title'); bgmVolume(.8); } });
@@ -1803,7 +1944,7 @@ async function boot() {
   buildBg();
   await Promise.all([buildAssets(), buildAnims(), loadBGM().then(() => Promise.all([loadVoices(), loadSfx()]))]);
   document.querySelectorAll('[data-src]').forEach(i => i.src = window.ASSETS[i.dataset.src]);
-  document.querySelectorAll('.card img').forEach(i => { const id = i.closest('.card').dataset.char; i.src = window.ASSETS[id === 'suzune' ? 'suci' : 'aoci']; });
+  document.querySelectorAll('.card img').forEach(i => { const id = i.closest('.card').dataset.char; i.src = window.ASSETS[{ suzune: 'suci', aoi: 'aoci', arca: 'arcard' }[id]]; });
   setupUI();
   try { await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]); } catch (e) { }
   $('#loading').remove();
