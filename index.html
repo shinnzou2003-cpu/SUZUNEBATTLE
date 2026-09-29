@@ -26,14 +26,28 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 
 /* title: two slanted portraits crossing */
 #title{align-items:flex-end;justify-content:space-between;gap:24px}
-.duo{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.duo img{position:absolute;top:0;height:100%;width:62%;object-fit:cover;filter:saturate(1.08)}
-.duo .l{left:0;clip-path:polygon(0 0,100% 0,72% 100%,0 100%);object-position:60% 30%}
-.duo .r{right:0;clip-path:polygon(28% 0,100% 0,100% 100%,0 100%);object-position:60% 35%}
-.duo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(28,20,51,.1) 30%,rgba(28,20,51,.92) 88%)}
-.duo .seam{position:absolute;left:50%;top:-10%;width:6px;height:120%;background:linear-gradient(var(--gold),#fff,var(--cyan));transform:translateX(-50%) rotate(12deg);box-shadow:0 0 30px 8px rgba(255,220,180,.55)}
+.trio{position:absolute;inset:0;overflow:hidden;pointer-events:none;background:#140d26}
+.trio img{position:absolute;top:0;height:100%;object-fit:cover;filter:saturate(1.1) contrast(1.04)}
+.trio .p1{left:0;width:44%;clip-path:polygon(0 0,100% 0,78% 100%,0 100%);object-position:50% 22%}
+.trio .p2{left:29%;width:43%;clip-path:polygon(22% 0,100% 0,78% 100%,0 100%);object-position:50% 22%}
+.trio .p3{right:0;width:44%;clip-path:polygon(22% 0,100% 0,100% 100%,0 100%);object-position:50% 12%}
+.trio .sm{position:absolute;top:-10%;width:5px;height:120%;transform:rotate(11.5deg)}
+.trio .s1{left:37.5%;background:linear-gradient(var(--gold),#fff,var(--cyan));box-shadow:0 0 26px 6px rgba(255,210,150,.55)}
+.trio .s2{left:62.5%;background:linear-gradient(var(--cyan),#fff,#2ee6c8);box-shadow:0 0 26px 6px rgba(120,230,220,.5)}
+.trio .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,13,38,0) 0%,rgba(20,13,38,0) 46%,rgba(20,13,38,.72) 68%,rgba(20,13,38,.95) 100%),
+  radial-gradient(120% 60% at 50% 0%,rgba(0,0,0,0) 60%,rgba(10,6,20,.35) 100%)}
+@media (orientation: portrait){
+  #title{flex-direction:column;align-items:stretch;justify-content:flex-end;gap:14px}
+  .trio .p1,.trio .p2,.trio .p3{height:62%}
+  .trio .p1{width:52%;object-position:50% 18%} .trio .p2{left:24%;width:52%} .trio .p3{width:52%}
+  .trio .s1{left:37%;height:70%} .trio .s2{left:63%;height:70%}
+  .trio .shade{background:linear-gradient(180deg,rgba(20,13,38,0) 0%,rgba(20,13,38,0) 42%,rgba(20,13,38,.9) 60%,#140d26 70%)}
+  .brand{max-width:100%}
+  .menu{min-width:0;width:100%}
+  .util{flex-wrap:wrap}
+}
 .brand{position:relative;max-width:min(560px,58vw)}
-.brand h1{font-family:var(--serif);font-weight:800;font-size:clamp(40px,8.4vw,104px);line-height:.92;margin:0;letter-spacing:-.01em;
+.brand h1{font-family:var(--serif);font-weight:800;font-size:clamp(34px,min(8.4vw,15vh),104px);line-height:.92;margin:0;letter-spacing:-.01em;
   background:linear-gradient(100deg,var(--gold) 0%,#fff 48%,var(--cyan) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 18px rgba(0,0,0,.6))}
 .brand p{margin:.5em 0 0;font-size:clamp(13px,1.6vw,17px);color:var(--muted);line-height:1.5}
 .menu{position:relative;display:flex;flex-direction:column;gap:10px;min-width:min(300px,38vw)}
@@ -43,7 +57,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 .mbtn:nth-child(2){border-left-color:var(--coral)} .mbtn:nth-child(3){border-left-color:var(--cyan)}
 .mbtn:hover,.mbtn:active{transform:translateX(-6px);background:rgba(40,26,70,.85)}
 .util{display:flex;gap:8px;margin-top:4px}
-.chip{border:1px solid rgba(255,244,234,.3);background:rgba(22,14,40,.6);padding:7px 12px;font-size:13px;border-radius:999px}
+.chip{border:1px solid rgba(255,244,234,.3);background:rgba(22,14,40,.6);padding:7px 12px;font-size:13px;border-radius:999px;white-space:nowrap}
+@media (max-height:500px){.brand p{font-size:12px}.mbtn{padding:8px 16px;font-size:17px}.chip{padding:5px 10px;font-size:12px}}
 .keys{font-size:12px;color:var(--muted);line-height:1.6;margin-top:10px}
 @media (pointer:coarse){.keys{display:none}}
 
@@ -275,11 +290,11 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 </section>
 
 <section class="screen" id="title" aria-label="タイトル">
-  <div class="duo"><img class="l" data-src="suci" alt=""><img class="r" data-src="aoci" alt=""><div class="seam"></div></div>
+  <div class="trio"><img class="p1" data-src="tsu" alt=""><img class="p2" data-src="tao" alt=""><img class="p3" data-src="tar" alt=""><i class="sm s1"></i><i class="sm s2"></i><div class="shade"></div></div>
   <div class="brand">
     <h1>CHRONO<br>FIGHT</h1>
-    <p>SUZUNE と AOI、2029年の東京スカイデッキで。<br>攻撃と必殺、2つのボタンで戦う2ラウンド先取バトル。</p>
-    <div class="keys">ボタンは「攻撃」と「必殺」だけ。攻撃連打で自動コンボ、必殺はゲージで 強攻撃→EX→ULT に変化。<br>1P：A D 移動 / W ジャンプ / J 攻撃 / K 必殺　2P：矢印キー / , 攻撃 / . 必殺　相手と反対に押すとガード<br>SUZUNEのみ：ダッシュ（1P I・2P / ・左右2回押しでもOK）ダッシュ中は一瞬無敵</div>
+    <p>SUZUNE・AOI・ARCA-07、2029年の東京スカイデッキで。<br>攻撃と必殺、2つのボタンで戦う2ラウンド先取バトル。</p>
+    <div class="keys">ボタンは「攻撃」と「必殺」だけ。攻撃連打で自動コンボ、必殺はゲージで 強攻撃→EX→ULT に変化。<br>1P：A D 移動 / W ジャンプ / J 攻撃 / K 必殺　2P：矢印キー / , 攻撃 / . 必殺　相手と反対に押すとガード<br>SUZUNE・ARCA-07：ダッシュ（1P I・2P / ・左右2回押しでもOK）ダッシュ中は一瞬無敵</div>
   </div>
   <nav class="menu" aria-label="モード選択">
     <button class="mbtn" data-mode="cpu">CPUと対戦 <small>1人で遊ぶ</small></button>
@@ -294,7 +309,7 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
   <div class="cards">
     <button class="card" data-char="suzune"><img alt="SUZUNE"><video class="sv-intro" src="media/select_suzune_intro.mp4" poster="media/select_suzune_poster.jpg" muted playsinline preload="auto"></video><video class="sv-confirm" src="media/select_suzune_confirm.mp4" muted playsinline preload="auto"></video><span class="sv-flash"></span><div class="info"><b>SUZUNE</b><span>高速近接・連撃　EX 桜閃レール／ULT 桜花彗星</span></div></button>
     <button class="card" data-char="aoi"><img alt="AOI"><video class="sv-intro" src="media/select_aoi_intro.mp4" poster="media/select_aoi_poster.jpg" muted playsinline preload="auto"></video><video class="sv-confirm" src="media/select_aoi_confirm.mp4" muted playsinline preload="auto"></video><span class="sv-flash"></span><div class="info"><b>AOI</b><span>ドローン・遠距離　EX ホーミング・ビット／ULT オービタル・レイ</span></div></button>
-    <button class="card" data-char="arca"><img alt="ARCA-07"><video class="sv-intro" src="media/select_arca_intro.mp4" poster="media/select_arca_intro_poster.jpg" muted playsinline preload="auto"></video><video class="sv-confirm" src="media/select_arca_confirm.mp4" muted playsinline preload="auto"></video><span class="sv-flash"></span><div class="info"><b>ARCA-07</b><span>魔道兵器・重砲撃　EX ルーン・ミサイル／ULT アーセナル・ノヴァ</span></div></button>
+    <button class="card" data-char="arca"><img alt="ARCA-07"><video class="sv-intro" src="media/select_arca_intro.mp4" poster="media/select_arca_intro_poster.jpg" muted playsinline preload="auto"></video><video class="sv-confirm" src="media/select_arca_confirm2.mp4" muted playsinline preload="auto"></video><span class="sv-flash"></span><div class="info"><b>ARCA-07</b><span>魔道兵器・重砲撃　EX ルーン・ミサイル／ULT アーセナル・ノヴァ</span></div></button>
   </div>
   <p id="selNote"></p>
   <div class="selrow">
@@ -360,7 +375,7 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 <div id="rotate"><p>スマホを横向きにすると<br>大きな画面で遊べます</p><button class="pbtn" id="rotateOk">このまま遊ぶ</button></div>
 <div id="loading">読み込み中… <span id="loadPct">0%</span></div>
 
-<script>window.ASSETS={"su": "assets/suzune.webp", "ao": "assets/aoi.webp", "drone": "assets/drone.webp", "suci": "assets/suzune_cutin.webp", "aoci": "assets/aoi_cutin.webp", "ar": "assets/arca.webp", "arci": "assets/arca_cutin.webp", "arp": "assets/arca_pilot.webp", "arcard": "assets/arca_card.webp"};</script>
+<script>window.ASSETS={"su": "assets/suzune.webp", "ao": "assets/aoi.webp", "drone": "assets/drone.webp", "suci": "assets/suzune_cutin.webp", "aoci": "assets/aoi_cutin.webp", "ar": "assets/arca.webp", "arci": "assets/arca_cutin.webp", "arp": "assets/arca_pilot.webp", "arcard": "assets/arca_card.webp", "tsu": "assets/title_suzune.webp", "tao": "assets/title_aoi.webp", "tar": "assets/title_arca.webp"};</script>
 <script src="game.js"></script>
 </body>
 </html>
