@@ -95,7 +95,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 .tb.dh{grid-area:dh;--s:60px;font-size:13px;letter-spacing:.04em;justify-self:start;border:0;color:#1c1433;font-weight:800;
   background:radial-gradient(circle,rgba(255,200,80,.92) 60%,transparent 61%),conic-gradient(#fff var(--g,100%),rgba(255,255,255,.2) 0)}
 .tb.dh.cool{color:rgba(255,255,255,.7);background:radial-gradient(circle,rgba(20,12,38,.6) 60%,transparent 61%),conic-gradient(#ffc24a var(--g,100%),rgba(255,255,255,.2) 0)}
-.tb.dh[hidden]{display:none}
+.tb.dh[hidden],.tb.jp[hidden]{display:none}
 .tb.atk{grid-area:atk;--s:84px;font-size:18px;border-color:#fff}
 .tb.sp{grid-area:sp;--s:84px;font-size:17px;border:0;position:relative;
   background:radial-gradient(circle,rgba(20,12,38,.55) 60%,transparent 61%),conic-gradient(var(--coral) var(--g),rgba(255,255,255,.28) 0)}
@@ -120,7 +120,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 /* select videos */
 .card video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:skewX(6deg) scale(1.12);object-position:70% 40%}
 .card[data-char="aoi"] video{object-position:78% 35%}
-.card[data-char="arca"] video{object-position:50% 45%}
+.card[data-char="arca"] video{object-position:50% 28%}
 .card .sv-confirm{opacity:0}
 .card.confirm .sv-confirm{opacity:1}
 .card.confirm .sv-intro{opacity:0}
@@ -171,6 +171,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 @keyframes wmin{from{opacity:0}}
 #winMovie video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
 #winMovie video.on{display:block}
+#winMovie video[data-char="arca"]{object-position:50% 6%}
 .wm-bar{position:absolute;left:0;right:0;height:9vh;background:#000;z-index:1;transform:scaleY(0)}
 .wm-bar.top{top:0;transform-origin:top}.wm-bar.bot{bottom:0;transform-origin:bottom}
 #winMovie.on .wm-bar{animation:wmbar .5s cubic-bezier(.2,.9,.3,1) forwards}

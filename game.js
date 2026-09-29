@@ -54,7 +54,7 @@ const CHARS = {
   suzune: { id: 'suzune', name: 'SUZUNE', role: '高速近接・連撃', c1: '#ffc24a', c2: '#ff3350', rgb: '255,190,90', rgb2: '255,70,90', speed: 6.4, jump: -18.5, anchor: .6, exName: '桜閃レール', ultName: '桜花彗星' },
   aoi: { id: 'aoi', name: 'AOI', role: 'ドローン・遠距離', c1: '#5cc8ff', c2: '#a970ff', rgb: '110,195,255', rgb2: '170,110,255', speed: 5.2, jump: -17.5, anchor: .58, exName: 'ホーミング・ビット', ultName: 'オービタル・レイ' },
   // ARCA-07 rides the four-legged MAGITEK ARSENAL: big, heavy, long reach, magic artillery
-  arca: { id: 'arca', name: 'ARCA-07', role: '魔道兵器・重砲撃', c1: '#2ee6c8', c2: '#e0405a', rgb: '46,230,200', rgb2: '235,80,100', speed: 4.3, jump: -15.5, anchor: .55, h: 500, hurtW: 125, hurtH: 440, exName: 'ルーン・ミサイル', ultName: 'アーセナル・ノヴァ' }
+  arca: { id: 'arca', name: 'ARCA-07', role: '魔道兵器・重砲撃', c1: '#2ee6c8', c2: '#e0405a', rgb: '46,230,200', rgb2: '235,80,100', speed: 4.3, jump: -15.5, anchor: .55, h: 625, hurtW: 156, hurtH: 550, exName: 'ルーン・ミサイル', ultName: 'アーセナル・ノヴァ' }
 };
 const ALT = {
   suzune: { c1: '#7fd8ff', c2: '#4f7bff', rgb: '130,215,255', rgb2: '90,120,255', test: (h, s, l) => (h > 33 && h < 64 && s > .3) || ((h < 12 || h > 340) && s > .55), shift: 175 },
@@ -81,7 +81,7 @@ async function buildAssets() {
 const ANIMS = {};
 const frameCount = (id, n) => ANIMS[id] && ANIMS[id].a[n] ? ANIMS[id].a[n].length : 0;
 // visual size balance between characters (SUZUNE's source video was framed larger)
-const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 500 / 318 };   // AOI stands taller; SUZUNE fights from a low crouch
+const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318 };   // AOI stands taller; SUZUNE fights from a low crouch
 const LOAD = { done: 0, total: 0 };
 function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = document.getElementById('loadPct'); if (el) el.textContent = Math.round(LOAD.done / Math.max(1, LOAD.total) * 100) + '%'; return v; }); }
 async function buildAnims() {
@@ -127,11 +127,13 @@ function pickFrame(f) {
   const loop = (n, fps) => { const arr = a[n] || a.idle, L = arr.length, x = (G.frame * fps / 60) % L, i0 = Math.floor(x); return { fr: arr[i0], fr2: arr[(i0 + 1) % L], mix: smooth(n) ? x - i0 : 0 }; };
   const t = Math.max(0, f.t);
   switch (f.state) {
-    case 'idle': return f.land > 0 ? at('jump', 2) : loop('idle', AN.fps.idle || 12);
+    case 'idle': { const bd = boardState(f); if (bd && bd.t < BOARD.arrive && a.idleEmpty) return loop('idleEmpty', AN.fps.idleEmpty || 8); }
+      return f.land > 0 ? at('jump', 2) : loop('idle', AN.fps.idle || 12);
     case 'walk': return loop('walk', AN.fps.walk || 12);
     case 'guard': return at('guard', 0);
     case 'jump': return f.vy < -8 && f.t < 10 ? at('jump', 0) : at('jump', 1);
-    case 'dash': return f.dashDir === f.face ? at('ex', 99) : at('guard', 0);
+    case 'dash': if (f.id === 'arca') return f.dashDir === f.face ? loop('walk', 20) : at('guard', 0);
+      return f.dashDir === f.face ? at('ex', 99) : at('guard', 0);
     case 'dashin': return f.id === 'aoi' ? loop('walk', (AN.fps.walk || 12) * 1.2) : at('ex', 99);
     case 'hit': return prog('hit', t / (t + Math.max(1, f.stun)));
     case 'air': return prog('air', t / 16);
@@ -704,7 +706,7 @@ function updateMove(f, o, dt) {
 }
 
 // ARCA-07 / MAGITEK ARSENAL: crushing blade legs, rune railgun, rune missiles, magic-circle nova beam
-function arcaMuzzle(f) { return { x: f.x + f.face * 256, y: f.y - 352 }; }
+function arcaMuzzle(f) { return { x: f.x + f.face * 320, y: f.y - 440 }; }
 function updateArcaMove(f, o, m, t, k, act, at, dt, first) {
   const rgb = f.col.rgb, mz = arcaMuzzle(f);
   if (k === 'a') {
@@ -712,10 +714,10 @@ function updateArcaMove(f, o, m, t, k, act, at, dt, first) {
     if (t < m.st) f.vx *= .8;
     if (first(0)) {
       f.vx = f.face * (fin ? 9 : 5); shake(fin ? 8 : 4); fxDust(f.x + f.face * 150, f.y, 6, 1);
-      fxArc(f.x + f.face * 150, f.y - 200, fin ? 210 : 175, fin ? -2.2 : -1.2, fin ? 1.2 : .9, rgb, f.face, 14, fin ? 44 : 30);
-      fxRing(f.x + f.face * 170, f.y - 4, rgb, 10, fin ? 190 : 120, 16, 6, .22);
+      fxArc(f.x + f.face * 300, f.y - 230, fin ? 330 : 290, fin ? -2.2 : -1.2, fin ? 1.2 : .9, rgb, f.face, 14, fin ? 44 : 30);
+      fxRing(f.x + f.face * 380, f.y - 4, rgb, 10, fin ? 300 : 200, 16, 6, .22); for (let q = 0; q < 8; q++) addFx({ k: 'streak', x: f.x + f.face * rnd(150, 620), y: f.y - rnd(80, 380), vx: f.face * rnd(16, 30), vy: rnd(-3, 3), life: rnd(8, 14), t: 0, rgb, w: rnd(2, 4) });
     }
-    if (act) tryHit(f, o, box(f, 30, 330, -380, -20), { dmg: fin ? 8 : 5, kb: fin ? 13 : 5, stun: fin ? 22 : 17, power: fin ? 1.6 : .9, launch: fin ? -10 : 0, hy: 150 });
+    if (act) tryHit(f, o, box(f, 30, 660, -475, -20), { dmg: fin ? 8 : 5, kb: fin ? 13 : 5, stun: fin ? 22 : 17, power: fin ? 1.6 : .9, launch: fin ? -10 : 0, hy: 150 });
   } else if (k === 'b') {
     if (t < m.st) { f.vx *= .7; f.charge = t / m.st; if ((t | 0) % 2 === 0) fxSpark(mz.x, mz.y, rgb, 2, .4); }
     if (first(0)) {
@@ -727,7 +729,7 @@ function updateArcaMove(f, o, m, t, k, act, at, dt, first) {
   } else if (k === 'ex') {
     if (t < m.st) { f.vx = 0; f.charge = t / m.st; if ((t | 0) % 2 === 0) fxSpark(f.x - f.face * 150, f.y - 330, f.col.rgb2, 2, .4); }
     if (first(0) || first(4) || first(8) || first(12) || first(16) || first(20)) {
-      const i = Math.round(at / 4), px = f.x - f.face * (190 + (i % 2) * 50), py = f.y - 425 - (i % 3) * 20;
+      const i = Math.round(at / 4), px = f.x - f.face * (238 + (i % 2) * 60), py = f.y - 530 - (i % 3) * 24;
       G.proj.push({ owner: f, x: px, y: py, vx: f.face * rnd(3, 7), vy: rnd(-17, -11), dmg: 4.2, type: 'homing', life: 120, t: 0, trail: [], rgb: i % 2 ? rgb : f.col.rgb2 });
       playS('arca_missile', .55, rnd(.9, 1.1)); if (i === 0) sfx.homing(); fxRing(px, py, rgb, 5, 60, 12, 5); fxCore(px, py, rgb, 50, 8); shake(3);
     }
@@ -829,6 +831,7 @@ function onKO(att, tgt) {
 }
 
 /* SUZUNE's short step-dash: brief invulnerability (slips through AOI's shots), short cooldown */
+const CAN_DASH = { suzune: 1, arca: 1 };
 const DASH = { len: 30, speed: 26, inv: 20, cd: 62, cancel: 16 };
 function startDash(f, d) {
   f.state = 'dash'; f.t = 0; f.move = null; f.dashDir = d; f.vx = d * DASH.speed; f.inv = DASH.inv; f.dashCd = DASH.cd;
@@ -843,7 +846,7 @@ function stepFighter(f, o, inp, dt) {
   const pr = k => inp[k] && !f.prev[k];
   for (const k of ['a', 'b', 'ex', 'ult', 'u', 's', 'dh']) if (pr(k)) f.buf[k] = 9; else if (f.buf[k] > 0) f.buf[k] -= dt;
   // SUZUNE step-dash: dash button, or double-tap left/right
-  if (f.id === 'suzune') {
+  if (CAN_DASH[f.id]) {
     for (const [k, d] of [['l', -1], ['r', 1]]) if (pr(k)) { if (f.tapD === d && G.frame - f.tapF < 14) { f.buf.dh = 9; f.dashReq = d; f.tapD = 0; } else { f.tapD = d; f.tapF = G.frame; } }
     if (f.dashCd > 0) f.dashCd -= dt;
   } else f.buf.dh = 0;
@@ -862,14 +865,14 @@ function stepFighter(f, o, inp, dt) {
     if (grounded) f.face = Math.sign(o.x - f.x) || f.face;
     if (canAct) {
       const want = k => f.buf[k] > 0;
-      if (want('dh') && grounded && f.id === 'suzune' && !(f.dashCd > 0)) { f.buf.dh = 0; startDash(f, f.dashReq || dirIn || (Math.sign(o.x - f.x) || f.face)); f.dashReq = 0; }
+      if (want('dh') && grounded && CAN_DASH[f.id] && !(f.dashCd > 0)) { f.buf.dh = 0; startDash(f, f.dashReq || dirIn || (Math.sign(o.x - f.x) || f.face)); f.dashReq = 0; }
       else if (want('s')) { f.buf.s = 0; startMove(f, spPick(f)); }
       else if (want('ult') && f.gauge >= 100) { f.buf.ult = 0; startMove(f, 'ult'); }
       else if (want('ex') && f.gauge >= 50) { f.buf.ex = 0; startMove(f, 'ex'); }
       else if (want('b')) { f.buf.b = 0; startMove(f, 'b'); }
       else if (want('a')) { f.buf.a = 0; startMove(f, 'a'); }
       else if (inp.d && grounded) { f.state = 'guard'; f.vx *= .6; }
-      else if (want('u') && grounded) {
+      else if (want('u') && grounded && f.id !== 'arca') {
         f.buf.u = 0; f.vy = f.ch.jump; f.state = 'jump'; f.vx = dirIn * f.ch.speed * 1.15; sfx.jump(); voice(f, 'jump', { p: .45, cd: 90 }); fxDust(f.x, f.y, 5, .7);
         f.flip = f.id !== 'arca' && dirIn !== 0 && dirIn !== away; f.flipT = 0; f.sy = .8; f.sx = 1.1;
         if (f.flip) fxArc(f.x, f.y - 160, 150, 2.4, -.4, f.col.rgb, f.face, 16, 16);
@@ -895,7 +898,7 @@ function stepFighter(f, o, inp, dt) {
       f.face = Math.sign(o.x - f.x) || f.face;
       if (f.buf.s > 0) { f.buf.s = 0; startMove(f, spPick(f)); }
       else if (f.buf.a > 0) { f.buf.a = 0; startMove(f, 'a'); }
-      else if (f.buf.u > 0) { f.buf.u = 0; f.state = 'jump'; f.vy = f.ch.jump; f.vx = f.dashDir * f.ch.speed * 1.4; sfx.jump(); }
+      else if (f.buf.u > 0 && f.id !== 'arca') { f.buf.u = 0; f.state = 'jump'; f.vy = f.ch.jump; f.vx = f.dashDir * f.ch.speed * 1.4; sfx.jump(); }
     }
     if (f.state === 'dash' && f.t >= DASH.len) { f.state = 'idle'; f.land = 6; f.vx *= .3; fxDust(f.x, f.y, 4, .7); }
   } else if (f.state === 'dashin') {
@@ -1053,7 +1056,7 @@ function aiInput(f, o) {
   const d = o.x - f.x, ad = Math.abs(d), dir = Math.sign(d) || 1, toward = dir > 0 ? 'r' : 'l', away = dir > 0 ? 'l' : 'r';
   const threatened = (o.state === 'atk' && ad < 320) || G.proj.some(p => p.owner === o && Math.abs(p.x - f.x) < 360);
   const set = (h, n) => { ai.hold = h; ai.holdT = n; };
-  if (f.id === 'suzune' && !(f.dashCd > 0) && onGround(f)) {   // slip through AOI's shots / close the gap
+  if (CAN_DASH[f.id] && !(f.dashCd > 0) && onGround(f)) {   // slip through AOI's shots / close the gap
     const shot = G.proj.some(p => p.owner === o && Math.abs(p.x - f.x) < 300 && Math.sign(p.vx) === -dir);
     if ((shot && Math.random() < .35 + D.guard * .5) || (ad > 520 && Math.random() < .22)) { set({ [toward]: true }, 6); ai.press = 'dh'; return out; }
   }
@@ -1383,7 +1386,7 @@ function boardState(f) {
 }
 function drawBoarding(f, bd, front) {
   const t = bd.t, img = GFX.arcaPilot; if (!img) return;
-  const seatX = f.x + f.face * 74, seatY = f.y - 306, startX = f.x - f.face * 270, ph = 170, pw = img.width * ph / img.height;
+  const seatX = f.x + f.face * 92, seatY = f.y - 382, startX = f.x + f.face * 330, ph = 170, pw = img.width * ph / img.height;
   if (front && t < BOARD.arrive) {
     let x = startX, y = f.y, s = 1;
     if (t >= BOARD.jump) { const u = (t - BOARD.jump) / (BOARD.arrive - BOARD.jump), e = u * u * (3 - 2 * u); x = lerp(startX, seatX, e); y = lerp(f.y, seatY + 70, e) - Math.sin(u * Math.PI) * 260; s = 1 - .35 * u; }
@@ -1851,7 +1854,8 @@ function setTouch(on) {
   t.dataset.mode = G.mode;
   $('#pauseBtn').classList.toggle('on', on);
   TOUCH[0] = {}; TOUCH[1] = {};
-  document.querySelectorAll('#touch .tb.dh').forEach(b => { const f = G.fighters[+b.closest('[data-side]').dataset.side]; b.hidden = !(f && f.id === 'suzune'); });
+  document.querySelectorAll('#touch .tb.dh').forEach(b => { const f = G.fighters[+b.closest('[data-side]').dataset.side]; b.hidden = !(f && CAN_DASH[f.id]); });
+  document.querySelectorAll('#touch .tb.jp').forEach(b => { const f = G.fighters[+b.closest('[data-side]').dataset.side]; b.hidden = !!(f && f.id === 'arca'); });
 }
 function bindTouch() {
   const t = $('#touch');
