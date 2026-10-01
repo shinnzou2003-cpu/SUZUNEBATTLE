@@ -832,7 +832,7 @@ function onKO(att, tgt) {
 
 /* SUZUNE's short step-dash: brief invulnerability (slips through AOI's shots), short cooldown */
 const CAN_DASH = { suzune: 1, arca: 1 };
-const DASH = { len: 30, speed: 26, inv: 20, cd: 62, cancel: 16 };
+const DASH = { len: 30, speed: 52, inv: 30, cd: 62, cancel: 16 };
 function startDash(f, d) {
   f.state = 'dash'; f.t = 0; f.move = null; f.dashDir = d; f.vx = d * DASH.speed; f.inv = DASH.inv; f.dashCd = DASH.cd;
   f.sx = 1.14; f.sy = .9; sfx.dash(); playS('whoosh_punch2', .7, 1.2);
@@ -890,8 +890,8 @@ function stepFighter(f, o, inp, dt) {
       f.vx = lerp(f.vx, dirIn * f.ch.speed * 1.15, .04);
     }
   } else if (f.state === 'dash') {
-    f.vx *= Math.pow(.94, dt);
-    if (G.frame % 2 === 0) { f.trail.push(1); f.rail.push({ x: f.x - f.dashDir * 20, y: f.y - 10, t: G.frame }); }
+    f.vx *= Math.pow(.91, dt);
+    f.trail.push(1); f.rail.push({ x: f.x - f.dashDir * 20, y: f.y - 10, t: G.frame });
     if (G.frame % 3 === 0) fxDust(f.x - f.dashDir * 40, f.y, 1, .6);
     // dash-cancel: attacks come out of the back half of the dash so it leads straight into close range
     if (canAct && f.t >= DASH.cancel) {
@@ -1131,7 +1131,7 @@ function updateFlow(dt) {
       G.resultShown = true;
       const [a, b] = G.fighters, winner = a.hp > b.hp ? a : b.hp > a.hp ? b : null;
       if (winner && winner.wins >= 2 && winMovieStart(winner)) { G.winMovie = true; }
-      else if (winner && winner.wins < 2 && ANIMS[winner.id] && ANIMS[winner.id].a.cutin) { const AN = ANIMS[winner.id], t0 = -Math.round(AN.a.winPose.length / (AN.fps.winPose || 24) * 60 + 6); G.rwCut = { f: winner, t: t0, t0, len: 100 }; }
+      else if (winner && winner.wins < 2 && ANIMS[winner.id] && ANIMS[winner.id].a.cutin) { const AN = ANIMS[winner.id], t0 = -Math.round((AN.a.winPose ? AN.a.winPose.length / (AN.fps.winPose || 24) * 60 : 105) + 6); G.rwCut = { f: winner, t: t0, t0, len: 100 }; }
       else if (winner && winner.wins >= 2 && VICT[winner.id]) { const V = VICT[winner.id]; G.victory = { f: winner, t: 0, len: V.frames.length / V.fps * 60 }; sfx.cutin(); }
       if (winner && !G.winMovie) voice(winner, 'win', { delay: .2 });
       if (winner) { winner.state = 'win'; winner.t = 0; winner.move = null; winner.hidden = false; G.banner = { txt: `${winner.ch.name} WINS`, t: 0, rgb: winner.col.rgb }; }
@@ -1734,7 +1734,13 @@ function runOpening() {
   try { v.pause(); v.currentTime = 0; } catch (e) { }
   G.scene = 'title'; showScreen('opening');
 }
+function goFull() {
+  const d = document.documentElement;
+  if (document.fullscreenElement || !d.requestFullscreen) return;
+  d.requestFullscreen({ navigationUI: 'hide' }).then(() => { try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => { }); } catch (e) { } }).catch(() => { });
+}
 function opStart() {
+  goFull();
   if (OP.stage !== 'wait') return;
   OP.stage = 'video'; audioInit();
   document.querySelectorAll('#exMovie video, .card video, #winMovie video, #rwMovie video, .stage-vid').forEach(x => { try { x.load(); } catch (e) { } });   // warm up clips inside the user gesture
@@ -1873,7 +1879,7 @@ function setupUI() {
   let pickStep = 0;
   const title = $('#title');
   document.querySelectorAll('.mbtn[data-mode]').forEach(b => b.addEventListener('click', () => {
-    audioInit(); G.mode = b.dataset.mode; pickStep = 0; G.picks = ['suzune', 'aoi']; updateSelect(); showScreen('select'); selReset(false); bgmVolume(.6);
+    goFull(); audioInit(); G.mode = b.dataset.mode; pickStep = 0; G.picks = ['suzune', 'aoi']; updateSelect(); showScreen('select'); selReset(false); bgmVolume(.6);
   }));
   document.querySelectorAll('[data-diff]').forEach(b => b.addEventListener('click', () => { G.diff = +b.dataset.diff; document.querySelectorAll('[data-diff]').forEach(x => x.setAttribute('aria-pressed', x === b)); }));
   function updateSelect() {

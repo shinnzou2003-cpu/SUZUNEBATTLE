@@ -1,0 +1,22 @@
+{
+ "name": "CHRONO FIGHT",
+ "short_name": "CHRONO FIGHT",
+ "start_url": "./",
+ "scope": "./",
+ "display": "fullscreen",
+ "orientation": "landscape",
+ "background_color": "#1c1433",
+ "theme_color": "#1c1433",
+ "icons": [
+  {
+   "src": "assets/icon_192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "assets/icon_512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  }
+ ]
+}

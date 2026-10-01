@@ -3,6 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1c1433">
 <title>CHRONO FIGHT — SUZUNE × AOI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Shippori+Mincho+B1:wght@600;800&display=swap" rel="stylesheet">
@@ -240,7 +245,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 #opening{padding:0;background:#000;align-items:center;justify-content:center;overflow:hidden;z-index:12}
 #opVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform-origin:50% 60%}
 #opening.logo #opVideo{animation:opzoom 3.4s ease-out forwards}
-@keyframes opzoom{to{transform:scale(1.09);filter:brightness(.7) saturate(1.15)}}
+@keyframes opzoom{to{transform:scale(1.09);filter:brightness(.88) saturate(1.12)}}
 .op-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
 #opening.logo .op-flash{animation:opflash .9s ease-out forwards}
 @keyframes opflash{0%{opacity:.95}100%{opacity:0}}
@@ -258,7 +263,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 @keyframes opfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 #opening.out{animation:opout .7s ease-in forwards}
 @keyframes opout{to{opacity:0}}
-.op-start{position:absolute;inset:0;border:0;background:radial-gradient(ellipse at center,rgba(10,6,20,.35),rgba(10,6,20,.8));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.op-start[hidden]{display:none}
+.op-start{position:absolute;inset:0;border:0;background:radial-gradient(ellipse at center,rgba(10,6,20,.15),rgba(10,6,20,.55));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
 .op-start b{font-family:var(--serif);font-size:clamp(22px,4vw,40px);animation:blink 1.4s ease-in-out infinite}
 .op-start small{font-size:13px;color:var(--muted)}
 @keyframes blink{50%{opacity:.45}}
@@ -283,7 +289,7 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
   <div class="op-logo" aria-hidden="true">
     <span class="op-kicker">SZOU ORIGINAL</span>
     <h1><span>CHRONO</span><span>FIGHT</span></h1>
-    <p>SUZUNE <i>×</i> AOI</p>
+    <p>SUZUNE <i>×</i> AOI <i>×</i> ARCA-07</p>
   </div>
   <button class="op-start" id="opStart"><b>タップしてスタート</b><small>音が出ます</small></button>
   <button class="op-skip" id="opSkip" hidden>スキップ ▶▶</button>
