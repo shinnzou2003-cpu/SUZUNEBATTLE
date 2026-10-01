@@ -51,8 +51,8 @@ function recolor(img, test, shift) {
 }
 
 const CHARS = {
-  suzune: { id: 'suzune', name: 'SUZUNE', role: '高速近接・連撃', c1: '#ffc24a', c2: '#ff3350', rgb: '255,190,90', rgb2: '255,70,90', speed: 6.4, jump: -18.5, anchor: .6, exName: '桜閃レール', ultName: '桜花彗星' },
-  aoi: { id: 'aoi', name: 'AOI', role: 'ドローン・遠距離', c1: '#5cc8ff', c2: '#a970ff', rgb: '110,195,255', rgb2: '170,110,255', speed: 5.2, jump: -17.5, anchor: .58, exName: 'ホーミング・ビット', ultName: 'オービタル・レイ' },
+  suzune: { id: 'suzune', name: 'SUZUNE', role: '高速近接・連撃', c1: '#ffc24a', c2: '#ff3350', rgb: '255,190,90', rgb2: '255,70,90', speed: 6.4, jump: -26.2, anchor: .6, exName: '桜閃レール', ultName: '桜花彗星' },
+  aoi: { id: 'aoi', name: 'AOI', role: 'ドローン・遠距離', c1: '#5cc8ff', c2: '#a970ff', rgb: '110,195,255', rgb2: '170,110,255', speed: 5.2, jump: -24.7, anchor: .58, exName: 'ホーミング・ビット', ultName: 'オービタル・レイ' },
   // ARCA-07 rides the four-legged MAGITEK ARSENAL: big, heavy, long reach, magic artillery
   arca: { id: 'arca', name: 'ARCA-07', role: '魔道兵器・重砲撃', c1: '#2ee6c8', c2: '#e0405a', rgb: '46,230,200', rgb2: '235,80,100', speed: 4.3, jump: -15.5, anchor: .55, h: 625, hurtW: 156, hurtH: 550, exName: 'ルーン・ミサイル', ultName: 'アーセナル・ノヴァ' }
 };
@@ -134,7 +134,7 @@ function pickFrame(f) {
     case 'jump': return f.vy < -8 && f.t < 10 ? at('jump', 0) : at('jump', 1);
     case 'dash': if (f.id === 'arca') return f.dashDir === f.face ? loop('walk', 20) : at('guard', 0);
       return f.dashDir === f.face ? at('ex', 99) : at('guard', 0);
-    case 'dashin': return f.id === 'aoi' ? loop('walk', (AN.fps.walk || 12) * 1.2) : at('ex', 99);
+    case 'dashin': return f.id !== 'suzune' ? loop('walk', (AN.fps.walk || 12) * 1.2) : at('ex', 99);
     case 'hit': return prog('hit', t / (t + Math.max(1, f.stun)));
     case 'air': return prog('air', t / 16);
     case 'down': return at('down', t < 6 ? 0 : 1);
@@ -359,9 +359,9 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => KEYS.delete(e.code));
 addEventListener('blur', () => KEYS.clear());
-const MAP1 = { l: ['KeyA'], r: ['KeyD'], u: ['KeyW'], d: ['KeyS'], a: ['KeyJ'], s: ['KeyK', 'KeyL'], dh: ['KeyI'] };
-const MAP1solo = { l: ['KeyA', 'ArrowLeft'], r: ['KeyD', 'ArrowRight'], u: ['KeyW', 'ArrowUp', 'Space'], d: ['KeyS', 'ArrowDown'], a: ['KeyJ', 'KeyZ'], s: ['KeyK', 'KeyX', 'KeyL'], dh: ['KeyC', 'KeyI'] };
-const MAP2 = { l: ['ArrowLeft'], r: ['ArrowRight'], u: ['ArrowUp'], d: ['ArrowDown'], a: ['Comma', 'Numpad1'], s: ['Period', 'Numpad2'], dh: ['Slash', 'Numpad3'] };
+const MAP1 = { l: ['KeyA'], r: ['KeyD'], u: ['KeyW'], d: ['KeyS'], a: ['KeyJ'], s: ['KeyK', 'KeyL'], dh: ['KeyI'], tg: ['KeyU'] };
+const MAP1solo = { l: ['KeyA', 'ArrowLeft'], r: ['KeyD', 'ArrowRight'], u: ['KeyW', 'ArrowUp', 'Space'], d: ['KeyS', 'ArrowDown'], a: ['KeyJ', 'KeyZ'], s: ['KeyK', 'KeyX', 'KeyL'], dh: ['KeyC', 'KeyI'], tg: ['KeyV', 'KeyU'] };
+const MAP2 = { l: ['ArrowLeft'], r: ['ArrowRight'], u: ['ArrowUp'], d: ['ArrowDown'], a: ['Comma', 'Numpad1'], s: ['Period', 'Numpad2'], dh: ['Slash', 'Numpad3'], tg: ['Quote', 'Numpad4'] };
 const TOUCH = [{}, {}];
 function readHuman(side) {
   const map = G.mode === 'pvp' ? (side === 0 ? MAP1 : MAP2) : MAP1solo;
@@ -595,6 +595,7 @@ const MOVES = {
 function startMove(f, key) {
   const m = MOVES[f.id][key];
   if (f.gauge < m.cost) return false;
+  if (key === 'ult' && f.hp > 50) return false;
   f.gauge -= m.cost;
   if (key === 'a' && f.state === 'atk' && f.move && f.move.key === 'a') f.chain++; else f.chain = 0;
   f.state = 'atk'; f.t = -1; f.move = { key, ...m, total: m.st + m.act + m.rec, id: Math.random() }; f.hitIds.clear();
@@ -619,7 +620,7 @@ function hitTarget(att, tgt, o) {
   const guarding = (tgt.state === 'guard' || (tgt.holdBack && (tgt.state === 'walk' || tgt.state === 'idle'))) && onGround(tgt) && tgt.face === -fromDir;
   const hx = (att.x + tgt.x) / 2 + fromDir * 20, hy = tgt.y - (o.hy || 160);
   if (guarding && !o.unblock) {
-    tgt.hp = Math.max(1, tgt.hp - o.dmg * .12); tgt.vx = fromDir * (o.kb || 4) * .6; tgt.stun = 10; tgt.t = 0;
+    tgt.hp = Math.max(1, tgt.hp - o.dmg * (o.ult ? .2 : .05)); tgt.vx = fromDir * (o.kb || 4) * (o.ult ? .5 : .4); tgt.stun = o.ult ? 9 : 7; tgt.t = 0;   // stronger guard: small chip, short blockstun, little pushback
     tgt.gauge = Math.min(100, tgt.gauge + o.dmg * .6); att.gauge = Math.min(100, att.gauge + o.dmg * .4);
     fxHex(tgt.x - fromDir * 40, tgt.y - 150, tgt.col.rgb, -fromDir); fxSpark(hx, hy, '180,220,255', 8, .6, -fromDir); fxRing(hx, hy, '180,220,255', 10, 70, 12, 4);
     G.hitstop = Math.max(G.hitstop, 4); shake(4); sfx.guard(); voice(tgt, 'guard', { p: .5, cd: 240 });
@@ -758,7 +759,7 @@ function updateSuzuneUlt(f, o, at, dt, first) {
       fxRing(X, GROUND - 150, f.col.rgb, 40, 300, 28, 10);
       fxSpark(X, GROUND - 40, '255,170,70', 60, 1.8); fxPetals(X, GROUND - 80, 30, 2.2); fxDust(X, GROUND, 24, 2.2);
       for (let i = 0; i < 40; i++) addFx({ k: 'ember', x: X + rnd(-300, 300), y: GROUND - rnd(0, 200), vx: rnd(-1, 1), vy: rnd(-3, -.5), life: rnd(60, 120), t: 0, rgb: '255,160,70' });
-      if (Math.abs(o.x - X) < 250) hitTarget(f, o, { noScale: true, dmg: 30, kb: 17, launch: -19, power: 3, hitstop: 14, unblock: true });
+      if (Math.abs(o.x - X) < 250) hitTarget(f, o, { noScale: true, dmg: 30, kb: 17, launch: -19, power: 3, hitstop: 14, ult: true });
       f.inv = 0; G.tintA = 0;
     }
   }
@@ -778,7 +779,7 @@ function updateAoiUlt(f, o, at, dt, first) {
     if (at >= m.nextHit && overlap(b, hb)) {
       m.nextHit += 6;
       const last = at >= 99;
-      hitTarget(f, o, { noScale: true, dmg: last ? 6 : 2.6, kb: last ? 16 : 3, stun: 20, power: last ? 2.4 : 1, launch: last ? -14 : 0, unblock: true, hy: o.y - dy });
+      hitTarget(f, o, { noScale: true, dmg: last ? 6 : 2.6, kb: last ? 16 : 3, stun: 20, power: last ? 2.4 : 1, launch: last ? -14 : 0, ult: true, hy: o.y - dy });
     }
     if ((at | 0) % 2 === 0) fxSpark(f.face > 0 ? Math.min(STAGE_W, o.x) : Math.max(0, o.x), dy, f.col.rgb, 3, 1.2, -f.face);
   }
@@ -824,14 +825,50 @@ function drawProj() {
 
 function onKO(att, tgt) {
   tgt.state = 'air'; tgt.vy = Math.min(tgt.vy, -15); tgt.vx = Math.sign(tgt.x - att.x) * 11; tgt.ko = true;
+  const pt = partnerOf(tgt);
+  if (pt && pt.hp > 0) {   // one member down: partner jumps in, the round continues
+    fxBig(tgt.x, tgt.y - 170, auraRgb(att), auraHot(att), 2.4, Math.sign(tgt.x - att.x) || 1);
+    slowmo(.3, 40); flash(.7); shake(18); zoomKick(.1); sfx.ko(); quake(22, .9, [90, 40, 120]);
+    G.banner = { txt: `${tgt.ch.name} DOWN`, t: 0, rgb: tgt.col.rgb };
+    G.pendingTag = { side: tgt.side, t: 0 };
+    return;
+  }
   fxBig(tgt.x, tgt.y - 170, auraRgb(att), auraHot(att), 3.2, Math.sign(tgt.x - att.x) || 1);
   G.phase = 'ko'; G.phaseT = 0; slowmo(.22, 80); flash(1); shake(24); zoomKick(.14); sfx.ko(); quake(34, 1.4, [120, 60, 220]);
   G.banner = { txt: 'K.O.', t: 0, big: true }; voice('sys', 'ko', { delay: .45 });
-  att.wins++;
+  G.wins[att.side]++; for (const f of G.teams[att.side]) f.wins = G.wins[att.side];
 }
 
 /* SUZUNE's short step-dash: brief invulnerability (slips through AOI's shots), short cooldown */
 const CAN_DASH = { suzune: 1, arca: 1 };
+const TAG_CD = 150;
+function doTag(side, forced) {
+  const out = G.fighters[side], inn = partnerOf(out);
+  if (!inn || inn.hp <= 0) return false;
+  if (!forced && (G.tagCd[side] > 0 || G.phase !== 'fight')) return false;
+  const x = clamp(out.x, 120, STAGE_W - 120), face = out.face;
+  inn.x = x - face * 60; inn.y = GROUND; inn.vy = 0; inn.face = face; inn.vx = face * 22; inn.state = 'dashin'; inn.t = 0; inn.move = null;
+  inn.inv = 45; inn.hidden = false; inn.ko = false; inn.gauge = Math.max(inn.gauge, out.gauge); out.gauge = inn.gauge; inn.wins = out.wins;
+  inn.ghosts = []; inn.rail = []; inn.trail = []; inn.buf = {}; inn.prev = { ...out.prev }; inn.dashCd = 0;
+  if (!forced) { out.state = 'idle'; out.move = null; out.vx = 0; }
+  G.fighters[side] = inn; G.tagCd[side] = TAG_CD;
+  const rgb = auraRgb(inn);
+  fxRing(out.x, out.y - 150, auraRgb(out), 20, 200, 18, 8); fxDust(out.x, GROUND, 8, 1);
+  addFx({ k: 'pillar', x: inn.x, y: GROUND, rgb, hot: auraHot(inn), life: 26, t: 0, w: 110 });
+  fxRing(inn.x, GROUND - 4, rgb, 20, 260, 22, 9, .22); fxText(inn.x, inn.y - 380, 'CHANGE!', rgb, 34, 40);
+  sfx.dash(); playS('special_start', .6, 1.2); voice(inn, 'a2', { delay: .05 }); shake(6);
+  refreshTouchFor(side);
+  return true;
+}
+function updateTeams(dt) {
+  if (!G.teams) return;
+  for (let side = 0; side < 2; side++) {
+    if (G.tagCd[side] > 0) G.tagCd[side] -= dt;
+    for (const f of G.teams[side]) if (f !== G.fighters[side] && f.hp > 0 && f.hp < 100 && G.phase === 'fight') f.hp = Math.min(100, f.hp + .012 * dt);   // resting partner recovers slowly
+  }
+  const pt = G.pendingTag;
+  if (pt) { pt.t += dt; const down = G.fighters[pt.side]; if (pt.t > 75 && (down.state === 'down' || pt.t > 140)) { G.pendingTag = null; doTag(pt.side, true); } }
+}
 const DASH = { len: 30, speed: 52, inv: 30, cd: 62, cancel: 16 };
 function startDash(f, d) {
   f.state = 'dash'; f.t = 0; f.move = null; f.dashDir = d; f.vx = d * DASH.speed; f.inv = DASH.inv; f.dashCd = DASH.cd;
@@ -841,10 +878,12 @@ function startDash(f, d) {
   fxArc(f.x + d * 30, f.y - 150, 120, fwd ? -.6 : 2.5, fwd ? .6 : 3.7, rgb, f.face, 12, 12);
   for (let i = 0; i < 6; i++) addFx({ k: 'streak', x: f.x + rnd(-30, 30), y: f.y - rnd(20, 260), vx: -d * rnd(14, 26), vy: 0, life: rnd(8, 14), t: 0, rgb, w: rnd(1.5, 3) });
 }
-const spPick = f => f.gauge >= 100 ? 'ult' : f.gauge >= 50 ? 'ex' : 'b';
+const canUlt = f => f.gauge >= 100 && f.hp <= 50;   // ULT unlocks only at half health or below
+const spPick = f => canUlt(f) ? 'ult' : f.gauge >= 50 ? 'ex' : 'b';
 function stepFighter(f, o, inp, dt) {
   const pr = k => inp[k] && !f.prev[k];
   for (const k of ['a', 'b', 'ex', 'ult', 'u', 's', 'dh']) if (pr(k)) f.buf[k] = 9; else if (f.buf[k] > 0) f.buf[k] -= dt;
+  if (pr('tg') && G.phase === 'fight' && ['idle', 'walk', 'guard', 'jump', 'dash'].includes(f.state) && G.fighters[f.side] === f) { f.prev = { ...inp }; if (doTag(f.side, false)) return; }
   // SUZUNE step-dash: dash button, or double-tap left/right
   if (CAN_DASH[f.id]) {
     for (const [k, d] of [['l', -1], ['r', 1]]) if (pr(k)) { if (f.tapD === d && G.frame - f.tapF < 14) { f.buf.dh = 9; f.dashReq = d; f.tapD = 0; } else { f.tapD = d; f.tapF = G.frame; } }
@@ -867,7 +906,7 @@ function stepFighter(f, o, inp, dt) {
       const want = k => f.buf[k] > 0;
       if (want('dh') && grounded && CAN_DASH[f.id] && !(f.dashCd > 0)) { f.buf.dh = 0; startDash(f, f.dashReq || dirIn || (Math.sign(o.x - f.x) || f.face)); f.dashReq = 0; }
       else if (want('s')) { f.buf.s = 0; startMove(f, spPick(f)); }
-      else if (want('ult') && f.gauge >= 100) { f.buf.ult = 0; startMove(f, 'ult'); }
+      else if (want('ult') && canUlt(f)) { f.buf.ult = 0; startMove(f, 'ult'); }
       else if (want('ex') && f.gauge >= 50) { f.buf.ex = 0; startMove(f, 'ex'); }
       else if (want('b')) { f.buf.b = 0; startMove(f, 'b'); }
       else if (want('a')) { f.buf.a = 0; startMove(f, 'a'); }
@@ -912,7 +951,7 @@ function stepFighter(f, o, inp, dt) {
       if (after && m.key !== 'ult' && canAct) {
         let next = null; const hit = f.hitIds.size > 0;
         if (f.buf.s > 0 && (m.key === 'a' || (m.key === 'b' && spPick(f) !== 'b'))) { next = spPick(f); f.buf.s = 0; }
-        else if (f.buf.ult > 0 && f.gauge >= 100 && hit) { next = 'ult'; f.buf.ult = 0; }
+        else if (f.buf.ult > 0 && canUlt(f) && hit) { next = 'ult'; f.buf.ult = 0; }
         else if (f.buf.ex > 0 && f.gauge >= 50 && hit) { next = 'ex'; f.buf.ex = 0; }
         else if (f.buf.b > 0 && m.key === 'a' && hit) { next = 'b'; f.buf.b = 0; }
         else if (f.buf.a > 0 && m.key === 'a') { next = f.chain < 2 ? 'a' : 'b'; f.buf.a = 0; }
@@ -1056,12 +1095,13 @@ function aiInput(f, o) {
   const d = o.x - f.x, ad = Math.abs(d), dir = Math.sign(d) || 1, toward = dir > 0 ? 'r' : 'l', away = dir > 0 ? 'l' : 'r';
   const threatened = (o.state === 'atk' && ad < 320) || G.proj.some(p => p.owner === o && Math.abs(p.x - f.x) < 360);
   const set = (h, n) => { ai.hold = h; ai.holdT = n; };
+  { const pt = partnerOf(f); if (pt && pt.hp > f.hp + 25 && f.hp < 40 && !(G.tagCd[f.side] > 0) && Math.random() < .25) { ai.press = 'tg'; return out; } }
   if (CAN_DASH[f.id] && !(f.dashCd > 0) && onGround(f)) {   // slip through AOI's shots / close the gap
     const shot = G.proj.some(p => p.owner === o && Math.abs(p.x - f.x) < 300 && Math.sign(p.vx) === -dir);
     if ((shot && Math.random() < .35 + D.guard * .5) || (ad > 520 && Math.random() < .22)) { set({ [toward]: true }, 6); ai.press = 'dh'; return out; }
   }
   if (threatened && Math.random() < D.guard) { set({ d: true }, 14 + (Math.random() * 10 | 0)); return out; }
-  if (f.gauge >= 100 && Math.random() < .5 && (f.id !== 'suzune' || ad < 700)) { ai.press = 'ult'; return out; }
+  if (canUlt(f) && Math.random() < .5 && (f.id !== 'suzune' || ad < 700)) { ai.press = 'ult'; return out; }
   if (f.id === 'arca') {
     if (f.gauge >= 50 && Math.random() < .3) { ai.press = 'ex'; return out; }
     if (ad < 290) { if (Math.random() < D.agg) ai.press = Math.random() < .25 ? 'b' : 'a'; else set({ [away]: true }, 12); }
@@ -1086,20 +1126,26 @@ function aiInput(f, o) {
 }
 
 /* ---------- round flow ---------- */
+/* 2-on-2 tag team (KOF style): each side picks two fighters and can switch any time */
+function makeTeams() {
+  const [t0, t1] = G.picks;
+  G.teams = [t0.map(id => makeFighter(id, 0, false)), t1.map(id => makeFighter(id, 1, t0.includes(id)))];
+  for (const t of G.teams) for (const f of t) f.wins = G.wins[f.side];
+  G.fighters = [G.teams[0][0], G.teams[1][0]];
+}
+const partnerOf = f => G.teams && G.teams[f.side].find(x => x !== f);
 function startMatch() {
-  const [p1, p2] = G.picks;
-  const alt2 = p1 === p2;
-  G.fighters = [makeFighter(p1, 0, false), makeFighter(p2, 1, alt2)];
+  if (!Array.isArray(G.picks[0])) G.picks = [[G.picks[0], G.picks[0] === 'suzune' ? 'aoi' : 'suzune'], [G.picks[1], G.picks[1] === 'arca' ? 'suzune' : 'arca']];
+  G.wins = [0, 0];
   G.round = 1; G.matchOver = false; G.winMovie = false; G.rwMovie = false;
-  setStage(G.picks[0] === 'arca' ? 'aoi' : G.picks[0]);
-  G.fighters.forEach(f => { if (f.alt) prepareAlt(f.id); });
+  makeTeams();
+  setStage(G.picks[0][0] === 'arca' ? 'aoi' : G.picks[0][0]);
+  G.teams.flat().forEach(f => { if (f.alt) prepareAlt(f.id); });
   startRound();
   G.scene = 'game'; showScreen(null); setTouch(true); bgmTrack('battle', .5);
 }
 function startRound() {
-  for (const f of G.fighters) {
-    const w = f.wins; Object.assign(f, makeFighter(f.id, f.side, f.alt)); f.wins = w;
-  }
+  makeTeams(); G.tagCd = [0, 0]; G.pendingTag = null;
   G.resultShown = false; G.victory = null; G.fx = []; G.proj = []; G.timer = 99; G.timerF = 0; G.phase = 'intro'; G.phaseT = 0; G.cutin = null; G.rwCut = null; G.freeze = 0; G.tintA = 0; G.slow = 1;
   G.cam.x = STAGE_W / 2;
   for (const f of G.fighters) {
@@ -1129,7 +1175,7 @@ function updateFlow(dt) {
   } else if (G.phase === 'ko' || G.phase === 'timeup') {
     if (G.phaseT > 130 && !G.resultShown) {
       G.resultShown = true;
-      const [a, b] = G.fighters, winner = a.hp > b.hp ? a : b.hp > a.hp ? b : null;
+      const [a, b] = G.fighters, th = side => G.teams[side].reduce((s, f) => s + Math.max(0, f.hp), 0), winner = th(0) > th(1) ? a : th(1) > th(0) ? b : null;
       if (winner && winner.wins >= 2 && winMovieStart(winner)) { G.winMovie = true; }
       else if (winner && winner.wins < 2 && ANIMS[winner.id] && ANIMS[winner.id].a.cutin) { const AN = ANIMS[winner.id], t0 = -Math.round((AN.a.winPose ? AN.a.winPose.length / (AN.fps.winPose || 24) * 60 : 105) + 6); G.rwCut = { f: winner, t: t0, t0, len: 100 }; }
       else if (winner && winner.wins >= 2 && VICT[winner.id]) { const V = VICT[winner.id]; G.victory = { f: winner, t: 0, len: V.frames.length / V.fps * 60 }; sfx.cutin(); }
@@ -1149,7 +1195,8 @@ function updateFlow(dt) {
 }
 function timeUp() {
   G.phase = 'timeup'; G.phaseT = 0; G.banner = { txt: 'TIME UP', t: 0, big: true }; sfx.boom(); voice('sys', 'timeup');
-  const [a, b] = G.fighters; if (a.hp > b.hp) a.wins++; else if (b.hp > a.hp) b.wins++;
+  const hpOf = side => G.teams[side].reduce((s, f) => s + Math.max(0, f.hp), 0), ha = hpOf(0), hb = hpOf(1);
+  const ws = ha > hb ? 0 : hb > ha ? 1 : -1; if (ws >= 0) { G.wins[ws]++; for (const f of G.teams[ws]) f.wins = G.wins[ws]; }
 }
 function endMatch(w) {
   { const l = G.fighters.find(x => x !== w); if (l) voice(l.id, 'lose', { delay: .5 }); }
@@ -1201,7 +1248,7 @@ function drawBackground(camX, z) {
 function worldTransform() {
   const c = G.cam, sh = c.shake;
   const ox = sh ? rnd(-sh, sh) : 0, oy = sh ? rnd(-sh, sh) * .7 : 0, z = c.z + c.kick;
-  ctx.translate(W / 2 + ox, GY + oy); ctx.scale(z, z); ctx.translate(-c.x, -GROUND);
+  ctx.translate(W / 2 + ox, GY + oy + (c.y || 0)); ctx.scale(z, z); ctx.translate(-c.x, -GROUND);
 }
 /* ---------- video stages: chosen by 1P's character ---------- */
 const STAGE = { v: null, id: null };
@@ -1582,6 +1629,16 @@ function drawHUD2() {
     const nw = ctx.measureText(f.ch.name).width;
     ctx.font = `600 15px 'Chakra Petch', sans-serif`; ctx.fillStyle = f.col.c1; ctx.fillText(lab, dir < 0 ? nx + nw + 12 : nx - nw - 12, barH + 27);
     for (let i = 0; i < 2; i++) { const px = dir < 0 ? x0 + barW - 12 - i * 24 : x0 + 12 + i * 24; ctx.fillStyle = i < f.wins ? f.col.c1 : 'rgba(255,255,255,.2)'; ctx.beginPath(); ctx.arc(px, barH + 20, 7, 0, TAU); ctx.fill(); }
+    const pt = partnerOf(f);
+    if (pt) {   // partner: mini health bar + tag readiness
+      const mw = 150, mx = dir < 0 ? x0 + barW - mw : x0, my = -16, ready = !(G.tagCd[f.side] > 0) && pt.hp > 0;
+      ctx.fillStyle = 'rgba(10,6,20,.75)'; ctx.fillRect(mx, my, mw, 8);
+      ctx.fillStyle = pt.hp > 0 ? pt.col.c1 : '#555'; const pw2 = mw * Math.max(0, pt.hp) / 100; ctx.fillRect(dir < 0 ? mx + mw - pw2 : mx, my, pw2, 8);
+      ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 1; ctx.strokeRect(mx, my, mw, 8);
+      ctx.font = `700 13px 'Chakra Petch', sans-serif`; ctx.textAlign = dir < 0 ? 'right' : 'left';
+      ctx.fillStyle = pt.hp > 0 ? '#fff' : '#888';
+      ctx.fillText(pt.hp > 0 ? `${pt.ch.name}${ready ? '  ⇄ READY' : ''}` : `${pt.ch.name}  K.O.`, dir < 0 ? mx - 8 : mx + mw + 8, my + 8);
+    }
     ctx.restore();
     // gauge
     const gw = 290, gy = 34 + 70, gx0 = dir < 0 ? W / 2 - 66 - barW : W / 2 + 66 + barW - gw, full = f.gauge >= 100, gv = gw * f.gauge / 100;
@@ -1590,7 +1647,7 @@ function drawHUD2() {
     ctx.fillRect(dir < 0 ? gx0 : gx0 + gw - gv, gy, gv, 12);
     ctx.fillStyle = '#fff'; ctx.fillRect(gx0 + gw / 2 - 1, gy - 3, 2, 18);
     ctx.font = `700 15px 'Chakra Petch', sans-serif`; ctx.textAlign = dir < 0 ? 'left' : 'right';
-    ctx.fillStyle = full ? '#fff' : 'rgba(255,255,255,.8)'; ctx.fillText(full ? 'ULT READY' : f.gauge >= 50 ? 'EX READY' : `DRIVE ${f.gauge | 0}%`, dir < 0 ? gx0 + gw + 10 : gx0 - 10, gy + 11);
+    ctx.fillStyle = full ? '#fff' : 'rgba(255,255,255,.8)'; ctx.fillText(full ? (f.hp <= 50 ? 'ULT READY' : 'ULT LOCK (HP≤50%)') : f.gauge >= 50 ? 'EX READY' : `DRIVE ${f.gauge | 0}%`, dir < 0 ? gx0 + gw + 10 : gx0 - 10, gy + 11);
   };
   bar(a, -1); bar(b, 1);
   // timer
@@ -1680,7 +1737,7 @@ function simStep(dt) {
   const ia = G.mode === 'watch' ? aiInput(a, b) : readHuman(0);
   const ib = G.mode === 'pvp' ? readHuman(1) : aiInput(b, a);
   stepFighter(a, b, ia, sdt); stepFighter(b, a, ib, sdt); pushApart(a, b);
-  updateProj(sdt); updateFx(sdt); updateFlow(sdt);
+  updateProj(sdt); updateFx(sdt); updateFlow(sdt); updateTeams(sdt);
 }
 function updateCamera() {
   const c = G.cam, [a, b] = G.fighters;
@@ -1692,6 +1749,7 @@ function updateCamera() {
     c.z = 1;
     const half = W / 2 / c.z;
     c.x = lerp(c.x, clamp(mid, half, STAGE_W - half), .12);
+    const hi = Math.max(...vis.map(f => GROUND - f.y), 0); c.y = lerp(c.y || 0, Math.max(0, hi - 140) * .7, .14);   // tilt up for big jumps
   }
   c.shake *= .86; if (c.shake < .3) c.shake = 0;
   c.kick *= .8;
@@ -1704,10 +1762,11 @@ const SPL = [null, null];
 function updateTouchLabels() {
   document.querySelectorAll('#touch .tb.sp').forEach(b => {
     const side = +b.closest('[data-side]').dataset.side, f = G.fighters[side]; if (!f) return;
-    const lv = f.gauge >= 100 ? 'ULT' : f.gauge >= 50 ? 'EX' : '必殺';
+    const lv = canUlt(f) ? 'ULT' : f.gauge >= 50 ? 'EX' : '必殺';
     if (b.dataset.lv !== lv) { b.dataset.lv = lv; b.querySelector('b').textContent = lv; }
     b.style.setProperty('--g', (f.gauge | 0) + '%');
   });
+  document.querySelectorAll('#touch .tb.tg').forEach(b => { const side = +b.closest('[data-side]').dataset.side, f = G.fighters[side], pt = f && partnerOf(f); const ok = pt && pt.hp > 0 && !(G.tagCd && G.tagCd[side] > 0); b.classList.toggle('cool', !ok); b.style.setProperty('--g', ((G.tagCd ? 1 - Math.max(0, G.tagCd[side]) / TAG_CD : 1) * 100 | 0) + '%'); });
   document.querySelectorAll('#touch .tb.dh').forEach(b => {
     const f = G.fighters[+b.closest('[data-side]').dataset.side]; if (!f || b.hidden) return;
     const r = f.dashCd > 0 ? 1 - f.dashCd / DASH.cd : 1; b.style.setProperty('--g', (r * 100 | 0) + '%'); b.classList.toggle('cool', r < 1);
@@ -1856,6 +1915,11 @@ function togglePause(force) {
   if (STAGE.v) { try { G.paused ? STAGE.v.pause() : STAGE.v.play().catch(() => { }); } catch (e) { } }
 }
 const isTouch = () => matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+function refreshTouchFor(side) {
+  const f = G.fighters[side]; if (!f) return;
+  document.querySelectorAll(`#touch [data-side="${side}"] .tb.dh`).forEach(b => b.hidden = !CAN_DASH[f.id]);
+  document.querySelectorAll(`#touch [data-side="${side}"] .tb.jp`).forEach(b => b.hidden = f.id === 'arca');
+}
 function setTouch(on) {
   const t = $('#touch'); t.classList.toggle('on', on && isTouch() && G.mode !== 'watch');
   t.dataset.mode = G.mode;
@@ -1880,26 +1944,33 @@ function setupUI() {
   let pickStep = 0;
   const title = $('#title');
   document.querySelectorAll('.mbtn[data-mode]').forEach(b => b.addEventListener('click', () => {
-    goFull(); audioInit(); G.mode = b.dataset.mode; pickStep = 0; G.picks = ['suzune', 'aoi']; updateSelect(); showScreen('select'); selReset(false); bgmVolume(.6);
+    goFull(); audioInit(); G.mode = b.dataset.mode; pickStep = 0; G.sel = []; updateSelect(); showScreen('select'); selReset(); bgmVolume(.6);
   }));
   document.querySelectorAll('[data-diff]').forEach(b => b.addEventListener('click', () => { G.diff = +b.dataset.diff; document.querySelectorAll('[data-diff]').forEach(x => x.setAttribute('aria-pressed', x === b)); }));
+  // team select: 4 picks — side A member 1/2, then side B member 1/2
+  G.sel = [];
+  const SLOT = () => {
+    const team = pickStep < 2 ? 0 : 1, n = pickStep % 2 + 1;
+    const who = G.mode === 'pvp' ? (team ? '2P' : '1P') : G.mode === 'watch' ? (team ? '右チーム' : '左チーム') : (team ? '相手チーム' : 'あなたのチーム');
+    return { team, n, who };
+  };
   function updateSelect() {
-    const who = G.mode === 'pvp' ? (pickStep === 0 ? '1Pのキャラを選んでください' : '2Pのキャラを選んでください') : G.mode === 'watch' ? (pickStep === 0 ? '左側のキャラを選んでください' : '右側のキャラを選んでください') : (pickStep === 0 ? '使うキャラを選んでください' : '対戦相手を選んでください');
-    $('#selPrompt').textContent = who;
+    const sl = SLOT();
+    $('#selPrompt').textContent = `${sl.who}：${sl.n}人目を選んでください`;
     $('#diffRow').hidden = G.mode === 'pvp';
-    document.querySelectorAll('.card').forEach(c => { c.classList.toggle('p1', pickStep === 1 && c.dataset.char === G.picks[0]); });
-    $('#selNote').textContent = pickStep === 1 ? '同じキャラを選ぶと、2人目はカラー違いになります' : '';
+    document.querySelectorAll('.card').forEach(c => {
+      const tags = []; G.sel.forEach((id, i) => { if (id === c.dataset.char) tags.push(`${i < 2 ? (G.mode === 'pvp' ? '1P' : G.mode === 'watch' ? 'L' : 'YOU') : (G.mode === 'pvp' ? '2P' : G.mode === 'watch' ? 'R' : 'CPU')}${'①②'[i % 2]}`); });
+      if (tags.length) c.dataset.tag = tags.join(' '); else delete c.dataset.tag;
+      c.classList.remove('p1');
+    });
+    $('#selNote').textContent = sl.n === 2 ? '同じチームに同じキャラは選べません。試合中は「交代」でいつでも入れ替え！' : '2人1組のチームバトル。1人目が先鋒で出撃します';
   }
   // --- select-screen video: intro plays when the screen opens, confirm plays on pick ---
   let selBusy = false, selTimer = null, selNext = null;
   const vplay = v => { if (!v) return; try { v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(() => { }); } catch (e) { } };
-  function selReset(keepP1) {
+  function selReset() {
     selBusy = false; clearTimeout(selTimer);
-    document.querySelectorAll('.card').forEach(c => {
-      c.classList.remove('confirm', 'dim');
-      const keep = keepP1 && c.dataset.char === G.picks[0];
-      const iv = c.querySelector('.sv-intro'); if (!keep && iv) vplay(iv);
-    });
+    document.querySelectorAll('.card').forEach(c => { c.classList.remove('confirm', 'dim'); vplay(c.querySelector('.sv-intro')); });
   }
   window.selReset = selReset;
   function selProceed() {
@@ -1910,26 +1981,29 @@ function setupUI() {
     c.addEventListener('click', () => {
       audioInit();
       if (selBusy) { selProceed(); return; }                // tap again to skip the confirm animation
+      const sl = SLOT();
+      if (sl.n === 2 && G.sel[pickStep - 1] === c.dataset.char) { tone(.1, 300, 200, .1, 'square'); $('#selNote').textContent = '同じチームに同じキャラは選べません'; return; }
       selBusy = true;
       tone(.12, 880, 1200, .1, 'triangle'); sfx.cutin(); voice(c.dataset.char, 'select', { delay: .15 });
-      G.picks[pickStep] = c.dataset.char;
+      G.sel[pickStep] = c.dataset.char;
       document.querySelectorAll('.card').forEach(o => o.classList.toggle('dim', o !== c));
       c.classList.remove('confirm'); void c.offsetWidth; c.classList.add('confirm');
       vplay(c.querySelector('.sv-confirm'));
       setTimeout(() => sfx.hit(1.2), 1150);
       selNext = () => {
-        if (pickStep === 0) { pickStep = 1; updateSelect(); selReset(true); const p1 = document.querySelector(`.card[data-char="${G.picks[0]}"]`); if (p1 && G.picks[0]) { p1.classList.add('confirm'); } document.querySelectorAll('.card').forEach(o => o.classList.remove('dim')); }
-        else startMatch();
+        pickStep++;
+        if (pickStep < 4) { updateSelect(); selReset(); }
+        else { G.picks = [[G.sel[0], G.sel[1]], [G.sel[2], G.sel[3]]]; startMatch(); }
       };
       selTimer = setTimeout(selProceed, c.querySelector('.sv-confirm') ? 3600 : 1500);             // safety if 'ended' never fires
     });
   });
-  $('#selBack').addEventListener('click', () => { if (pickStep === 1) { pickStep = 0; updateSelect(); selReset(false); } else { showScreen('title'); bgmVolume(.8); } });
+  $('#selBack').addEventListener('click', () => { if (pickStep > 0) { pickStep--; G.sel.length = pickStep; updateSelect(); selReset(); } else { showScreen('title'); bgmVolume(.8); } });
   $('#pauseBtn').addEventListener('click', () => togglePause(true));
   $('#resume').addEventListener('click', () => togglePause(false));
   $('#quit').addEventListener('click', () => { stopStage(); G.paused = false; G.scene = 'title'; setTouch(false); showScreen('title'); bgmTrack('title', .8); });
-  $('#again').addEventListener('click', () => { G.fighters.forEach(f => f.wins = 0); startMatch(); });
-  $('#toSelect').addEventListener('click', () => { stopStage(); bgmTrack('title', .6); G.scene = 'title'; pickStep = 0; updateSelect(); showScreen('select'); selReset(false); });
+  $('#again').addEventListener('click', () => { startMatch(); });
+  $('#toSelect').addEventListener('click', () => { stopStage(); bgmTrack('title', .6); G.scene = 'title'; pickStep = 0; G.sel = []; updateSelect(); showScreen('select'); selReset(); });
   $('#toTitle').addEventListener('click', () => { stopStage(); bgmTrack('title', .8); G.scene = 'title'; showScreen('title'); });
   $('#snd').addEventListener('click', e => { SND.on = !SND.on; e.currentTarget.textContent = SND.on ? '効果音 オン' : '効果音 オフ'; e.currentTarget.setAttribute('aria-pressed', SND.on); audioInit(); });
   $('#opStart').addEventListener('click', opStart);
