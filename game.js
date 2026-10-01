@@ -298,7 +298,7 @@ function voice(who, key, opts = {}) {
 const SFXB = { buf: {}, gain: null };
 const SFX_FILES = ['whoosh_punch', 'whoosh_punch2', 'whoosh_kick', 'whoosh_kick_heavy', 'hit_light', 'hit_mid', 'hit_heavy', 'guard', 'impact_big',
   'laser_shot', 'laser_homing', 'beam', 'charge', 'special_start', 'ult_start', 'dash', 'jump', 'land',
-  'arca_saw', 'arca_stomp', 'arca_rail', 'arca_missile', 'arca_step', 'arca_armor', 'arca_boot'];
+  'arca_saw', 'arca_stomp', 'arca_rail', 'arca_missile', 'arca_step', 'arca_armor', 'arca_boot', 'arca_nova'];
 async function loadSfx() {
   if (!SND.ac) return;
   await Promise.all(SFX_FILES.map(async n => {
@@ -1777,6 +1777,7 @@ function exMovieStart(f) {
   box.querySelector('.ex-name b').textContent = f.ch.ultName;
   box.classList.add('on');
   try { v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(() => exMovieEnd()); } catch (e) { exMovieEnd(); }
+  if (f.id === 'arca') playS('arca_nova', 1);   // circles snap open -> silent beat -> beam blast at 1.75s, synced to the clip
   clearTimeout(EXM.timer); EXM.timer = setTimeout(exMovieEnd, (v.duration || 3.2) * 1000 + 600);
   return true;
 }
