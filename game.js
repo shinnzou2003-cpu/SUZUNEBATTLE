@@ -84,24 +84,53 @@ const frameCount = (id, n) => ANIMS[id] && ANIMS[id].a[n] ? ANIMS[id].a[n].lengt
 const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318 };   // AOI stands taller; SUZUNE fights from a low crouch
 const LOAD = { done: 0, total: 0 };
 function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = document.getElementById('loadPct'); if (el) el.textContent = Math.round(LOAD.done / Math.max(1, LOAD.total) * 100) + '%'; return v; }); }
+// Atlases are NOT decoded at boot any more: only the fighters in the current match are kept in memory,
+// so the roster can grow (10+ characters) without phones running out of RAM.
+const ANIM_META = {};
+const ANIM_LOAD = {};          // id -> Promise while loading
 async function buildAnims() {
-  const jobs = [];
-  for (const id of ['suzune', 'aoi', 'arca']) {
-    let meta;
-    try { meta = await (await fetch('anim/' + id + '.json')).json(); } catch (e) { continue; }
-    const AN = { k: DH / meta.storeH * (CHAR_SCALE[id] || 1), a: {}, fps: {}, atlases: [], alt: [], altBusy: false };
-    const idx = {};
-    for (const k in meta.anims) {
-      const an = meta.anims[k];
-      AN.fps[k] = an.fps || 24;
-      const ais = an.atlases.map(p => { if (!(p in idx)) { idx[p] = AN.atlases.length; AN.atlases.push(null); jobs.push(track(loadImg(p)).then(im => { AN.atlases[idx[p]] = im; })); } return idx[p]; });
-      AN.a[k] = an.frames.map(r => ({ ai: ais[r.a], sx: r.x, sy: r.y, w: r.w, h: r.h, ox: r.ox, oy: r.oy }));
-    }
-    AN.cutBox = meta.cutinBox || [564, 420];
-    ANIMS[id] = AN;
-  }
-  await Promise.all(jobs);
+  await Promise.all(Object.keys(CHARS).map(async id => {
+    try { ANIM_META[id] = await (await fetch('anim/' + id + '.json')).json(); } catch (e) { }
+  }));
 }
+function loadAnim(id, onTick) {
+  if (ANIMS[id]) return Promise.resolve();
+  if (ANIM_LOAD[id]) return ANIM_LOAD[id];
+  const meta = ANIM_META[id]; if (!meta) return Promise.resolve();
+  const AN = { k: DH / meta.storeH * (CHAR_SCALE[id] || 1), a: {}, fps: {}, atlases: [], alt: [], altBusy: false, cutBox: meta.cutinBox || [564, 420] };
+  const idx = {}, paths = [];
+  for (const k in meta.anims) {
+    const an = meta.anims[k];
+    AN.fps[k] = an.fps || 24;
+    const ais = an.atlases.map(p => { if (!(p in idx)) { idx[p] = paths.length; paths.push(p); } return idx[p]; });
+    AN.a[k] = an.frames.map(r => ({ ai: ais[r.a], sx: r.x, sy: r.y, w: r.w, h: r.h, ox: r.ox, oy: r.oy }));
+  }
+  const dec = im => (im.decode ? im.decode().catch(() => { }) : Promise.resolve()).then(() => im);
+  const pr = Promise.all(paths.map((p, i) => loadImg(p).then(dec).then(im => { AN.atlases[i] = im; onTick && onTick(); })))
+    .then(() => { if (ANIM_LOAD[id] === pr) { ANIMS[id] = AN; delete ANIM_LOAD[id]; } });
+  pr.count = paths.length;
+  return ANIM_LOAD[id] = pr;
+}
+function unloadAnim(id) {
+  const AN = ANIMS[id]; delete ANIMS[id]; delete ANIM_LOAD[id];
+  if (!AN) return;
+  AN.atlases.forEach(im => { if (im && 'src' in im) im.src = ''; });
+  AN.alt.forEach(b => { if (b && b.close) b.close(); else if (b) b.width = b.height = 0; });
+  AN.atlases.length = AN.alt.length = 0; AN.altBusy = false;
+}
+const atlasCount = id => { const m = ANIM_META[id]; if (!m) return 0; const s = new Set(); for (const k in m.anims) m.anims[k].atlases.forEach(p => s.add(p)); return s.size; };
+// keep exactly `ids` in memory; free everyone else. onPct(0..100) reports progress.
+async function ensureAnims(ids, onPct) {
+  const keep = new Set(ids);
+  Object.keys(ANIMS).concat(Object.keys(ANIM_LOAD)).forEach(id => { if (!keep.has(id)) unloadAnim(id); });
+  const need = [...keep].filter(id => !ANIMS[id]);
+  let total = need.reduce((a, id) => a + atlasCount(id), 0), done = 0;
+  const tick = () => { done++; onPct && onPct(Math.min(99, Math.round(done / Math.max(1, total) * 100))); };
+  await Promise.all(need.map(id => loadAnim(id, tick)));
+  onPct && onPct(100);
+}
+// warm up a character while the player is still on the select screen (nothing is freed here)
+function preloadAnim(id) { if (ANIM_META[id]) loadAnim(id); }
 // colour-variant atlases for mirror matches, built a few at a time so the game never stalls
 function prepareAlt(id) {
   const AN = ANIMS[id]; if (!AN || AN.altBusy || AN.alt.length === AN.atlases.length) return;
@@ -1134,8 +1163,14 @@ function makeTeams() {
   G.fighters = [G.teams[0][0], G.teams[1][0]];
 }
 const partnerOf = f => G.teams && G.teams[f.side].find(x => x !== f);
-function startMatch() {
+async function startMatch() {
   if (!Array.isArray(G.picks[0])) G.picks = [[G.picks[0], G.picks[0] === 'suzune' ? 'aoi' : 'suzune'], [G.picks[1], G.picks[1] === 'arca' ? 'suzune' : 'arca']];
+  const need = [...new Set(G.picks.flat())];
+  if (need.some(id => !ANIMS[id])) {
+    const ov = $('#matchLoad'), pc = $('#matchPct'); ov.hidden = false; pc.textContent = '0%';
+    await ensureAnims(need, v => pc.textContent = v + '%');
+    ov.hidden = true;
+  } else ensureAnims(need);
   G.wins = [0, 0];
   G.round = 1; G.matchOver = false; G.winMovie = false; G.rwMovie = false;
   makeTeams();
@@ -1970,7 +2005,16 @@ function setupUI() {
   const vplay = v => { if (!v) return; try { v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(() => { }); } catch (e) { } };
   function selReset() {
     selBusy = false; clearTimeout(selTimer);
-    document.querySelectorAll('.card').forEach(c => { c.classList.remove('confirm', 'dim'); vplay(c.querySelector('.sv-intro')); });
+    document.querySelectorAll('.card').forEach(c => { c.classList.remove('confirm', 'dim'); if (c.dataset.vis !== '0') vplay(c.querySelector('.sv-intro')); });
+  }
+  // with a big roster only the cards on screen play their intro video (phones can't decode 10+ at once)
+  if (window.IntersectionObserver) {
+    const io = new IntersectionObserver(es => es.forEach(e => {
+      const c = e.target, v = c.querySelector('.sv-intro'); c.dataset.vis = e.isIntersecting ? '1' : '0';
+      if (!v || c.classList.contains('confirm')) return;
+      if (e.isIntersecting) { if (v.paused) vplay(v); } else v.pause();
+    }), { root: document.querySelector('.cards'), threshold: .25 });
+    document.querySelectorAll('.card').forEach(c => io.observe(c));
   }
   window.selReset = selReset;
   function selProceed() {
@@ -1985,7 +2029,7 @@ function setupUI() {
       if (sl.n === 2 && G.sel[pickStep - 1] === c.dataset.char) { tone(.1, 300, 200, .1, 'square'); $('#selNote').textContent = '同じチームに同じキャラは選べません'; return; }
       selBusy = true;
       tone(.12, 880, 1200, .1, 'triangle'); sfx.cutin(); voice(c.dataset.char, 'select', { delay: .15 });
-      G.sel[pickStep] = c.dataset.char;
+      G.sel[pickStep] = c.dataset.char; preloadAnim(c.dataset.char);
       document.querySelectorAll('.card').forEach(o => o.classList.toggle('dim', o !== c));
       c.classList.remove('confirm'); void c.offsetWidth; c.classList.add('confirm');
       vplay(c.querySelector('.sv-confirm'));
