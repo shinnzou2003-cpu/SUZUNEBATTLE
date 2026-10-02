@@ -312,7 +312,11 @@ const VOICE = { buf: {}, gain: null, last: {} };
 // BGM ducking bus: music dips while a character is speaking so lines cut through
 function duckNode(ac) { if (!SND.duck) { SND.duck = ac.createGain(); SND.duck.connect(ac.destination); } return SND.duck; }
 function duckFor(t0, dur) {
-  const ac = SND.ac, g = duckNode(ac).gain; g.cancelScheduledValues(t0); g.setValueAtTime(g.value, t0);
+  const ac = SND.ac, g = duckNode(ac).gain;
+  if (MOVIE_AUDIO.src && MOVIE_AUDIO.gain) {   // the ULT score steps back while a line is spoken over it
+    const mg = MOVIE_AUDIO.gain.gain; mg.cancelScheduledValues(t0); mg.setValueAtTime(mg.value, t0);
+    mg.linearRampToValueAtTime(MOVIE_GAIN * .45, t0 + .06); mg.setValueAtTime(MOVIE_GAIN * .45, t0 + dur); mg.linearRampToValueAtTime(MOVIE_GAIN, t0 + dur + .3);
+  } g.cancelScheduledValues(t0); g.setValueAtTime(g.value, t0);
   g.linearRampToValueAtTime(.42, t0 + .08); g.setValueAtTime(.42, t0 + dur); g.linearRampToValueAtTime(1, t0 + dur + .45);
 }
 async function loadVoices() {
@@ -335,9 +339,9 @@ function voice(who, key, opts = {}) {
   if (opts.cd && VOICE.last[slot + key] && G.frame - VOICE.last[slot + key] < opts.cd) return;
   VOICE.last[slot + key] = G.frame;
   if (!VOICE.gain) {   // character lines: 2x louder, with a limiter so the boost never clips
-    VOICE.gain = ac.createGain(); VOICE.gain.gain.value = 2.3;
+    VOICE.gain = ac.createGain(); VOICE.gain.gain.value = 3.1;
     const c = ac.createDynamicsCompressor(); c.threshold.value = -9; c.knee.value = 4; c.ratio.value = 14; c.attack.value = .002; c.release.value = .16;
-    const mk = ac.createGain(); mk.gain.value = 1.05; VOICE.gain.connect(c); c.connect(mk); mk.connect(ac.destination);
+    const mk = ac.createGain(); mk.gain.value = 1.3; VOICE.gain.connect(c); c.connect(mk); mk.connect(ac.destination);
   }
   const prev = VOICE['src_' + slot]; if (prev) { try { prev.stop(); } catch (e) { } }
   const s = ac.createBufferSource(); s.buffer = VOICE.buf[avail[Math.floor(Math.random() * avail.length)]];
@@ -358,6 +362,37 @@ async function loadSfx() {
     try { const r = await fetch('media/sfx/' + n + '.mp3'); if (!r.ok) return; const ab = await r.arrayBuffer(); SFXB.buf[n] = await new Promise((res, rej) => SND.ac.decodeAudioData(ab, res, rej)); } catch (e) { }
   }));
 }
+// rising rumble under the ULT cutscene: low growl + noise sweeping up, cut dead at the end
+function ultRiser(dur) {
+  const ac = SND.ac, bus = loudBus(); if (!ac || !SND.on || !bus) return;
+  const t = ac.currentTime;
+  if (!noiseBuf) { noiseBuf = ac.createBuffer(1, ac.sampleRate * 1.5, ac.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+  const n = ac.createBufferSource(); n.buffer = noiseBuf; n.loop = true;
+  const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 6; f.frequency.setValueAtTime(70, t); f.frequency.exponentialRampToValueAtTime(2400, t + dur);
+  const g = ac.createGain(); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.55, t + dur * .85); g.gain.setValueAtTime(.55, t + dur - .03); g.gain.linearRampToValueAtTime(0, t + dur);
+  n.connect(f); f.connect(g); g.connect(bus); n.start(t); n.stop(t + dur + .05);
+  const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(38, t); o.frequency.exponentialRampToValueAtTime(96, t + dur);
+  const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260;
+  const g2 = ac.createGain(); g2.gain.setValueAtTime(.0001, t); g2.gain.exponentialRampToValueAtTime(.45, t + dur * .9); g2.gain.linearRampToValueAtTime(0, t + dur);
+  o.connect(lp); lp.connect(g2); g2.connect(bus); o.start(t); o.stop(t + dur + .05);
+  SND.riser = [n, o];
+}
+function killRiser() { (SND.riser || []).forEach(x => { try { x.stop(); } catch (e) { } }); SND.riser = null; }
+// the release: sub thump + blast + ringing ears
+function ultBlast(big = 1) {
+  const ac = SND.ac, bus = loudBus(); if (!ac || !SND.on || !bus) return;
+  const t = ac.currentTime;
+  const o = ac.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(28, t + .9);
+  const g = ac.createGain(); g.gain.setValueAtTime(1.1 * big, t); g.gain.exponentialRampToValueAtTime(.001, t + 1.1); o.connect(g); g.connect(bus); o.start(t); o.stop(t + 1.2);
+  const r = ac.createOscillator(); r.type = 'sine'; r.frequency.setValueAtTime(3300, t); r.frequency.linearRampToValueAtTime(3000, t + 1.6);
+  const rg = ac.createGain(); rg.gain.setValueAtTime(.0001, t); rg.gain.linearRampToValueAtTime(.06 * big, t + .05); rg.gain.exponentialRampToValueAtTime(.0005, t + 1.8); r.connect(rg); rg.connect(bus); r.start(t); r.stop(t + 1.9);
+  playLoud('impact_big', 1.2 * big, .78); playLoud('impact_big', .8 * big, 1.15, .06); playLoud('beam', .7 * big, .8);
+}
+function playLoud(name, vol = 1, rate = 1, delay = 0) {
+  const ac = SND.ac, b = SFXB.buf[name], bus = loudBus(); if (!ac || !b || !bus || !SND.on) return false;
+  const s = ac.createBufferSource(), g = ac.createGain(); s.buffer = b; s.playbackRate.value = rate; g.gain.value = vol;
+  s.connect(g); g.connect(bus); s.start(ac.currentTime + delay); return true;
+}
 function playS(name, vol = 1, rate = 1, delay = 0) {
   const ac = SND.ac, b = SFXB.buf[name]; if (!ac || !b) return false; if (!SND.on) return true;
   if (!SFXB.gain) { SFXB.gain = ac.createGain(); SFXB.gain.gain.value = .9; SFXB.gain.connect(ac.destination); }
@@ -374,10 +409,21 @@ async function loadMovieAudio() {
     try { const r = await fetch('media/sfx/movie_' + n + '.mp3'); if (!r.ok) return; const ab = await r.arrayBuffer(); MOVIE_AUDIO.buf[n] = await new Promise((res, rej) => SND.ac.decodeAudioData(ab, res, rej)); } catch (e) { }
   }));
 }
+// LOUD bus: cutscene scores and ULT impacts, boosted then limited so they hit hard without clipping
+function loudBus() {
+  const ac = SND.ac; if (!ac) return null;
+  if (!SND.loud) {
+    SND.loud = ac.createGain(); SND.loud.gain.value = 1;
+    const c = ac.createDynamicsCompressor(); c.threshold.value = -6; c.knee.value = 3; c.ratio.value = 16; c.attack.value = .002; c.release.value = .2;
+    SND.loud.connect(c); c.connect(ac.destination);
+  }
+  return SND.loud;
+}
+const MOVIE_GAIN = 2.1;   // ~+6.5 dB over the old level
 function movieAudio(name) {
   const ac = SND.ac, b = MOVIE_AUDIO.buf[name]; stopMovieAudio(); if (!ac || !b || !SND.on) return !!b;
-  if (!MOVIE_AUDIO.gain) { MOVIE_AUDIO.gain = ac.createGain(); MOVIE_AUDIO.gain.connect(duckNode(ac)); }
-  MOVIE_AUDIO.gain.gain.value = .95;
+  if (!MOVIE_AUDIO.gain) { MOVIE_AUDIO.gain = ac.createGain(); MOVIE_AUDIO.gain.connect(loudBus()); }
+  { const g = MOVIE_AUDIO.gain.gain, t = ac.currentTime; g.cancelScheduledValues(t); g.setValueAtTime(MOVIE_GAIN, t); }
   const s = ac.createBufferSource(); s.buffer = b; s.connect(MOVIE_AUDIO.gain); s.start(ac.currentTime + .02); MOVIE_AUDIO.src = s;
   if (MOVIE_AUDIO.bgmVol === null) MOVIE_AUDIO.bgmVol = BGM.vol;
   bgmVolume(.08, .25);   // the battle song steps back while the cutscene score plays
@@ -695,7 +741,7 @@ function startMove(f, key) {
   f.gauge -= m.cost;
   if (key === 'a' && f.state === 'atk' && f.move && f.move.key === 'a') f.chain++; else f.chain = 0;
   f.state = 'atk'; f.t = -1; f.move = { key, ...m, total: m.st + m.act + m.rec, id: Math.random() }; f.hitIds.clear();
-  if (key === 'ult') { startUlt(f); voice(f, 'ult'); }
+  if (key === 'ult') { startUlt(f); voice(f, 'ult', { delay: .15 }); }
   if (key === 'ex') { fxPowerUp(f, false); sfx.special(); voice(f, 'ex'); f.inv = f.id === 'suzune' ? 30 : 0; sfx.charge(); }
   if (key === 'a') voice(f, 'a' + Math.min(2, f.chain), { p: f.chain === 2 ? 1 : .75 });
   if (key === 'b') voice(f, 'b');
@@ -706,7 +752,7 @@ function startMove(f, key) {
 }
 function startUlt(f) {
   sfx.ultimate(); f.inv = 999;
-  if (!exMovieStart(f)) { G.freeze = 78; G.cutin = { f, t: 0 }; flash(.6, f.col.rgb); }   // fallback: in-canvas cut-in
+  if (!exMovieStart(f)) { G.freeze = 78; G.cutin = { f, t: 0 }; flash(.6, f.col.rgb); G.ultMono = 150; ultRiser(1.3); }   // fallback: in-canvas cut-in
   G.tintA = .55; G.tintC = auraRgb(f); fxPowerUp(f, true);
 }
 
@@ -740,6 +786,14 @@ function hitTarget(att, tgt, o) {
   if (pw >= 1.4 || o.launch) { quake(3 + 5 * pw, .28 + .12 * pw, pw >= 2 ? 60 : 25); fxBig(hx, hy, auraRgb(att), auraHot(att), Math.max(1.4, pw), fromDir); }
   if (pw >= 2) flash(.35 * pw / 2, '255,230,200');
   sfx.hit(pw);
+  if (o.ult) {
+    playLoud('impact_big', .55 + .25 * Math.min(2, pw), rnd(.85, 1.05));
+    if (pw >= 2.3 || tgt.hp <= 0) {   // ULT finisher
+      ultBlast(1.15); flash(1, auraHot(att)); G.speedlines = 60; zoomKick(.14); G.ultMono = 0;
+      addFx({ k: 'pillar', x: tgt.x, y: GROUND, rgb: auraRgb(att), hot: auraHot(att), life: 50, t: 0, w: 260 });
+      fxRing(tgt.x, GROUND - 4, auraRgb(att), 30, 620, 40, 14, .25); fxText(tgt.x, tgt.y - 420, 'FINISH!', auraHot(att), 60, 60);
+    }
+  }
   if (tgt.id === 'arca') playS('arca_armor', .55, rnd(.9, 1.1));         // the ARSENAL's armour rings when struck
   else if (att.id === 'arca' && pw >= .9) playS('arca_armor', .3, 1.3);   // steel-on-body crunch for its blade hits
   if (tgt.combo >= 2) fxText(att.x, att.y - 340, `${tgt.combo} HITS`, att.col.rgb, 30, 40);
@@ -1733,6 +1787,11 @@ function drawStage(camX) {
   const px = -(camX - STAGE_W / 2) * .09 + (sh ? rnd(-sh, sh) * .6 : 0), py = sh ? rnd(-sh, sh) * .4 : 0;
   ctx.drawImage(v, (W - w) / 2 + px, (H - h) * .62 + py, w, h);
   ctx.fillStyle = 'rgba(8,6,20,.12)'; ctx.fillRect(0, 0, W, H);                   // slight grade so fighters pop
+  if (G.ultMono > 0) {   // ULT: the world drains to grey and darkens, only the fighters and the move keep their colour
+    const a = Math.min(1, G.ultMono / 20);
+    ctx.save(); ctx.globalCompositeOperation = 'saturation'; ctx.fillStyle = `rgba(128,128,128,${a})`; ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = `rgba(6,4,14,${.45 * a})`; ctx.fillRect(0, 0, W, H); ctx.restore();
+  }
   const fg = ctx.createLinearGradient(0, H * .82, 0, H); fg.addColorStop(0, 'rgba(8,6,20,0)'); fg.addColorStop(1, 'rgba(8,6,20,.45)');
   ctx.fillStyle = fg; ctx.fillRect(0, H * .8, W, H * .2);
 }
@@ -2248,6 +2307,7 @@ function updateCamera() {
   c.shake *= .86; if (c.shake < .3) c.shake = 0;
   c.kick *= .8;
   G.flash *= .86; if (G.flash < .01) G.flash = 0;
+  if (G.ultMono > 0) { G.ultMono -= 1; if (!G.fighters.some(f => f.state === 'atk' && f.move && f.move.key === 'ult')) G.ultMono = Math.min(G.ultMono, 20); }
   if (G.speedlines > 0) G.speedlines -= 1;
   if (G.banner) G.banner.t += 1;
   if (G.victory) G.victory.t += 1;
@@ -2331,17 +2391,25 @@ function exMovieStart(f) {
   box.classList.add('on');
   try { v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(() => exMovieEnd()); } catch (e) { exMovieEnd(); }
   if (!movieAudio('ex_' + f.id) && f.id === 'arca') playS('arca_nova', 1);   // scored cutscene audio; ARCA keeps its nova sting as a fallback
+  ultRiser(Math.max(1.5, (v.duration || 3.2) - .1));
   clearTimeout(EXM.timer); EXM.timer = setTimeout(exMovieEnd, (v.duration || 3.2) * 1000 + 600);
   return true;
 }
 function exMovieEnd() {
-  if (!G.exPause) return;
+  if (!G.exPause || EXM.hold) return;
   clearTimeout(EXM.timer);
   const box = $('#exMovie'); box.classList.remove('on');
   box.querySelectorAll('video').forEach(v => { try { v.pause(); } catch (e) { } });
-  { const v = stopMovieAudio(); if (v !== null) bgmVolume(v, .4); }
-  G.exPause = false; acc = 0; flash(.9, EXM.f ? EXM.f.col.rgb : '255,255,255'); shake(12); sfx.boom(); quake(16, .6, 80);
-  EXM.f = null;
+  const bv = stopMovieAudio(.04); killRiser();
+  if (BGM.gain && SND.ac) { const t = SND.ac.currentTime; BGM.gain.gain.cancelScheduledValues(t); BGM.gain.gain.setValueAtTime(0, t); }   // total silence
+  G.flash = 1; G.flashCol = '255,255,255'; EXM.hold = true;
+  setTimeout(() => {   // ...then the blast
+    EXM.hold = false; const f = EXM.f;
+    G.exPause = false; acc = 0; flash(1, f ? auraHot(f) : '255,255,255'); shake(22); quake(26, 1, 140); zoomKick(.12); G.speedlines = 50;
+    ultBlast(1); bgmVolume(bv !== null ? bv : .5, .9);
+    if (f) { fxText(f.x, f.y - 470, f.ch.ultName, auraRgb(f), 54, 70); G.ultMono = 150; }
+    EXM.f = null;
+  }, 320);
 }
 /* ---------- match victory movie + telop ---------- */
 const WINQ = { suzune: 'まだまだ、こんなもんじゃないッス！', aoi: '解析完了。――この勝負、わたしの勝ち。', arca: '観測、完了です。……え、もう終わりですか？', sakura: 'わたしの設計に、狂いはないの。', mio: 'ほら、世界がちょっとキレイになった！' };
