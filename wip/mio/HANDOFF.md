@@ -30,3 +30,9 @@
 - キャラは固定カメラ・真横〜3/4・足が常にフレーム内・同じスケールで。
 - 交代ジャンプ(tagin)・倒れたまま残る(benched)・2人分HPバーは実装済み。新キャラは pickFrame の jump フレームがあれば自動で対応。
 - 選択画面カード・ex/winムービー・ステージ動画・ラウンド勝利カットイン・タイトル顔パネルもSAKURAと同様に追加（index.html / game.js の sakura 箇所が雛形）。
+
+## 完了 (2026-10-02)
+- 素材: Topviewキャンバス「CHRONO FIGHT MIO-07」。①MIOモーション（立ち絵 keyart_stance.jpg を参照に低い構えで撮り直し）②犬 ③演出（選択イントロ/決定/ULT/勝利/ステージ）
+- スプライト: tools/mio_sprites.json（moves.mp4=①、dog.mp4=②）→ sprite_tool.py pack → tools/mio_postfix.py（カットイン座標をSAKURA方式に変換）
+- 声: ElevenLabs eleven_v4・声Nao。voice_take.mp3 を18分割 → media/voice/mi_01..18.mp3
+- 参照画像1枚だけだとTopviewが「先頭フレーム指定」扱いになり16:9でエラー → 参照は2枚渡す
