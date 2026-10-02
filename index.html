@@ -37,7 +37,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 .trio .p2{left:18.7%;width:24%;clip-path:polygon(22% 0,100% 0,78% 100%,0 100%);object-position:50% 22%}
 .trio .p4{left:37.4%;width:24%;clip-path:polygon(22% 0,100% 0,78% 100%,0 100%);object-position:50% 20%}
 .trio .p3{left:56.1%;width:24%;clip-path:polygon(22% 0,100% 0,78% 100%,0 100%);object-position:50% 12%}
-.trio .p5{right:0;width:24.6%;clip-path:polygon(22% 0,100% 0,100% 100%,0 100%);object-position:50% 14%}
+.trio .p5{right:0;width:24.6%;top:-46%;height:146%;clip-path:polygon(22% 31.5%,100% 31.5%,100% 100%,0 100%);object-position:42% 50%}
 .trio .sm{position:absolute;top:-10%;width:5px;height:120%;transform:rotate(11.5deg)}
 .trio .s1{left:21.3%;background:linear-gradient(var(--gold),#fff,var(--cyan));box-shadow:0 0 26px 6px rgba(255,210,150,.55)}
 .trio .s2{left:40%;background:linear-gradient(var(--cyan),#fff,#2ee6c8);box-shadow:0 0 26px 6px rgba(120,230,220,.5)}
@@ -49,6 +49,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
   #title{flex-direction:column;align-items:stretch;justify-content:flex-end;gap:14px}
   .trio .p1,.trio .p2,.trio .p3,.trio .p4,.trio .p5{height:62%}
   .trio .p1{object-position:50% 18%}
+  .trio .p5{top:-28%;height:90%;clip-path:polygon(22% 31%,100% 31%,100% 100%,0 100%)}
   .trio .s1,.trio .s2,.trio .s3,.trio .s4{height:70%}
   .trio .shade{background:linear-gradient(180deg,rgba(20,13,38,0) 0%,rgba(20,13,38,0) 42%,rgba(20,13,38,.9) 60%,#140d26 70%)}
   .brand{max-width:100%}
@@ -74,14 +75,14 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 /* select */
 #select{flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,2vh,18px);background:radial-gradient(ellipse at 50% 120%,rgba(255,138,106,.35),transparent 60%),rgba(20,13,38,.55)}
 #selPrompt{font-family:var(--serif);font-weight:800;font-size:clamp(18px,3vw,30px);margin:0}
-.cards{display:flex;gap:clamp(8px,1.8vw,22px);width:100%;max-width:1180px;justify-content:safe center;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;padding:6px 3vw 10px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.cards{display:flex;gap:clamp(6px,1.4vw,18px);width:100%;max-width:1180px;justify-content:safe center;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;padding:6px 3vw 10px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
 .cards.more{-webkit-mask-image:linear-gradient(90deg,#000 82%,transparent);mask-image:linear-gradient(90deg,#000 82%,transparent)}
-.card{position:relative;flex:0 0 clamp(130px,calc((min(92vw,1120px) - 3 * clamp(8px,1.8vw,22px)) / 4 - 10px),370px);scroll-snap-align:center;aspect-ratio:2/1.15;border:0;padding:0;overflow:hidden;background:#000;transform:skewX(-6deg);transition:transform .15s}
+.card{position:relative;flex:0 0 clamp(104px,calc((min(94vw,1160px) - 4 * clamp(6px,1.4vw,18px)) / 5 - 8px),300px);scroll-snap-align:center;aspect-ratio:2/1.15;border:0;padding:0;overflow:hidden;background:#000;transform:skewX(-6deg);transition:transform .15s}
 .card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:skewX(6deg) scale(1.12)}
 .card::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 35%,rgba(12,8,24,.92))}
 .card .info{position:absolute;left:8%;right:6%;bottom:9%;z-index:1;text-align:left;transform:skewX(6deg)}
-.card b{display:block;font-family:var(--serif);font-size:clamp(20px,3.3vw,40px);line-height:1;white-space:nowrap}
-.card span{display:block;font-size:clamp(11px,1.5vw,14px);color:var(--muted);margin-top:4px;line-height:1.45}
+.card b{display:block;font-family:var(--serif);font-size:clamp(16px,2.7vw,34px);line-height:1;white-space:nowrap}
+.card span{display:block;font-size:clamp(9px,1.25vw,13px);color:var(--muted);margin-top:4px;line-height:1.45}
 .card[data-char="suzune"]{box-shadow:inset 0 0 0 3px var(--gold)} .card[data-char="aoi"]{box-shadow:inset 0 0 0 3px var(--cyan)} .card[data-char="arca"]{box-shadow:inset 0 0 0 3px #2ee6c8} .card[data-char="sakura"]{box-shadow:inset 0 0 0 3px #ff9ec4} .card[data-char="mio"]{box-shadow:inset 0 0 0 3px #9acfff}
 .card:hover,.card:focus-visible{transform:skewX(-6deg) translateY(-4px)}
 .card[data-tag]::before{content:attr(data-tag);position:absolute;top:8px;left:14px;z-index:2;background:var(--gold);color:#1c1433;font-weight:700;padding:2px 10px;transform:skewX(6deg)}
@@ -128,6 +129,12 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 .tb.sp{grid-area:sp;--s:84px;font-size:17px;border:0;position:relative;
   background:radial-gradient(circle,rgba(20,12,38,.55) 60%,transparent 61%),conic-gradient(var(--coral) var(--g),rgba(255,255,255,.28) 0)}
 .tb.sp b{font-weight:700}
+#touch .grp{transform:scale(.55)}
+#touch .mv{transform-origin:left bottom}
+#touch .ac{transform-origin:right bottom}
+#touch[data-mode="pvp"] .grp{transform:scale(.75)}
+#touch[data-mode="pvp"] .pad[data-side="0"] .grp{transform-origin:left bottom}
+#touch[data-mode="pvp"] .pad[data-side="1"] .grp{transform-origin:right bottom}
 .tb.sp[data-lv="EX"]{background:radial-gradient(circle,rgba(255,138,106,.5) 60%,transparent 61%),conic-gradient(var(--coral) var(--g),rgba(255,255,255,.28) 0)}
 .tb.sp[data-lv="ULT"]{color:#1c1433;background:radial-gradient(circle,var(--gold) 60%,transparent 61%),conic-gradient(#fff 100%,#fff 0);animation:ready .6s ease-in-out infinite alternate}
 @keyframes ready{to{box-shadow:0 0 22px 6px rgba(255,194,74,.75)}}
@@ -405,6 +412,6 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 <div id="loading">読み込み中… <span id="loadPct">0%</span></div>
 
 <script>window.ASSETS={"su": "assets/suzune.webp", "ao": "assets/aoi.webp", "drone": "assets/drone.webp", "suci": "assets/suzune_cutin.webp", "aoci": "assets/aoi_cutin.webp", "ar": "assets/arca.webp", "arci": "assets/arca_cutin.webp", "arp": "assets/arca_pilot.webp", "arcard": "assets/arca_card.webp", "tsu": "assets/title_suzune.webp", "tao": "assets/title_aoi.webp", "tar": "assets/title_arca.webp", "tsa": "assets/title_sakura.webp", "sa": "assets/sakura.webp", "saci": "assets/sakura_cutin.webp", "sacard": "assets/sakura_card.webp", "mi": "assets/mio.webp", "mici": "assets/mio_cutin.webp", "micard": "assets/mio_card.webp", "tmi": "assets/title_mio.webp"};</script>
-<script src="game.js?v=20261002f"></script>
+<script src="game.js?v=20261002m"></script>
 </body>
 </html>

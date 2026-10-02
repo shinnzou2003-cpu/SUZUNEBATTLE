@@ -56,7 +56,7 @@ const CHARS = {
   // ARCA-07 rides the four-legged MAGITEK ARSENAL: big, heavy, long reach, magic artillery
   arca: { id: 'arca', name: 'ARCA-07', role: '魔道兵器・重砲撃', c1: '#2ee6c8', c2: '#e0405a', rgb: '46,230,200', rgb2: '235,80,100', speed: 4.3, jump: -15.5, anchor: .55, h: 625, hurtW: 156, hurtH: 550, exName: 'ルーン・ミサイル', ultName: 'アーセナル・ノヴァ' },
   // SAKURA: sky-city aircraft engineer. Draws blueprints with her compass and summons the IDEA DRAGON (AOI-style summoner)
-  sakura: { id: 'sakura', name: 'SAKURA', role: '設計図・竜召喚', c1: '#ff9ec4', c2: '#e8c25a', rgb: '255,158,200', rgb2: '232,194,90', speed: 5.0, jump: -24.5, anchor: .55, hurtW: 52, hurtH: 310, exName: 'アイディア・ドラゴン', ultName: 'ドラフト・ノヴァ' },
+  sakura: { id: 'sakura', name: 'SAKURA', role: '設計図・竜召喚', c1: '#ff9ec4', c2: '#e8c25a', rgb: '255,158,200', rgb2: '232,194,90', speed: 5.0, jump: -24.5, anchor: .55, hurtW: 47, hurtH: 279, exName: 'アイディア・ドラゴン', ultName: 'ドラフト・ノヴァ' },
   // MIO-07: android painter of IF TOKYO 2099. Fights with the giant brush "Kibou-fude" and paint; her ULT paints a giant blue paint hound into being
   mio: { id: 'mio', name: 'MIO-07', role: '巨大筆・絵具', c1: '#9acfff', c2: '#ff688a', rgb: '120,190,255', rgb2: '255,104,138', speed: 5.3, jump: -24.8, anchor: .55, hurtW: 54, hurtH: 300, exName: 'ブルー・ストローク', ultName: 'キャンバス・ハウンド' }
 };
@@ -87,7 +87,7 @@ async function buildAssets() {
 const ANIMS = {};
 const frameCount = (id, n) => ANIMS[id] && ANIMS[id].a[n] ? ANIMS[id].a[n].length : 0;
 // visual size balance between characters (SUZUNE's source video was framed larger)
-const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.33, mio: 1.22 };   // AOI stands taller; SUZUNE fights from a low crouch
+const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.2, mio: 1.22 };   // AOI stands taller; SUZUNE fights from a low crouch
 const LOAD = { done: 0, total: 0 };
 function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = document.getElementById('loadPct'); if (el) el.textContent = Math.round(LOAD.done / Math.max(1, LOAD.total) * 100) + '%'; return v; }); }
 // Atlases are NOT decoded at boot any more: only the fighters in the current match are kept in memory,
@@ -168,6 +168,7 @@ function pickFrame(f) {
     case 'guard': return at('guard', 0);
     case 'jump': return f.vy < -8 && f.t < 10 ? at('jump', 0) : at('jump', 1);
     case 'dash': if (f.id === 'arca') return f.dashDir === f.face ? loop('walk', 20) : at('guard', 0);
+      if (f.id === 'mio') return f.dashDir === f.face ? loop('walk', 26) : at('guard', 0);
       return f.dashDir === f.face ? at('ex', 99) : at('guard', 0);
     case 'tagin': if (f.id === 'arca') return loop('walk', 20); return f.t < f.tg.L * .45 ? at('jump', 0) : at('jump', 1);
     case 'dashin': return f.id !== 'suzune' ? loop('walk', (AN.fps.walk || 12) * 1.2) : at('ex', 99);
@@ -835,9 +836,9 @@ function updateArcaMove(f, o, m, t, k, act, at, dt, first) {
   } else if (k === 'ult') updateAoiUlt(f, o, at, dt, first);   // same beam logic, fired from the ARSENAL's railgun
 }
 // SAKURA: drafting-compass strikes, a thrown blueprint disc, and the IDEA DRAGON she draws into being
-function sakuraTip(f) { return { x: f.x + f.face * 155, y: f.y - 270 }; }
+function sakuraTip(f) { return { x: f.x + f.face * 140, y: f.y - 243 }; }
 // ULT: her blueprint beam and the dragon's breath converge here, then fire as one braided beam
-function sakuraFocus(f) { return { x: f.x + f.face * 440, y: f.y - 245 }; }
+function sakuraFocus(f) { return { x: f.x + f.face * 396, y: f.y - 220 }; }
 function updateSakuraMove(f, o, m, t, k, act, at, dt, first) {
   const rgb = f.col.rgb, gold = f.col.rgb2, tip = sakuraTip(f);
   if (k === 'a') {
@@ -845,12 +846,12 @@ function updateSakuraMove(f, o, m, t, k, act, at, dt, first) {
     if (t < m.st) f.vx *= .75;
     if (first(0)) {
       f.vx = f.face * [4, 6, 9][c];
-      if (c === 1) fxArc(f.x + f.face * 106, f.y - 245, 122, -1.6, 1.1, rgb, f.face, 18, 34);
+      if (c === 1) fxArc(f.x + f.face * 95, f.y - 220, 110, -1.6, 1.1, rgb, f.face, 18, 34);
       else { fxRing(tip.x, tip.y, gold, 4, 46, 10, 4); fxCore(tip.x, tip.y, rgb, 40, 8); }
       if (c === 2) { spawnBolt(f, tip.x, tip.y, f.face * 24, 0, 5, 'bolt'); sfx.laser(); fxRing(tip.x + f.face * 30, tip.y, rgb, 6, 70, 12, 5, 2.4); }
       else sfx.swing();
     }
-    if (act) tryHit(f, o, box(f, 25, c === 1 ? 260 : 230, -325, -122), { dmg: [4, 4.5, 5][c], kb: [3, 4, 9][c], stun: [15, 16, 20][c], power: [.7, .8, 1.2][c], launch: c === 2 ? -8 : 0 });
+    if (act) tryHit(f, o, box(f, 23, c === 1 ? 234 : 207, -293, -110), { dmg: [4, 4.5, 5][c], kb: [3, 4, 9][c], stun: [15, 16, 20][c], power: [.7, .8, 1.2][c], launch: c === 2 ? -8 : 0 });
   } else if (k === 'b') {
     if (t < m.st) { f.vx *= .7; f.charge = t / m.st; if ((t | 0) % 2 === 0) fxSpark(tip.x, tip.y, gold, 2, .4); }
     if (first(0)) {   // blueprint compass-rose disc flung forward
@@ -860,7 +861,7 @@ function updateSakuraMove(f, o, m, t, k, act, at, dt, first) {
       sfx.heavySwing();
     }
   } else if (k === 'ex') {
-    if (t < m.st) { f.vx = 0; f.charge = t / m.st; if ((t | 0) % 2 === 0) fxSpark(f.x, f.y - 457, gold, 3, .5); if ((t | 0) % 6 === 0) fxRing(f.x - f.face * 49, f.y - 522, rgb, 20, 163, 16, 3, .3); }
+    if (t < m.st) { f.vx = 0; f.charge = t / m.st; if ((t | 0) % 2 === 0) fxSpark(f.x, f.y - 411, gold, 3, .5); if ((t | 0) % 6 === 0) fxRing(f.x - f.face * 44, f.y - 470, rgb, 20, 147, 16, 3, .3); }
     if (first(0)) { summonDragon(f, o, 'swoop'); f.charge = 0; }
   } else if (k === 'ult') {
     if (first(0)) summonDragon(f, o, 'ult');
@@ -873,9 +874,9 @@ const dragonScale = f => { const AN = ANIMS[f.id]; return AN ? AN.k * AN.dragonK
 function summonDragon(f, o, mode) {
   const back = -f.face;
   f.dragon = mode === 'swoop'
-    ? { mode, t: 0, face: f.face, x: f.x + back * 700, y: f.y - 571, x0: f.x + back * 700, x1: o.x + f.face * 1000, hits: 0, next: 0 }
-    : { mode, t: 0, face: f.face, x: f.x + back * 900, y: f.y - 735, hits: 0, next: 0 };
-  fxRing(f.x, f.y - 522, f.col.rgb2, 30, 320, 24, 8, .3); fxCore(f.x, f.y - 522, f.col.rgb, 200, 18); flash(.35, f.col.rgb);
+    ? { mode, t: 0, face: f.face, x: f.x + back * 700, y: f.y - 514, x0: f.x + back * 700, x1: o.x + f.face * 1000, hits: 0, next: 0 }
+    : { mode, t: 0, face: f.face, x: f.x + back * 900, y: f.y - 662, hits: 0, next: 0 };
+  fxRing(f.x, f.y - 470, f.col.rgb2, 30, 320, 24, 8, .3); fxCore(f.x, f.y - 470, f.col.rgb, 200, 18); flash(.35, f.col.rgb);
   playS('special_start', .5, 1.3); shake(6);
 }
 function updateDragon(f, o, dt) {
@@ -884,16 +885,16 @@ function updateDragon(f, o, dt) {
   if (d.mode === 'swoop') {
     const L = 46, q = Math.min(1, d.t / L);
     const px = d.x, py = d.y;
-    d.x = lerp(d.x0, d.x1, q); d.y = f.y - 571 + Math.sin(q * Math.PI) * 490;   // arc dives through the opponent and climbs away
+    d.x = lerp(d.x0, d.x1, q); d.y = f.y - 514 + Math.sin(q * Math.PI) * 441;   // arc dives through the opponent and climbs away
     if (d.t > dt) d.rot = lerp(d.rot || 0, Math.atan2(d.y - py, Math.abs(d.x - px) + .01), .35);
     if (q < .9 && d.hits < 4 && d.t >= d.next && G.phase === 'fight') {   // wide body + wing + claw hitbox
-      const hb = { x0: d.x - 277, x1: d.x + 277, y0: d.y - 245, y1: d.y + 245 };
+      const hb = { x0: d.x - 249, x1: d.x + 249, y0: d.y - 220, y1: d.y + 220 };
       if (overlap(hb, hurt(o))) { d.hits++; d.next = d.t + 7; const fin = d.hits === 4; hitTarget(f, o, { dmg: fin ? 7 : 4, kb: fin ? 14 : 4, stun: 22, power: fin ? 1.9 : 1.1, launch: fin ? -13 : 0, hy: clamp(o.y - d.y, 60, 260) }); fxArc(d.x, d.y + 40, 220, -1.8, 1.4, f.col.rgb, d.face, 18, 34); }
     }
     if ((d.t | 0) % 2 === 0) addFx({ k: 'streak', x: d.x - d.face * 160, y: d.y + rnd(-60, 60), vx: -d.face * 14, vy: 0, life: 14, t: 0, rgb: f.col.rgb, w: 4 });
     if (d.t > L + 10) f.dragon = null;
   } else if (d.mode === 'ult') {
-    const tx = f.x + f.face * 139, ty = f.y - 351;   // hovers over her outstretched arm, both facing the foe
+    const tx = f.x + f.face * 125, ty = f.y - 316;   // hovers over her outstretched arm, both facing the foe
     d.x = lerp(d.x, tx, .14); d.y = lerp(d.y, ty + Math.sin(d.t * .08) * 14, .14); d.face = f.face;
     d.rot = lerp(d.rot || 0, f.move && f.move.beam ? .32 : .12, .1);   // dips its head to breathe down onto the focus point
     const c = sakuraFocus(f); f.droneX = c.x; f.droneY = c.y;
@@ -1103,7 +1104,12 @@ function updateAoiUlt(f, o, at, dt, first) {
     const bx = f.id === 'sakura' ? f.x : dx, b = { x0: f.face > 0 ? bx : -500, x1: f.face > 0 ? STAGE_W + 500 : bx, y0: dy - 70, y1: dy + 70 };   // SAKURA's feeds sweep the space in front of her too
     const hb = hurt(o);
     if (m.nextHit === undefined) m.nextHit = 45;
-    if (at >= m.nextHit && overlap(b, hb)) {
+    const cb = clashBox(o);
+    if (at >= m.nextHit && cb && overlap(b, cb)) {   // a normal attack swung into the beam cancels it out
+      m.nextHit += 6; o.vx = f.face * 3; o.beamGuard = G.frame + 22; clashFx(o.x + o.face * 150, dy, o, f);
+    } else if (at >= m.nextHit && o.beamGuard > G.frame && overlap(b, hb)) {   // still pushing through the cancelled beam
+      m.nextHit += 6; o.vx = f.face * 2; fxSpark(o.x + o.face * 120, dy, '255,255,255', 6, 1.1, -f.face); fxCore(o.x + o.face * 120, dy, f.col.rgb, 60, 6);
+    } else if (at >= m.nextHit && overlap(b, hb)) {
       m.nextHit += 6;
       const last = at >= 99;
       hitTarget(f, o, { noScale: true, dmg: last ? 6 : 2.6, kb: last ? 16 : 3, stun: 20, power: last ? 2.4 : 1, launch: last ? -14 : 0, ult: true, hy: o.y - dy });
@@ -1114,6 +1120,17 @@ function updateAoiUlt(f, o, at, dt, first) {
   if (at >= 108 && at < 110) f.t = m.st + m.act;
 }
 
+// beams and shots can be cancelled by a normal attack swung into them
+function clashBox(f) {
+  if (!f || f.state !== 'atk' || !f.move || f.move.key !== 'a') return null;
+  const m = f.move; if (f.t < m.st - 3) return null;   // from just before the swing lands until it recovers
+  return box(f, -30, 300, -430, 10);
+}
+function clashFx(x, y, a, b) {
+  fxCore(x, y, '255,255,255', 110, 12); fxRing(x, y, '255,255,255', 10, 190, 16, 7, .3);
+  fxSpark(x, y, a.col.rgb, 10, 1.5); fxSpark(x, y, b.col.rgb, 10, 1.5);
+  fxText(x, y - 90, 'CLASH!', '255,255,255', 28, 26); G.freeze = Math.max(G.freeze || 0, 5); shake(8); sfx.hit(1.3);
+}
 function spawnBolt(f, x, y, vx, vy, dmg, type) {
   G.proj.push({ owner: f, x, y, vx, vy, dmg, type, life: type === 'homing' ? 110 : 80, t: 0, trail: [], rgb: type === 'homing' ? f.col.rgb2 : f.col.rgb });
 }
@@ -1132,8 +1149,13 @@ function updateProj(dt) {
     p.trail.push({ x: p.x, y: p.y }); if (p.trail.length > (p.type === 'homing' ? 16 : p.type === 'rail' ? 10 : p.type === 'stroke' ? 14 : 7)) p.trail.shift();
     if (p.type === 'paint' && (p.t | 0) % 3 === 0) addFx({ k: 'paint', x: p.x, y: p.y, vx: -p.vx * .1, vy: rnd(-1, 1), r: rnd(3, 6), rgb: PAINT.deep, life: 30, t: 0 });
     if (p.type === 'stroke') {   // MIO's EX: a wave of paint skimming the floor, hitting several times
-      if ((p.t | 0) % 2 === 0) { fxPuddle(p.x, (p.t | 0) % 4 ? PAINT.blue : PAINT.deep, 70, 170); fxPaint(p.x, GROUND - 20, 3, 1, Math.sign(p.vx)); }
+      const sd = Math.sign(p.vx);
+      if ((p.t | 0) % 2 === 0) { fxPuddle(p.x - sd * 40, (p.t | 0) % 4 ? PAINT.blue : PAINT.deep, 80, 150); }
+      fxPaint(p.x + sd * 10, GROUND - 150 - rnd(0, 30), 3, 1.25, sd, [PAINT.blue, '220,240,255', PAINT.deep, PAINT.pink]);   // spray off the crest
+      if ((p.t | 0) % 2 === 0) addFx({ k: 'streak', x: p.x - sd * rnd(40, 200), y: GROUND - rnd(20, 150), vx: sd * 26, vy: 0, life: 10, t: 0, rgb: '200,230,255', w: 3 });
+      if ((p.t | 0) % 6 === 0) { fxRing(p.x, GROUND - 4, PAINT.blue, 10, 150, 14, 5, .22); shake(2); }
       const hb = { x0: p.x - 90, x1: p.x + 90, y0: GROUND - 240, y1: GROUND };
+      { const cb = clashBox(o); if (cb && overlap(hb, cb)) { clashFx(p.x, GROUND - 110, o, p.owner); fxPaint(p.x, GROUND - 60, 24, 1.6); G.proj.splice(i, 1); continue; } }
       if (p.hits < p.multi && p.t >= p.next && overlap(hb, hurt(o)) && o.inv <= 0 && o.state !== 'down') {
         const f = p.owner, saveX = f.x; f.x = p.x - Math.sign(p.vx) * 40; p.hits++; p.next = p.t + p.every; const fin = p.hits === p.multi;
         hitTarget(f, o, { dmg: fin ? 5 : p.dmg, kb: fin ? 12 : 2, stun: 22, power: fin ? 1.6 : .9, launch: fin ? -12 : 0, hy: 120 }); f.x = saveX;
@@ -1143,6 +1165,7 @@ function updateProj(dt) {
       continue;
     }
     let dead = p.t > p.life || p.x < -100 || p.x > STAGE_W + 100 || p.y > GROUND + 20;
+    if (!dead) { const cb = clashBox(o); if (cb && overlap({ x0: p.x - 24, x1: p.x + 24, y0: p.y - 24, y1: p.y + 24 }, cb)) { clashFx(p.x, p.y, o, p.owner); if (p.type === 'paint') fxPaint(p.x, p.y, 18, 1.3); G.proj.splice(i, 1); continue; } }
     if (!dead && overlap({ x0: p.x - 16, x1: p.x + 16, y0: p.y - 16, y1: p.y + 16 }, hurt(o)) && o.inv <= 0 && o.state !== 'down' && o.state !== 'ko') {
       const f = p.owner, saveX = f.x; f.x = p.x - Math.sign(p.vx) * 40;
       hitTarget(f, o, { dmg: p.dmg, kb: p.kb || 5, stun: 16, power: p.pw || (p.type === 'homing' ? 1.1 : .8), hy: o.y - p.y }); f.x = saveX; dead = true;
@@ -1168,13 +1191,40 @@ function drawProj() {
 function drawPaintProj(p) {
   ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   const tr = p.trail;
-  if (p.type === 'stroke') {   // a thick wave of paint rolling along the floor
-    for (let pass = 0; pass < 3; pass++) {
-      ctx.beginPath(); tr.forEach((q, i) => { const k = i / (tr.length - 1), yy = GROUND - 8 - Math.sin(k * Math.PI) * (pass ? 40 : 70) * k; i ? ctx.lineTo(q.x, yy) : ctx.moveTo(q.x, yy); });
-      ctx.strokeStyle = pass === 0 ? `rgba(${PAINT.deep},.9)` : pass === 1 ? `rgba(${PAINT.blue},.95)` : 'rgba(255,255,255,.6)'; ctx.lineWidth = pass === 0 ? 46 : pass === 1 ? 30 : 6; ctx.stroke();
+  if (p.type === 'stroke') {   // a curling tidal wave of wet paint racing along the floor
+    const d = Math.sign(p.vx) || 1, hx = p.x, t = p.t, L = 420, H = 170 * Math.min(1, t / 6);
+    const wob = k => Math.sin(t * .5 + k * 14) * 6 * k;
+    const topY = k => GROUND - (12 + (H - 12) * Math.pow(k, 1.7)) - wob(k);
+    // light behind the wave (additive) so it reads against any stage
+    ctx.globalCompositeOperation = 'lighter';
+    const gl = ctx.createRadialGradient(hx, GROUND - 90, 0, hx, GROUND - 90, 240); gl.addColorStop(0, 'rgba(150,210,255,.55)'); gl.addColorStop(1, 'rgba(60,130,255,0)');
+    ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(hx, GROUND - 90, 240, 0, TAU); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    // body: thick wave tapering back toward MIO
+    const body = new Path2D(); body.moveTo(hx - d * L, GROUND + 4);
+    for (let i = 0; i <= 24; i++) { const k = i / 24; body.lineTo(hx - d * L * (1 - k), topY(k)); }
+    // curl: the crest folds forward over the front face
+    body.bezierCurveTo(hx + d * 40, GROUND - H - 40, hx + d * 120, GROUND - H + 10, hx + d * 92, GROUND - H * .55);
+    body.bezierCurveTo(hx + d * 70, GROUND - H * .7, hx + d * 50, GROUND - H * .45, hx + d * 70, GROUND + 4);
+    body.closePath();
+    const g = ctx.createLinearGradient(0, GROUND - H - 30, 0, GROUND);
+    g.addColorStop(0, 'rgb(225,242,255)'); g.addColorStop(.18, `rgb(${PAINT.blue})`); g.addColorStop(.7, `rgb(${PAINT.deep})`); g.addColorStop(1, 'rgb(20,50,120)');
+    ctx.fillStyle = g; ctx.fill(body);
+    // pink vein and ink streaks dragged through the paint
+    ctx.lineCap = 'round';
+    for (let r = 0; r < 3; r++) {
+      ctx.beginPath();
+      for (let i = 0; i <= 16; i++) { const k = .15 + .8 * i / 16, y = topY(k) + (GROUND - topY(k)) * (.3 + r * .22) + Math.sin(t * .7 + i + r) * 3; i ? ctx.lineTo(hx - d * L * (1 - k), y) : ctx.moveTo(hx - d * L * (1 - k), y); }
+      ctx.strokeStyle = r === 1 ? `rgba(${PAINT.pink},.75)` : r === 0 ? 'rgba(255,255,255,.35)' : `rgba(${PAINT.ink},.35)`; ctx.lineWidth = r === 1 ? 5 : 3; ctx.stroke();
     }
-    ctx.fillStyle = `rgb(${PAINT.blue})`; ctx.beginPath(); ctx.ellipse(p.x, GROUND - 60, 40, 70, 0, 0, TAU); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.ellipse(p.x - Math.sign(p.vx) * 10, GROUND - 95, 10, 22, 0, 0, TAU); ctx.fill();
+    // bright rim along the crest
+    ctx.beginPath(); for (let i = 0; i <= 24; i++) { const k = i / 24; i ? ctx.lineTo(hx - d * L * (1 - k), topY(k) + 3) : ctx.moveTo(hx - d * L * (1 - k), topY(k) + 3); }
+    ctx.bezierCurveTo(hx + d * 40, GROUND - H - 37, hx + d * 116, GROUND - H + 12, hx + d * 90, GROUND - H * .55);
+    ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 4; ctx.stroke();
+    // foam lip and leading splash
+    for (let i = 0; i < 6; i++) { const a = t * .4 + i; ctx.fillStyle = `rgba(235,246,255,${.6 + .3 * Math.sin(a)})`; ctx.beginPath(); ctx.arc(hx + d * (60 + i * 8), GROUND - H * (.55 + .06 * Math.sin(a * 1.3)) - i * 4, 8 - i, 0, TAU); ctx.fill(); }
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = 'rgba(180,225,255,.5)'; ctx.beginPath(); ctx.ellipse(hx + d * 60, GROUND - 6, 120, 16, 0, 0, TAU); ctx.fill();
   } else {
     ctx.beginPath(); tr.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y));
     ctx.strokeStyle = `rgba(${PAINT.blue},.85)`; ctx.lineWidth = 18; ctx.stroke();
@@ -1205,7 +1255,7 @@ function onKO(att, tgt) {
 }
 
 /* SUZUNE's short step-dash: brief invulnerability (slips through AOI's shots), short cooldown */
-const CAN_DASH = { suzune: 1, arca: 1 };
+const CAN_DASH = { suzune: 1, arca: 1, mio: 1 };
 const TAG_CD = 150;
 function doTag(side, forced) {
   const out = G.fighters[side], inn = partnerOf(out);
@@ -1321,6 +1371,7 @@ function stepFighter(f, o, inp, dt) {
     f.vx *= Math.pow(.91, dt);
     f.trail.push(1); f.rail.push({ x: f.x - f.dashDir * 20, y: f.y - 10, t: G.frame });
     if (G.frame % 3 === 0) fxDust(f.x - f.dashDir * 40, f.y, 1, .6);
+    if (f.id === 'mio' && G.frame % 2 === 0) { fxPaint(f.x - f.dashDir * 50, GROUND - 14, 2, .7, -f.dashDir); if (G.frame % 4 === 0) fxPuddle(f.x - f.dashDir * 30, PAINT.blue, 46, 90); }
     // dash-cancel: attacks come out of the back half of the dash so it leads straight into close range
     if (canAct && f.t >= DASH.cancel) {
       f.face = Math.sign(o.x - f.x) || f.face;
@@ -1402,7 +1453,7 @@ function stepFighter(f, o, inp, dt) {
   }
   if (f.id === 'sakura') {
     f.droneA += .05 * dt;
-    if (f.state === 'win' && !f.dragon && ANIMS.sakura) f.dragon = { mode: 'win', t: 0, face: f.face, x: f.x - f.face * 900, y: f.y - 571, hits: 0, next: 0 };
+    if (f.state === 'win' && !f.dragon && ANIMS.sakura) f.dragon = { mode: 'win', t: 0, face: f.face, x: f.x - f.face * 900, y: f.y - 514, hits: 0, next: 0 };
     if (!f.dragon) { f.droneX = sakuraTip(f).x; f.droneY = sakuraTip(f).y; }
     updateDragon(f, G.fighters[1 - f.side], dt);
   }
