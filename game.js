@@ -1283,7 +1283,7 @@ async function startMatch() {
   G.wins = [0, 0];
   G.round = 1; G.matchOver = false; G.winMovie = false; G.rwMovie = false;
   makeTeams();
-  setStage({ arca: 'aoi', sakura: 'suzune' }[G.picks[0][0]] || G.picks[0][0]);
+  setStage({ arca: 'aoi' }[G.picks[0][0]] || G.picks[0][0]);
   G.teams.flat().forEach(f => { if (f.alt) prepareAlt(f.id); });
   startRound();
   G.scene = 'game'; showScreen(null); setTouch(true); bgmTrack('battle', .5);
