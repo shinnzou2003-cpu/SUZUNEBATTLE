@@ -100,7 +100,7 @@ function loadAnim(id, onTick) {
   if (ANIMS[id]) return Promise.resolve();
   if (ANIM_LOAD[id]) return ANIM_LOAD[id];
   const meta = ANIM_META[id]; if (!meta) return Promise.resolve();
-  const AN = { k: DH / meta.storeH * (CHAR_SCALE[id] || 1), a: {}, fps: {}, atlases: [], alt: [], altBusy: false, cutBox: meta.cutinBox || [564, 420] };
+  const AN = { k: DH / meta.storeH * (CHAR_SCALE[id] || 1), a: {}, fps: {}, atlases: [], alt: [], altBusy: false, cutBox: meta.cutinBox || [564, 420], dragonK: meta.dragonK || 1 };
   const idx = {}, paths = [];
   for (const k in meta.anims) {
     const an = meta.anims[k];
@@ -815,7 +815,8 @@ function updateSakuraMove(f, o, m, t, k, act, at, dt, first) {
     updateAoiUlt(f, o, at, dt, first);   // same beam logic, breathed from the dragon's jaws
   }
 }
-const DRAGON = { mouthX: 300, mouthY: -40 };   // jaw position relative to the dragon's body centre (facing right, sprite px * k)
+const DRAGON = { mx: 300, my: -24 };   // jaw position relative to the dragon's body centre in source sprite px (facing right)
+const dragonScale = f => { const AN = ANIMS[f.id]; return AN ? AN.k * AN.dragonK : .9; };
 function summonDragon(f, o, mode) {
   const back = -f.face;
   f.dragon = mode === 'swoop'
@@ -829,7 +830,9 @@ function updateDragon(f, o, dt) {
   d.t += dt;
   if (d.mode === 'swoop') {
     const L = 46, q = Math.min(1, d.t / L);
+    const px = d.x, py = d.y;
     d.x = lerp(d.x0, d.x1, q); d.y = f.y - 560 + Math.sin(q * Math.PI) * 420;   // arc dives through the opponent and climbs away
+    if (d.t > dt) d.rot = lerp(d.rot || 0, Math.atan2(d.y - py, Math.abs(d.x - px) + .01), .35);
     if (q < .85 && d.hits < 3 && d.t >= d.next && G.phase === 'fight') {
       const hb = { x0: d.x - 180, x1: d.x + 180, y0: d.y - 140, y1: d.y + 150 };
       if (overlap(hb, hurt(o))) { d.hits++; d.next = d.t + 8; hitTarget(f, o, { dmg: d.hits === 3 ? 7 : 4.5, kb: d.hits === 3 ? 14 : 4, stun: 22, power: d.hits === 3 ? 1.8 : 1.1, launch: d.hits === 3 ? -12 : 0, hy: o.y - d.y }); fxArc(d.x, d.y + 40, 150, -1.8, 1.4, f.col.rgb, d.face, 16, 30); }
@@ -837,9 +840,9 @@ function updateDragon(f, o, dt) {
     if ((d.t | 0) % 2 === 0) addFx({ k: 'streak', x: d.x - d.face * 160, y: d.y + rnd(-60, 60), vx: -d.face * 14, vy: 0, life: 14, t: 0, rgb: f.col.rgb, w: 4 });
     if (d.t > L + 10) f.dragon = null;
   } else if (d.mode === 'ult') {
-    const tx = f.x - f.face * 160, ty = f.y - 470;
+    const tx = f.x - f.face * 140, ty = f.y - 190;   // hovers low behind her so the breath runs at body height
     d.x = lerp(d.x, tx, .14); d.y = lerp(d.y, ty + Math.sin(d.t * .08) * 14, .14); d.face = f.face;
-    f.droneX = d.x + d.face * DRAGON.mouthX; f.droneY = d.y + DRAGON.mouthY;
+    f.droneX = d.x + d.face * DRAGON.mx * dragonScale(f); f.droneY = d.y + DRAGON.my * dragonScale(f);
     if (!(f.state === 'atk' && f.move && f.move.key === 'ult')) { d.mode = 'leave'; d.t = 0; }
   } else if (d.mode === 'leave' || d.mode === 'win') {
     if (d.mode === 'leave') { d.x -= d.face * 22 * dt; d.y -= 9 * dt; if (d.t > 50) f.dragon = null; }
@@ -850,7 +853,6 @@ function dragonFrame(f) {
   const AN = ANIMS[f.id], d = f.dragon; if (!AN || !d) return null;
   const a = AN.a, pick = (n, i) => { const arr = a[n] || a.dFly; if (!arr) return null; return arr[clamp(Math.floor(i), 0, arr.length - 1)]; };
   const loop = n => { const arr = a[n] || a.dFly; return arr && arr[Math.floor(G.frame * (AN.fps[n] || 12) / 60) % arr.length]; };
-  if (d.mode === 'swoop') { const q = d.t / 46; return q < .55 ? pick('dDive', q / .55 * ((a.dDive || []).length - 1)) : pick('dClaw', (q - .55) / .45 * ((a.dClaw || []).length - 1)); }
   if (d.mode === 'ult' && f.move && f.move.beam) return loop('dBreath');
   return loop('dFly');
 }
@@ -858,9 +860,9 @@ function drawDragon(f, front) {
   const d = f.dragon; if (!d || f.hidden) return;
   if ((d.mode === 'swoop') !== front) return;
   const fr = dragonFrame(f), AN = ANIMS[f.id];
-  ctx.save(); ctx.translate(d.x, d.y); ctx.scale(d.face, 1);
+  ctx.save(); ctx.translate(d.x, d.y); ctx.scale(d.face, 1); if (d.rot) ctx.rotate(d.rot);
   if (d.mode === 'leave') ctx.globalAlpha = Math.max(0, 1 - d.t / 50);
-  if (fr) { const K = AN.k * (AN.dragonK || 1), src = frameSrc(fr, f); ctx.drawImage(src, fr.sx, fr.sy, fr.w, fr.h, fr.ox * K, fr.oy * K, fr.w * K, fr.h * K); }
+  if (fr) { const K = dragonScale(f), src = frameSrc(fr, f); ctx.drawImage(src, fr.sx, fr.sy, fr.w, fr.h, fr.ox * K, fr.oy * K, fr.w * K, fr.h * K); }
   else {   // atlas not loaded: a glowing blueprint silhouette so the move still reads
     ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(${f.col.rgb},.9)`; ctx.lineWidth = 6;
     ctx.beginPath(); ctx.ellipse(0, 0, 200, 60, 0, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-60, -20); ctx.lineTo(-180, -220); ctx.lineTo(60, -40); ctx.stroke();
