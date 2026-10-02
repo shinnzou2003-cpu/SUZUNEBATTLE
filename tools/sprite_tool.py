@@ -22,19 +22,35 @@ def frames(video, t0, t1, fps):
 
 
 def key(img):
+    """Hard green-screen key: tight threshold, full despill, 1px edge choke, speck removal."""
+    from scipy import ndimage
     a = np.asarray(img).astype(np.float32)
     r, g, b = a[..., 0], a[..., 1], a[..., 2]
-    # greenness: how much green dominates the other channels
-    gd = g - np.maximum(r, b)
-    alpha = np.clip(1.0 - (gd - 25.0) / 45.0, 0, 1)          # gd<=25 opaque, gd>=70 transparent
-    # despill: clamp green to max(r,b) where it dominates
-    spill = np.maximum(r, b)
-    g2 = np.where(g > spill, spill + (g - spill) * 0.15, g)
+    mx = np.maximum(r, b)
+    gd = g - mx                                   # how much green dominates
+    alpha = np.clip(1.0 - (gd - 6.0) / 20.0, 0, 1)   # gd<=6 opaque, gd>=26 gone
+    # hue-based catch for darker / desaturated green screen pixels
+    sat = (np.maximum(g, mx) - np.minimum(np.minimum(r, g), b)) / (np.maximum(g, mx) + 1e-3)
+    greenish = (g > r * 1.12) & (g > b * 1.12) & (sat > .22)
+    alpha = np.where(greenish, np.minimum(alpha, np.clip(1.0 - (gd + 4) / 18.0, 0, 1)), alpha)
+    # choke the matte 1px (removes the green halo) and drop isolated specks
+    solid = alpha > .5
+    solid = ndimage.binary_opening(solid, iterations=1)
+    lab, n = ndimage.label(solid)
+    if n > 1:
+        sizes = ndimage.sum(solid, lab, range(1, n + 1))
+        keep = np.isin(lab, 1 + np.where(sizes >= 60)[0])
+        solid = keep
+    core = ndimage.binary_erosion(solid, iterations=1)
+    alpha = np.where(core, 1.0, np.where(solid, np.minimum(alpha, .55), 0.0))
+    alpha = ndimage.gaussian_filter(alpha, .6) * (ndimage.binary_dilation(solid, iterations=1))
+    # full despill: green never exceeds max(r, b); edge pixels pulled further toward neutral
+    g2 = np.minimum(g, mx)
+    edge = (alpha < .95) & (alpha > 0)
+    g2 = np.where(edge, np.minimum(g2, (r + b) / 2 + 4), g2)
     out = np.dstack([r, g2, b, alpha * 255]).clip(0, 255).astype(np.uint8)
-    im = Image.fromarray(out, 'RGBA')
-    # drop tiny specks: zero alpha below 0.1
-    arr = np.asarray(im).copy(); arr[..., 3][arr[..., 3] < 26] = 0
-    return Image.fromarray(arr, 'RGBA')
+    out[..., 3][out[..., 3] < 20] = 0
+    return Image.fromarray(out, 'RGBA')
 
 
 def bbox(im):
