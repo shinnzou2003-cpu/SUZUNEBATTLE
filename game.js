@@ -352,6 +352,30 @@ function playS(name, vol = 1, rate = 1, delay = 0) {
   s.playbackRate.value = rate * (.95 + Math.random() * .1); g.gain.value = vol;
   s.connect(g); g.connect(SFXB.gain); s.start(ac.currentTime + delay); return true;
 }
+/* ---------- cutscene soundtracks (media/sfx/movie_<ex|win>_<id>.mp3), loaded after boot ---------- */
+const MOVIE_AUDIO = { buf: {}, src: null, gain: null, bgmVol: null };
+async function loadMovieAudio() {
+  if (!SND.ac) return;
+  const ids = Object.keys(CHARS).flatMap(id => ['ex_' + id, 'win_' + id]);
+  await Promise.all(ids.map(async n => {
+    try { const r = await fetch('media/sfx/movie_' + n + '.mp3'); if (!r.ok) return; const ab = await r.arrayBuffer(); MOVIE_AUDIO.buf[n] = await new Promise((res, rej) => SND.ac.decodeAudioData(ab, res, rej)); } catch (e) { }
+  }));
+}
+function movieAudio(name) {
+  const ac = SND.ac, b = MOVIE_AUDIO.buf[name]; stopMovieAudio(); if (!ac || !b || !SND.on) return !!b;
+  if (!MOVIE_AUDIO.gain) { MOVIE_AUDIO.gain = ac.createGain(); MOVIE_AUDIO.gain.connect(duckNode(ac)); }
+  MOVIE_AUDIO.gain.gain.value = .95;
+  const s = ac.createBufferSource(); s.buffer = b; s.connect(MOVIE_AUDIO.gain); s.start(ac.currentTime + .02); MOVIE_AUDIO.src = s;
+  if (MOVIE_AUDIO.bgmVol === null) MOVIE_AUDIO.bgmVol = BGM.vol;
+  bgmVolume(.08, .25);   // the battle song steps back while the cutscene score plays
+  return true;
+}
+function stopMovieAudio(fade = .25) {
+  const s = MOVIE_AUDIO.src; MOVIE_AUDIO.src = null;
+  if (s && SND.ac) { const t = SND.ac.currentTime, g = MOVIE_AUDIO.gain.gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + fade); try { s.stop(t + fade + .02); } catch (e) { } }
+  if (MOVIE_AUDIO.bgmVol !== null) { const v = MOVIE_AUDIO.bgmVol; MOVIE_AUDIO.bgmVol = null; return v; }
+  return null;
+}
 const _synth = {
   swing() { noise(.14, 2400, 700, 1.2, .25); },
   heavySwing() { noise(.26, 3000, 400, .9, .35); },
@@ -2005,7 +2029,7 @@ function exMovieStart(f) {
   box.querySelector('.ex-name b').textContent = f.ch.ultName;
   box.classList.add('on');
   try { v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(() => exMovieEnd()); } catch (e) { exMovieEnd(); }
-  if (f.id === 'arca') playS('arca_nova', 1);   // circles snap open -> silent beat -> beam blast at 1.75s, synced to the clip
+  if (!movieAudio('ex_' + f.id) && f.id === 'arca') playS('arca_nova', 1);   // scored cutscene audio; ARCA keeps its nova sting as a fallback
   clearTimeout(EXM.timer); EXM.timer = setTimeout(exMovieEnd, (v.duration || 3.2) * 1000 + 600);
   return true;
 }
@@ -2014,6 +2038,7 @@ function exMovieEnd() {
   clearTimeout(EXM.timer);
   const box = $('#exMovie'); box.classList.remove('on');
   box.querySelectorAll('video').forEach(v => { try { v.pause(); } catch (e) { } });
+  { const v = stopMovieAudio(); if (v !== null) bgmVolume(v, .4); }
   G.exPause = false; acc = 0; flash(.9, EXM.f ? EXM.f.col.rgb : '255,255,255'); shake(12); sfx.boom(); quake(16, .6, 80);
   EXM.f = null;
 }
@@ -2033,7 +2058,7 @@ function winMovieStart(w) {
   box.querySelector('.wm-score').textContent = `${a.wins} — ${b.wins}`;
   box.querySelector('.wm-grade').textContent = w.hp >= 99 ? 'PERFECT' : w.hp >= 60 ? 'GREAT' : w.hp >= 25 ? 'CLEAR' : 'CLUTCH';
   box.classList.remove('plate', 'tap'); void box.offsetWidth; box.classList.add('on');
-  setTouch(false); bgmVolume(.7); sfx.boom();
+  setTouch(false); bgmVolume(.7); sfx.boom(); movieAudio('win_' + w.id);
   try { v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(() => { }); } catch (e) { }
   const T = (ms, fn) => WM.timers.push(setTimeout(fn, ms));
   T(2300, () => { voice(w, 'winMovie');
@@ -2051,7 +2076,7 @@ function winMovieEnd() {
   const w = WM.w; WM.w = null; WM.timers.forEach(clearTimeout); WM.timers = []; clearInterval(WM.typing);
   const box = $('#winMovie'); box.classList.remove('on', 'plate', 'tap');
   box.querySelectorAll('video').forEach(x => { try { x.pause(); } catch (e) { } });
-  G.winMovie = false; bgmVolume(.6); endMatch(w);
+  stopMovieAudio(.5); G.winMovie = false; bgmVolume(.6); endMatch(w);
 }
 /* round-win cinematic (AOI): keyed bust-up clip over the stage, then on to the next round */
 const RW = { w: null, timer: null };
@@ -2212,7 +2237,7 @@ async function boot() {
     const cs = $('.cards'), upd = () => cs.classList.toggle('more', cs.scrollWidth - cs.clientWidth - cs.scrollLeft > 24);
     cs.addEventListener('scroll', upd, { passive: true }); addEventListener('resize', upd); new ResizeObserver(upd).observe(cs); upd();
   }
-  setupUI();
+  setupUI(); loadMovieAudio();
   try { await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]); } catch (e) { }
   $('#loading').remove();
   runOpening();
