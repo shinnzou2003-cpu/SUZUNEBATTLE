@@ -53,6 +53,20 @@ def key(img):
     return Image.fromarray(out, 'RGBA')
 
 
+def edge_fade(im, px):
+    """Ramp alpha to 0 over `px` pixels at every image border the matte touches."""
+    a = np.asarray(im).astype(np.float32)
+    h, w = a.shape[:2]
+    ramp = np.ones((h, w), np.float32)
+    al = a[..., 3]
+    x = np.arange(w, dtype=np.float32); y = np.arange(h, dtype=np.float32)
+    if al[:, :2].max() > 40: ramp *= np.clip(x / px, 0, 1)[None, :]
+    if al[:, -2:].max() > 40: ramp *= np.clip((w - 1 - x) / px, 0, 1)[None, :]
+    if al[:2, :].max() > 40: ramp *= np.clip(y / px, 0, 1)[:, None]
+    a[..., 3] *= ramp
+    return Image.fromarray(a.clip(0, 255).astype(np.uint8), 'RGBA')
+
+
 def bbox(im):
     al = np.asarray(im)[..., 3]
     ys, xs = np.where(al > 40)
@@ -94,6 +108,8 @@ def pack(cfg):
             fl = fl[::-1]
         if a.get('pingpong') and len(fl) > 2:
             fl = fl + fl[-2:0:-1]
+        if a.get('edgeFade'):   # soften parts cut off by the frame edge (e.g. a big creature's tail leaving the shot)
+            fl = [edge_fade(im, a['edgeFade']) for im in fl]
         keyed[name] = fl
     # anchor: feet line + body centre measured on the first idle frame (camera is locked)
     ref = keyed.get('idle', next(iter(keyed.values())))[0]

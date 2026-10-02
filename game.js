@@ -87,7 +87,7 @@ async function buildAssets() {
 const ANIMS = {};
 const frameCount = (id, n) => ANIMS[id] && ANIMS[id].a[n] ? ANIMS[id].a[n].length : 0;
 // visual size balance between characters (SUZUNE's source video was framed larger)
-const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.33 };   // AOI stands taller; SUZUNE fights from a low crouch
+const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.33, mio: 1.25 };   // AOI stands taller; SUZUNE fights from a low crouch
 const LOAD = { done: 0, total: 0 };
 function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = document.getElementById('loadPct'); if (el) el.textContent = Math.round(LOAD.done / Math.max(1, LOAD.total) * 100) + '%'; return v; }); }
 // Atlases are NOT decoded at boot any more: only the fighters in the current match are kept in memory,
@@ -934,17 +934,17 @@ function fxPaint(x, y, n = 12, pw = 1, dir = 0, cols) {
   cols = cols || [PAINT.blue, PAINT.blue, PAINT.deep, PAINT.pink];
   for (let i = 0; i < n; i++) {
     const a = dir ? (dir > 0 ? 0 : Math.PI) + rnd(-1.0, .7) * (dir > 0 ? 1 : -1) : rnd(0, TAU), sp = rnd(4, 16) * pw;
-    addFx({ k: 'paint', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - rnd(2, 7) * pw, r: rnd(3, 9) * Math.min(1.6, pw), rgb: cols[i % cols.length], life: rnd(40, 70), t: 0 });
+    addFx({ k: 'paint', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - rnd(2, 7) * pw, r: rnd(2, 5.5) * Math.min(1.5, pw), rgb: cols[i % cols.length], life: rnd(40, 70), t: 0 });
   }
 }
-function fxPuddle(x, rgb, r = 60, life = 200) { G.paintFloor = G.paintFloor || []; G.paintFloor.push({ x, rgb, r, life, t: 0, sx: rnd(.8, 1.2) }); if (G.paintFloor.length > 40) G.paintFloor.shift(); }
+function fxPuddle(x, rgb, r = 60, life = 200) { G.paintFloor = G.paintFloor || []; G.paintFloor.push({ x, rgb, r: r * .6, life, t: 0, sx: rnd(.8, 1.2) }); if (G.paintFloor.length > 40) G.paintFloor.shift(); }
 function fxPaintArc(f, x, y, r, a0, a1, w, life = 18) { fxArc(x, y, r, a0, a1, PAINT.blue, f.face, life, w); fxArc(x, y + 6, r * .92, a0 + .15, a1 - .1, PAINT.pink, f.face, life - 4, w * .35); }
 function drawPaintFloor() {
   const arr = G.paintFloor; if (!arr || !arr.length) return;
   for (let i = arr.length - 1; i >= 0; i--) { const p = arr[i]; p.t += G.slow; if (p.t >= p.life) arr.splice(i, 1); }
   ctx.save();
   for (const p of arr) {
-    const grow = Math.min(1, p.t / 10), a = Math.min(1, (p.life - p.t) / 50) * .85, r = p.r * (.5 + .5 * grow);
+    const grow = Math.min(1, p.t / 10), a = Math.min(1, (p.life - p.t) / 50) * .55, r = p.r * (.5 + .5 * grow);
     ctx.fillStyle = `rgba(${p.rgb},${a})`; ctx.beginPath(); ctx.ellipse(p.x, GROUND + 3, r * p.sx, r * .16, 0, 0, TAU); ctx.fill();
     ctx.fillStyle = `rgba(255,255,255,${a * .35})`; ctx.beginPath(); ctx.ellipse(p.x - r * .25, GROUND + 1, r * .35, r * .04, 0, 0, TAU); ctx.fill();
   }
@@ -1057,7 +1057,7 @@ function drawDog(f, front) {
   if (d.mode === 'melt') al = Math.max(0, 1 - d.t / 30);
   if (d.mode === 'win') al = d.a;
   ctx.globalAlpha = al;
-  if (fr) { const K = dogScale(f), src = frameSrc(fr, f); if (d.mode === 'melt') ctx.scale(1, 1 - d.t / 60); ctx.drawImage(src, fr.sx, fr.sy, fr.w, fr.h, fr.ox * K, fr.oy * K, fr.w * K, fr.h * K); }
+  if (fr) { const K = dogScale(f), src = frameSrc(fr, f), AN = ANIMS[f.id], ref = AN.a.dRun && AN.a.dRun[0], foot = ref ? (ref.oy + ref.h) * K : 0; if (d.mode === 'melt') ctx.scale(1, 1 - d.t / 60); ctx.drawImage(src, fr.sx, fr.sy, fr.w, fr.h, fr.ox * K, fr.oy * K - foot, fr.w * K, fr.h * K); }
   else {   // atlas not loaded: a paint silhouette so the move still reads
     ctx.fillStyle = `rgba(${PAINT.blue},.9)`; ctx.beginPath(); ctx.ellipse(0, -170, 260, 110, 0, 0, TAU); ctx.fill();
     ctx.beginPath(); ctx.ellipse(230, -260, 90, 70, 0, 0, TAU); ctx.fill();
