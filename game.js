@@ -2184,6 +2184,10 @@ async function boot() {
   await Promise.all([buildAssets(), buildAnims(), loadBGM().then(() => Promise.all([loadVoices(), loadSfx()]))]);
   document.querySelectorAll('[data-src]').forEach(i => i.src = window.ASSETS[i.dataset.src]);
   document.querySelectorAll('.card img').forEach(i => { const id = i.closest('.card').dataset.char; i.src = window.ASSETS[{ suzune: 'suci', aoi: 'aoci', arca: 'arcard', sakura: 'sacard' }[id]]; });
+  {   // more cards than fit: fade the right edge so it reads as a swipeable row
+    const cs = $('.cards'), upd = () => cs.classList.toggle('more', cs.scrollWidth - cs.clientWidth - cs.scrollLeft > 24);
+    cs.addEventListener('scroll', upd, { passive: true }); addEventListener('resize', upd); new ResizeObserver(upd).observe(cs); upd();
+  }
   setupUI();
   try { await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]); } catch (e) { }
   $('#loading').remove();
