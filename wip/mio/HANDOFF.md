@@ -1,0 +1,38 @@
+# MIO-07 追加 — 引き継ぎメモ (2026-10-02)
+
+## キャラ設定（SZOU指定）
+- 名前: MIO-07（ミオ・ゼロセブン）／Android Painter・World Creator／IF TOKYO 2099／口癖「一緒に描こっ！」
+- 参照: refs/mio_sheet.jpg（三面図・ヘッドユニット猫耳ヘッドホン「07」・バックパックのペイントカプセル青/ピンク/金・浮遊ドローン）
+- カラー: WHITE #FFFFFF / GOLD #DAAF37 / DARK #262E34 / SKY BLUE #9ACFFF / PINK #FF688A
+- 戦い方: **青い巨大な筆（メインウェポン「希望筆」約175cm）と絵具**で戦う近〜中距離
+  - 通常: 筆の薙ぎ払い3段（青/ピンクの絵具の弧が残る）
+  - b: 絵具弾を飛ばす（着弾で飛沫）
+  - EX: 地面に大きく塗った絵具の帯を走らせる等
+- **超必殺技(ULT): ブルーの大型犬を召喚して攻撃**（絵具から描き出された青い大型犬が突進・噛みつき）
+  - 犬のイメージ参考動画（SZOU指定）: https://youtu.be/s9x2GMWa_TA ← 犬の見た目・動きはこの動画を確認して合わせる
+  - 犬のスクショ参照: refs/mio_dog_ref1〜3.jpg（動画からの切り出し）
+  - 犬の特徴: 濡れた**絵具でできた巨大な狼型の犬**。スカイブルー×黒の筆ムラ模様、逆立つトゲ状のたてがみ、琥珀色の目、
+    牙をむいた口から黒い絵具が垂れる、踏んだ所に青い絵具の水たまりと飛沫が残る。キャラより圧倒的に大きい（SAKURAのドラゴン級）。
+    動き: 低く構えて唸る→全力疾走（四肢が大きく伸びる）→飛びかかって噛みつく。
+    グリーンバック生成では床の絵具だまり・飛沫は入れず犬単体で（足元の青い絵具・飛沫はコードのfxで描く）
+  → SAKURAのドラゴン(dFly/dBreath + updateDragon)と同じ作りで、犬を別スプライトに
+- 身長: 他キャラと同程度（SAKURAは最終 CHAR_SCALE 1.33。立ち姿の見た目の高さをSAKURA/SUZUNEに合わせる）
+
+## 素材ルール（SZOUの方針）
+- 動画は Topview MCP、**480p・16:9**、ファイル数最小（**30秒動画にまとめる**: ①MIO全モーション ②犬 ③演出[選択イントロ/決定/ULTムービー/勝利ムービー]）
+- セリフは ElevenLabs（eleven_v4・1パターン・**18本を1本に繋げて生成**→分割）。「SZOU」は「エスゾウ」と書く
+  割当: a0[01,03] a1[02] a2[04] b[05] jump[06] guard[07] hit[08] hitBig[09] getup[10] ko[11] ex[12] ult[13] select[14] round[15] winMovie[16] win[17] lose[18] → media/voice/mi_01..18.mp3
+- クラウドセッションはTopview/ElevenLabsのファイル転送が遮断されるので、生成と取り込みはPC(ローカル)で
+
+## SAKURAで分かった注意点
+- グリーンバック動画に**発光・オーラ・ブレスなどの光エフェクトを入れない**こと。光が緑と混ざり、キーイング後にカーキ/オリーブの不透明なもやが残る（SAKURAのdBreath/ultFireで発生→後から修正した）。光はゲーム側のコード演出で足す。
+  プロンプトに「no glow, no light effects, no paint splashes floating in the air, no particles, solid character only」と明記。絵具の飛沫もコード側(fx)で描く。
+- キャラは固定カメラ・真横〜3/4・足が常にフレーム内・同じスケールで。
+- 交代ジャンプ(tagin)・倒れたまま残る(benched)・2人分HPバーは実装済み。新キャラは pickFrame の jump フレームがあれば自動で対応。
+- 選択画面カード・ex/winムービー・ステージ動画・ラウンド勝利カットイン・タイトル顔パネルもSAKURAと同様に追加（index.html / game.js の sakura 箇所が雛形）。
+
+## 完了 (2026-10-02)
+- 素材: Topviewキャンバス「CHRONO FIGHT MIO-07」。①MIOモーション（立ち絵 keyart_stance.jpg を参照に低い構えで撮り直し）②犬 ③演出（選択イントロ/決定/ULT/勝利/ステージ）
+- スプライト: tools/mio_sprites.json（moves.mp4=①、dog.mp4=②）→ sprite_tool.py pack → tools/mio_postfix.py（カットイン座標をSAKURA方式に変換）
+- 声: ElevenLabs eleven_v4・声Nao。voice_take.mp3 を18分割 → media/voice/mi_01..18.mp3
+- 参照画像1枚だけだとTopviewが「先頭フレーム指定」扱いになり16:9でエラー → 参照は2枚渡す
