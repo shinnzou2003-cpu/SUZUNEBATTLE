@@ -54,20 +54,23 @@ const CHARS = {
   suzune: { id: 'suzune', name: 'SUZUNE', role: '高速近接・連撃', c1: '#ffc24a', c2: '#ff3350', rgb: '255,190,90', rgb2: '255,70,90', speed: 6.4, jump: -26.2, anchor: .6, exName: '桜閃レール', ultName: '桜花彗星' },
   aoi: { id: 'aoi', name: 'AOI', role: 'ドローン・遠距離', c1: '#5cc8ff', c2: '#a970ff', rgb: '110,195,255', rgb2: '170,110,255', speed: 5.2, jump: -24.7, anchor: .58, exName: 'ホーミング・ビット', ultName: 'オービタル・レイ' },
   // ARCA-07 rides the four-legged MAGITEK ARSENAL: big, heavy, long reach, magic artillery
-  arca: { id: 'arca', name: 'ARCA-07', role: '魔道兵器・重砲撃', c1: '#2ee6c8', c2: '#e0405a', rgb: '46,230,200', rgb2: '235,80,100', speed: 4.3, jump: -15.5, anchor: .55, h: 625, hurtW: 156, hurtH: 550, exName: 'ルーン・ミサイル', ultName: 'アーセナル・ノヴァ' }
+  arca: { id: 'arca', name: 'ARCA-07', role: '魔道兵器・重砲撃', c1: '#2ee6c8', c2: '#e0405a', rgb: '46,230,200', rgb2: '235,80,100', speed: 4.3, jump: -15.5, anchor: .55, h: 625, hurtW: 156, hurtH: 550, exName: 'ルーン・ミサイル', ultName: 'アーセナル・ノヴァ' },
+  // SAKURA: sky-city aircraft engineer. Draws blueprints with her compass and summons the IDEA DRAGON (AOI-style summoner)
+  sakura: { id: 'sakura', name: 'SAKURA', role: '設計図・竜召喚', c1: '#ff9ec4', c2: '#e8c25a', rgb: '255,158,200', rgb2: '232,194,90', speed: 5.0, jump: -24.5, anchor: .55, exName: 'アイディア・ドラゴン', ultName: 'ドラフト・ノヴァ' }
 };
 const ALT = {
   suzune: { c1: '#7fd8ff', c2: '#4f7bff', rgb: '130,215,255', rgb2: '90,120,255', test: (h, s, l) => (h > 33 && h < 64 && s > .3) || ((h < 12 || h > 340) && s > .55), shift: 175 },
   aoi: { c1: '#ff7aa8', c2: '#ffb347', rgb: '255,120,170', rgb2: '255,180,80', test: (h, s, l) => h > 175 && h < 300 && s > .25, shift: 150 },
-  arca: { c1: '#ffb347', c2: '#5a8cff', rgb: '255,180,70', rgb2: '90,140,255', test: (h, s, l) => (h < 16 || h > 335) && s > .35 && l > .12, shift: 215 }
+  arca: { c1: '#ffb347', c2: '#5a8cff', rgb: '255,180,70', rgb2: '90,140,255', test: (h, s, l) => (h < 16 || h > 335) && s > .35 && l > .12, shift: 215 },
+  sakura: { c1: '#7fe0d0', c2: '#9aa8ff', rgb: '120,225,210', rgb2: '150,170,255', test: (h, s, l) => (h > 300 || h < 20) && s > .2, shift: 170 }
 };
 const GFX = {};
 async function buildAssets() {
   const A = window.ASSETS;
-  const [su, ao, drone, suci, aoci, ar, arci, arp] = await Promise.all([A.su, A.ao, A.drone, A.suci, A.aoci, A.ar, A.arci, A.arp].map(p => track(loadImg(p))));
-  const base = { suzune: { img: su, ci: suci }, aoi: { img: ao, ci: aoci }, arca: { img: ar, ci: arci } };
+  const [su, ao, drone, suci, aoci, ar, arci, arp, sa, saci] = await Promise.all([A.su, A.ao, A.drone, A.suci, A.aoci, A.ar, A.arci, A.arp, A.sa, A.saci].map(p => track(loadImg(p))));
+  const base = { suzune: { img: su, ci: suci }, aoi: { img: ao, ci: aoci }, arca: { img: ar, ci: arci }, sakura: { img: sa, ci: saci } };
   GFX.arcaPilot = arp;
-  for (const id of ['suzune', 'aoi', 'arca']) {
+  for (const id of ['suzune', 'aoi', 'arca', 'sakura']) {
     const ch = CHARS[id], al = ALT[id];
     const make = (img, ci, c1, rgb) => ({ img, ci, white: silhouette(img, '#fff'), tint: silhouette(img, c1), glow: glowOf(img, `rgb(${rgb})`) });
     GFX[id] = [make(base[id].img, base[id].ci, ch.c1, ch.rgb), null];
@@ -81,7 +84,7 @@ async function buildAssets() {
 const ANIMS = {};
 const frameCount = (id, n) => ANIMS[id] && ANIMS[id].a[n] ? ANIMS[id].a[n].length : 0;
 // visual size balance between characters (SUZUNE's source video was framed larger)
-const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318 };   // AOI stands taller; SUZUNE fights from a low crouch
+const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.02 };   // AOI stands taller; SUZUNE fights from a low crouch
 const LOAD = { done: 0, total: 0 };
 function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = document.getElementById('loadPct'); if (el) el.textContent = Math.round(LOAD.done / Math.max(1, LOAD.total) * 100) + '%'; return v; }); }
 // Atlases are NOT decoded at boot any more: only the fighters in the current match are kept in memory,
@@ -186,6 +189,12 @@ function pickFrame(f) {
         if (m.key === 'ex') return prog('ex', p);
         if (m.key === 'ult') { const u = t - m.st; if (u < 45) return loop('ultCharge', AN.fps.ultCharge || 8); return prog('ultFire', (u - 45) / 14); }
       }
+      if (f.id === 'sakura') {
+        if (m.key === 'a') { const n = ['a1', 'a2', 'a3'][Math.min(2, f.chain)]; return prog(a[n] ? n : 'a', p); }
+        if (m.key === 'b') return prog('b', p);
+        if (m.key === 'ex') return prog('ex', Math.min(1, t / (m.st + 20)));
+        if (m.key === 'ult') { const u = t - m.st; if (u < 45) return loop('ultCharge', AN.fps.ultCharge || 10); return prog('ultFire', Math.min(1, (u - 45) / 20)); }
+      }
       if (f.id === 'aoi') {
         if (m.key === 'a') return prog('a', p);
         if (m.key === 'b') return prog('b', p);
@@ -282,7 +291,9 @@ const VOICE_MAP = {
     getup: ['ar_10'], ko: ['ar_11'], ex: ['ar_12'], ult: ['ar_13'], select: ['ar_14'], round: ['ar_15'], winMovie: ['ar_16'], win: ['ar_17'], lose: ['ar_18'] },
   sys: { r1: ['sys_01'], r2: ['sys_02'], final: ['sys_03'], fight: ['sys_04'], ko: ['sys_05'], timeup: ['sys_06'] },
   aoi: { a0: ['ao_01', 'ao_03'], a1: ['ao_02'], a2: ['ao_04'], b: ['ao_05'], jump: ['ao_06'], guard: ['ao_07'], hit: ['ao_08'], hitBig: ['ao_09'],
-    getup: ['ao_10'], ko: ['ao_11'], ex: ['ao_12'], ult: ['ao_13'], select: ['ao_14'], round: ['ao_15'], winMovie: ['ao_16'], win: ['ao_17'], lose: ['ao_18'] }
+    getup: ['ao_10'], ko: ['ao_11'], ex: ['ao_12'], ult: ['ao_13'], select: ['ao_14'], round: ['ao_15'], winMovie: ['ao_16'], win: ['ao_17'], lose: ['ao_18'] },
+  sakura: { a0: ['sa_01', 'sa_03'], a1: ['sa_02'], a2: ['sa_04'], b: ['sa_05'], jump: ['sa_06'], guard: ['sa_07'], hit: ['sa_08'], hitBig: ['sa_09'],
+    getup: ['sa_10'], ko: ['sa_11'], ex: ['sa_12'], ult: ['sa_13'], select: ['sa_14'], round: ['sa_15'], winMovie: ['sa_16'], win: ['sa_17'], lose: ['sa_18'] }
 };
 const VOICE = { buf: {}, gain: null, last: {} };
 // BGM ducking bus: music dips while a character is speaking so lines cut through
@@ -422,7 +433,7 @@ function fxDust(x, y, n = 8, pw = 1) { for (let i = 0; i < n; i++) addFx({ k: 'd
 function fxText(x, y, txt, rgb, size = 40, life = 50) { addFx({ k: 'text', x, y, txt, rgb, size, life, t: 0 }); }
 function fxHex(x, y, rgb, face) { addFx({ k: 'hex', x, y, rgb, face, life: 18, t: 0 }); }
 /* SF-mecha energy colours: SUZUNE gold / AOI blue (mirror-match colour swaps keep their own palette) */
-const AURA = { suzune: { rgb: '255,196,64', hot: '255,244,200' }, aoi: { rgb: '64,168,255', hot: '205,240,255' }, arca: { rgb: '46,230,200', hot: '215,255,245' } };
+const AURA = { suzune: { rgb: '255,196,64', hot: '255,244,200' }, aoi: { rgb: '64,168,255', hot: '205,240,255' }, arca: { rgb: '46,230,200', hot: '215,255,245' }, sakura: { rgb: '255,150,200', hot: '255,236,246' } };
 const auraRgb = f => f.alt ? f.col.rgb : AURA[f.id].rgb;
 const auraHot = f => f.alt ? '255,255,255' : AURA[f.id].hot;
 function fxBolt(x0, y0, x1, y1, rgb, life = 9) {
@@ -613,6 +624,12 @@ const MOVES = {
     ex: { st: 14, act: 24, rec: 20, cost: 50 },
     ult: { st: 0, act: 150, rec: 30, cost: 100 }
   },
+  sakura: {
+    a: { st: 5, act: 4, rec: 12, cost: 0 },
+    b: { st: 9, act: 4, rec: 20, cost: 0 },
+    ex: { st: 16, act: 44, rec: 16, cost: 50 },
+    ult: { st: 0, act: 150, rec: 30, cost: 100 }
+  },
   aoi: {
     a: { st: 6, act: 2, rec: 14, cost: 0 },
     b: { st: 7, act: 7, rec: 17, cost: 0 },
@@ -716,6 +733,7 @@ function updateMove(f, o, dt) {
       if (t >= m.st + m.act) f.vx *= Math.pow(.8, dt);
     } else if (k === 'ult') updateSuzuneUlt(f, o, at, dt, first);
   } else if (f.id === 'arca') updateArcaMove(f, o, m, t, k, act, at, dt, first);
+  else if (f.id === 'sakura') updateSakuraMove(f, o, m, t, k, act, at, dt, first);
   else {
     const dx = f.droneX, dy = f.droneY;
     if (k === 'a') {
@@ -765,6 +783,89 @@ function updateArcaMove(f, o, m, t, k, act, at, dt, first) {
     }
     if (t >= m.st + m.act) f.charge = 0;
   } else if (k === 'ult') updateAoiUlt(f, o, at, dt, first);   // same beam logic, fired from the ARSENAL's railgun
+}
+// SAKURA: drafting-compass strikes, a thrown blueprint disc, and the IDEA DRAGON she draws into being
+function sakuraTip(f) { return { x: f.x + f.face * 120, y: f.y - 205 }; }
+function updateSakuraMove(f, o, m, t, k, act, at, dt, first) {
+  const rgb = f.col.rgb, gold = f.col.rgb2, tip = sakuraTip(f);
+  if (k === 'a') {
+    const c = Math.min(2, f.chain);
+    if (t < m.st) f.vx *= .75;
+    if (first(0)) {
+      f.vx = f.face * [4, 6, 9][c];
+      if (c === 1) fxArc(f.x + f.face * 80, f.y - 190, 95, -1.6, 1.1, rgb, f.face, 14, 26);
+      else { fxRing(tip.x, tip.y, gold, 4, 46, 10, 4); fxCore(tip.x, tip.y, rgb, 40, 8); }
+      if (c === 2) { spawnBolt(f, tip.x, tip.y, f.face * 24, 0, 5, 'bolt'); sfx.laser(); fxRing(tip.x + f.face * 30, tip.y, rgb, 6, 70, 12, 5, 2.4); }
+      else sfx.swing();
+    }
+    if (act) tryHit(f, o, box(f, 20, c === 1 ? 200 : 175, -250, -100), { dmg: [4, 4.5, 5][c], kb: [3, 4, 9][c], stun: [15, 16, 20][c], power: [.7, .8, 1.2][c], launch: c === 2 ? -8 : 0 });
+  } else if (k === 'b') {
+    if (t < m.st) { f.vx *= .7; f.charge = t / m.st; if ((t | 0) % 2 === 0) fxSpark(tip.x, tip.y, gold, 2, .4); }
+    if (first(0)) {   // blueprint compass-rose disc flung forward
+      G.proj.push({ owner: f, x: tip.x, y: tip.y, vx: f.face * 17, vy: 0, dmg: 8, type: 'rail', pw: 1.3, kb: 11, life: 90, t: 0, trail: [], rgb: gold });
+      f.vx = -f.face * 4; f.charge = 0; shake(4);
+      for (let i = 0; i < 3; i++) fxRing(tip.x, tip.y, i ? rgb : '255,255,255', 6, 60 + i * 26, 14, 5, 2.4);
+      sfx.heavySwing();
+    }
+  } else if (k === 'ex') {
+    if (t < m.st) { f.vx = 0; f.charge = t / m.st; if ((t | 0) % 2 === 0) fxSpark(f.x, f.y - 360, gold, 3, .5); if ((t | 0) % 6 === 0) fxRing(f.x - f.face * 40, f.y - 420, rgb, 20, 140, 14, 3, .3); }
+    if (first(0)) { summonDragon(f, o, 'swoop'); f.charge = 0; }
+  } else if (k === 'ult') {
+    if (first(0)) summonDragon(f, o, 'ult');
+    updateAoiUlt(f, o, at, dt, first);   // same beam logic, breathed from the dragon's jaws
+  }
+}
+const DRAGON = { mouthX: 300, mouthY: -40 };   // jaw position relative to the dragon's body centre (facing right, sprite px * k)
+function summonDragon(f, o, mode) {
+  const back = -f.face;
+  f.dragon = mode === 'swoop'
+    ? { mode, t: 0, face: f.face, x: f.x + back * 620, y: f.y - 560, x0: f.x + back * 620, x1: o.x + f.face * 900, hits: 0, next: 0 }
+    : { mode, t: 0, face: f.face, x: f.x + back * 900, y: f.y - 640, hits: 0, next: 0 };
+  fxRing(f.x, f.y - 420, f.col.rgb2, 30, 320, 24, 8, .3); fxCore(f.x, f.y - 420, f.col.rgb, 160, 16); flash(.35, f.col.rgb);
+  playS('special_start', .5, 1.3); shake(6);
+}
+function updateDragon(f, o, dt) {
+  const d = f.dragon; if (!d) return;
+  d.t += dt;
+  if (d.mode === 'swoop') {
+    const L = 46, q = Math.min(1, d.t / L);
+    d.x = lerp(d.x0, d.x1, q); d.y = f.y - 560 + Math.sin(q * Math.PI) * 420;   // arc dives through the opponent and climbs away
+    if (q < .85 && d.hits < 3 && d.t >= d.next && G.phase === 'fight') {
+      const hb = { x0: d.x - 180, x1: d.x + 180, y0: d.y - 140, y1: d.y + 150 };
+      if (overlap(hb, hurt(o))) { d.hits++; d.next = d.t + 8; hitTarget(f, o, { dmg: d.hits === 3 ? 7 : 4.5, kb: d.hits === 3 ? 14 : 4, stun: 22, power: d.hits === 3 ? 1.8 : 1.1, launch: d.hits === 3 ? -12 : 0, hy: o.y - d.y }); fxArc(d.x, d.y + 40, 150, -1.8, 1.4, f.col.rgb, d.face, 16, 30); }
+    }
+    if ((d.t | 0) % 2 === 0) addFx({ k: 'streak', x: d.x - d.face * 160, y: d.y + rnd(-60, 60), vx: -d.face * 14, vy: 0, life: 14, t: 0, rgb: f.col.rgb, w: 4 });
+    if (d.t > L + 10) f.dragon = null;
+  } else if (d.mode === 'ult') {
+    const tx = f.x - f.face * 160, ty = f.y - 470;
+    d.x = lerp(d.x, tx, .14); d.y = lerp(d.y, ty + Math.sin(d.t * .08) * 14, .14); d.face = f.face;
+    f.droneX = d.x + d.face * DRAGON.mouthX; f.droneY = d.y + DRAGON.mouthY;
+    if (!(f.state === 'atk' && f.move && f.move.key === 'ult')) { d.mode = 'leave'; d.t = 0; }
+  } else if (d.mode === 'leave' || d.mode === 'win') {
+    if (d.mode === 'leave') { d.x -= d.face * 22 * dt; d.y -= 9 * dt; if (d.t > 50) f.dragon = null; }
+    else { d.x = lerp(d.x, f.x - f.face * 260, .05); d.y = lerp(d.y, f.y - 520 + Math.sin(d.t * .05) * 20, .05); d.face = f.face; }
+  }
+}
+function dragonFrame(f) {
+  const AN = ANIMS[f.id], d = f.dragon; if (!AN || !d) return null;
+  const a = AN.a, pick = (n, i) => { const arr = a[n] || a.dFly; if (!arr) return null; return arr[clamp(Math.floor(i), 0, arr.length - 1)]; };
+  const loop = n => { const arr = a[n] || a.dFly; return arr && arr[Math.floor(G.frame * (AN.fps[n] || 12) / 60) % arr.length]; };
+  if (d.mode === 'swoop') { const q = d.t / 46; return q < .55 ? pick('dDive', q / .55 * ((a.dDive || []).length - 1)) : pick('dClaw', (q - .55) / .45 * ((a.dClaw || []).length - 1)); }
+  if (d.mode === 'ult' && f.move && f.move.beam) return loop('dBreath');
+  return loop('dFly');
+}
+function drawDragon(f, front) {
+  const d = f.dragon; if (!d || f.hidden) return;
+  if ((d.mode === 'swoop') !== front) return;
+  const fr = dragonFrame(f), AN = ANIMS[f.id];
+  ctx.save(); ctx.translate(d.x, d.y); ctx.scale(d.face, 1);
+  if (d.mode === 'leave') ctx.globalAlpha = Math.max(0, 1 - d.t / 50);
+  if (fr) { const K = AN.k * (AN.dragonK || 1), src = frameSrc(fr, f); ctx.drawImage(src, fr.sx, fr.sy, fr.w, fr.h, fr.ox * K, fr.oy * K, fr.w * K, fr.h * K); }
+  else {   // atlas not loaded: a glowing blueprint silhouette so the move still reads
+    ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(${f.col.rgb},.9)`; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.ellipse(0, 0, 200, 60, 0, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-60, -20); ctx.lineTo(-180, -220); ctx.lineTo(60, -40); ctx.stroke();
+  }
+  ctx.restore();
 }
 function updateSuzuneUlt(f, o, at, dt, first) {
   const m = f.move;
@@ -1030,6 +1131,12 @@ function stepFighter(f, o, inp, dt) {
     const mz = arcaMuzzle(f); f.droneX = mz.x; f.droneY = f.y - 250; f.droneA += .05 * dt;
     if (f.state === 'walk' && ((G.frame + f.side * 12) % 22) === 0) { playS('arca_step', .6, rnd(.92, 1.05)); fxDust(f.x + rnd(-120, 120), f.y, 2, .7); shake(1.5); }
   }
+  if (f.id === 'sakura') {
+    f.droneA += .05 * dt;
+    if (f.state === 'win' && !f.dragon && ANIMS.sakura) f.dragon = { mode: 'win', t: 0, face: f.face, x: f.x - f.face * 900, y: f.y - 700, hits: 0, next: 0 };
+    if (!f.dragon) { f.droneX = sakuraTip(f).x; f.droneY = sakuraTip(f).y; }
+    updateDragon(f, G.fighters[1 - f.side], dt);
+  }
   // drone follows
   if (f.id === 'aoi') {
     f.droneA += .05 * dt;
@@ -1174,7 +1281,7 @@ async function startMatch() {
   G.wins = [0, 0];
   G.round = 1; G.matchOver = false; G.winMovie = false; G.rwMovie = false;
   makeTeams();
-  setStage(G.picks[0][0] === 'arca' ? 'aoi' : G.picks[0][0]);
+  setStage({ arca: 'aoi', sakura: 'suzune' }[G.picks[0][0]] || G.picks[0][0]);
   G.teams.flat().forEach(f => { if (f.alt) prepareAlt(f.id); });
   startRound();
   G.scene = 'game'; showScreen(null); setTouch(true); bgmTrack('battle', .5);
@@ -1492,8 +1599,8 @@ function drawBoarding(f, bd, front) {
   if (front && t >= BOARD.lit && !f._boardFx2) { f._boardFx2 = true; fxRing(f.x, f.y - 200, auraHot(f), 20, 300, 24, 8); playS('charge', .5, 1.4); }
 }
 function drawDrone(f) {
-  if ((f.id !== 'aoi' && f.id !== 'arca') || f.hidden) return;
-  const arca = f.id === 'arca';
+  if ((f.id !== 'aoi' && f.id !== 'arca' && f.id !== 'sakura') || f.hidden) return;
+  const arca = f.id === 'arca' || f.id === 'sakura';
   if (arca && !(f.move && f.move.key === 'ult' && f.state === 'atk')) return;
   const img = f.alt ? GFX.droneAltLazy() : GFX.drone, x = f.droneX, y = f.droneY, s = 92;
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
@@ -1709,8 +1816,9 @@ function render() {
   drawCometFx();
   ctx.globalCompositeOperation = 'lighter'; for (const f of G.fighters) drawRail(f); ctx.globalCompositeOperation = 'source-over';
   const order = [...G.fighters].sort((p, q) => (p.state === 'atk') - (q.state === 'atk'));
+  for (const f of G.fighters) drawDragon(f, false);
   for (const f of order) drawFighter(f, false);
-  for (const f of G.fighters) drawDrone(f);
+  for (const f of G.fighters) { drawDrone(f); drawDragon(f, true); }
   drawFx('norm');
   ctx.globalCompositeOperation = 'lighter'; drawProj(); drawFx('add'); ctx.globalCompositeOperation = 'source-over';
   ctx.restore();
@@ -1884,7 +1992,7 @@ function exMovieEnd() {
   EXM.f = null;
 }
 /* ---------- match victory movie + telop ---------- */
-const WINQ = { suzune: 'まだまだ、こんなもんじゃないッス！', aoi: '解析完了。――この勝負、わたしの勝ち。', arca: '観測、完了です。……え、もう終わりですか？' };
+const WINQ = { suzune: 'まだまだ、こんなもんじゃないッス！', aoi: '解析完了。――この勝負、わたしの勝ち。', arca: '観測、完了です。……え、もう終わりですか？', sakura: 'わたしの設計に、狂いはないの。' };
 const WM = { w: null, timers: [], typing: null, ready: false };
 function winMovieStart(w) {
   const box = $('#winMovie'), v = box.querySelector(`video[data-char="${w.id}"]`);
@@ -2073,7 +2181,7 @@ async function boot() {
   buildBg();
   await Promise.all([buildAssets(), buildAnims(), loadBGM().then(() => Promise.all([loadVoices(), loadSfx()]))]);
   document.querySelectorAll('[data-src]').forEach(i => i.src = window.ASSETS[i.dataset.src]);
-  document.querySelectorAll('.card img').forEach(i => { const id = i.closest('.card').dataset.char; i.src = window.ASSETS[{ suzune: 'suci', aoi: 'aoci', arca: 'arcard' }[id]]; });
+  document.querySelectorAll('.card img').forEach(i => { const id = i.closest('.card').dataset.char; i.src = window.ASSETS[{ suzune: 'suci', aoi: 'aoci', arca: 'arcard', sakura: 'sacard' }[id]]; });
   setupUI();
   try { await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]); } catch (e) { }
   $('#loading').remove();
