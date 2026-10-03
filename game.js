@@ -58,22 +58,25 @@ const CHARS = {
   // SAKURA: sky-city aircraft engineer. Draws blueprints with her compass and summons the IDEA DRAGON (AOI-style summoner)
   sakura: { id: 'sakura', name: 'SAKURA', role: '設計図・竜召喚', c1: '#ff9ec4', c2: '#e8c25a', rgb: '255,158,200', rgb2: '232,194,90', speed: 5.0, jump: -24.5, anchor: .55, hurtW: 47, hurtH: 279, exName: 'アイディア・ドラゴン', ultName: 'ドラフト・ノヴァ' },
   // MIO-07: android painter of IF TOKYO 2099. Fights with the giant brush "Kibou-fude" and paint; her ULT paints a giant blue paint hound into being
-  mio: { id: 'mio', name: 'MIO-07', role: '巨大筆・絵具', c1: '#9acfff', c2: '#ff688a', rgb: '120,190,255', rgb2: '255,104,138', speed: 5.3, jump: -24.8, anchor: .55, hurtW: 54, hurtH: 300, exName: 'ブルー・ストローク', ultName: 'キャンバス・ハウンド' }
+  mio: { id: 'mio', name: 'MIO-07', role: '巨大筆・絵具', c1: '#9acfff', c2: '#ff688a', rgb: '120,190,255', rgb2: '255,104,138', speed: 5.3, jump: -24.8, anchor: .55, hurtW: 54, hurtH: 300, exName: 'ブルー・ストローク', ultName: 'キャンバス・ハウンド' },
+  // ARIA ÉCLUSE (GRAVITY TOKYO): 17-year-old sky-runner mechanic. Wrench + boot-thruster kicks, wire launcher, gravity-control choker
+  aria: { id: 'aria', name: 'ARIA', role: 'ワイヤー・重力制御', c1: '#e8a85a', c2: '#3fd0e0', rgb: '240,170,90', rgb2: '70,210,225', speed: 6.0, jump: -26.0, anchor: .55, hurtW: 52, hurtH: 270, exName: 'グラビティ・スリング', ultName: 'ルナ・サテライト・レイ' }
 };
 const ALT = {
   suzune: { c1: '#7fd8ff', c2: '#4f7bff', rgb: '130,215,255', rgb2: '90,120,255', test: (h, s, l) => (h > 33 && h < 64 && s > .3) || ((h < 12 || h > 340) && s > .55), shift: 175 },
   aoi: { c1: '#ff7aa8', c2: '#ffb347', rgb: '255,120,170', rgb2: '255,180,80', test: (h, s, l) => h > 175 && h < 300 && s > .25, shift: 150 },
   arca: { c1: '#ffb347', c2: '#5a8cff', rgb: '255,180,70', rgb2: '90,140,255', test: (h, s, l) => (h < 16 || h > 335) && s > .35 && l > .12, shift: 215 },
   sakura: { c1: '#7fe0d0', c2: '#9aa8ff', rgb: '120,225,210', rgb2: '150,170,255', test: (h, s, l) => (h > 300 || h < 20) && s > .2, shift: 170 },
-  mio: { c1: '#ffb15a', c2: '#7ad7a0', rgb: '255,170,80', rgb2: '110,215,160', test: (h, s, l) => h > 185 && h < 250 && s > .22, shift: 190 }
+  mio: { c1: '#ffb15a', c2: '#7ad7a0', rgb: '255,170,80', rgb2: '110,215,160', test: (h, s, l) => h > 185 && h < 250 && s > .22, shift: 190 },
+  aria: { c1: '#7fd0ff', c2: '#ff7a9a', rgb: '130,200,255', rgb2: '255,120,150', test: (h, s, l) => h > 15 && h < 50 && s > .25, shift: 180 }
 };
 const GFX = {};
 async function buildAssets() {
   const A = window.ASSETS;
-  const [su, ao, drone, suci, aoci, ar, arci, arp, sa, saci, mi, mici] = await Promise.all([A.su, A.ao, A.drone, A.suci, A.aoci, A.ar, A.arci, A.arp, A.sa, A.saci, A.mi, A.mici].map(p => track(loadImg(p))));
-  const base = { suzune: { img: su, ci: suci }, aoi: { img: ao, ci: aoci }, arca: { img: ar, ci: arci }, sakura: { img: sa, ci: saci }, mio: { img: mi, ci: mici } };
+  const [su, ao, drone, suci, aoci, ar, arci, arp, sa, saci, mi, mici, ari, arici] = await Promise.all([A.su, A.ao, A.drone, A.suci, A.aoci, A.ar, A.arci, A.arp, A.sa, A.saci, A.mi, A.mici, A.ar2, A.ar2ci].map(p => track(loadImg(p))));
+  const base = { suzune: { img: su, ci: suci }, aoi: { img: ao, ci: aoci }, arca: { img: ar, ci: arci }, sakura: { img: sa, ci: saci }, mio: { img: mi, ci: mici }, aria: { img: ari, ci: arici } };
   GFX.arcaPilot = arp;
-  for (const id of ['suzune', 'aoi', 'arca', 'sakura', 'mio']) {
+  for (const id of ['suzune', 'aoi', 'arca', 'sakura', 'mio', 'aria']) {
     const ch = CHARS[id], al = ALT[id];
     const make = (img, ci, c1, rgb) => ({ img, ci, white: silhouette(img, '#fff'), tint: silhouette(img, c1), glow: glowOf(img, `rgb(${rgb})`) });
     GFX[id] = [make(base[id].img, base[id].ci, ch.c1, ch.rgb), null];
@@ -87,7 +90,7 @@ async function buildAssets() {
 const ANIMS = {};
 const frameCount = (id, n) => ANIMS[id] && ANIMS[id].a[n] ? ANIMS[id].a[n].length : 0;
 // visual size balance between characters (SUZUNE's source video was framed larger)
-const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.2, mio: 1.22 };   // AOI stands taller; SUZUNE fights from a low crouch
+const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.2, mio: 1.22, aria: .95 };   // AOI stands taller; SUZUNE fights from a low crouch
 const LOAD = { done: 0, total: 0 };
 function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = document.getElementById('loadPct'); if (el) el.textContent = Math.round(LOAD.done / Math.max(1, LOAD.total) * 100) + '%'; return v; }); }
 // Atlases are NOT decoded at boot any more: only the fighters in the current match are kept in memory,
@@ -200,6 +203,11 @@ function pickFrame(f) {
         if (m.key === 'ex') return prog('ex', Math.min(1, t / (m.st + 20)));
         if (m.key === 'ult') { const u = t - m.st; if (u < 45) return loop('ultCharge', AN.fps.ultCharge || 10); return prog('ultFire', Math.min(1, (u - 45) / 20)); }
       }
+      if (f.id === 'aria') {
+        if (m.key === 'a') { const n = ['a1', 'a2', 'a3'][Math.min(2, f.chain)]; return prog(a[n] ? n : 'a', p); }
+        if (m.key === 'b' || m.key === 'ex') { const z = m.zip; if (!z || z.phase === 'fire') return prog('b', z ? z.ft / 10 : t / m.st); if (z.phase === 'zip') return loop('ex', AN.fps.ex || 18); if (z.phase === 'turn') return prog('b', z.ft / 8); return at('jump', 2); }
+        if (m.key === 'ult') { const u = t - m.st, U = ARIA_ULT; if (u < U.fire) return loop('ultCharge', AN.fps.ultCharge || 10); return prog('ultFire', Math.min(1, (u - U.fire) / 30)); }
+      }
       if (f.id === 'mio') {
         if (m.key === 'a') { const n = ['a1', 'a2', 'a3'][Math.min(2, f.chain)]; return prog(a[n] ? n : 'a', p); }
         if (m.key === 'b') return prog('b', p);
@@ -306,7 +314,9 @@ const VOICE_MAP = {
   sakura: { a0: ['sa_01', 'sa_03'], a1: ['sa_02'], a2: ['sa_04'], b: ['sa_05'], jump: ['sa_06'], guard: ['sa_07'], hit: ['sa_08'], hitBig: ['sa_09'],
     getup: ['sa_10'], ko: ['sa_11'], ex: ['sa_12'], ult: ['sa_13'], select: ['sa_14'], round: ['sa_15'], winMovie: ['sa_16'], win: ['sa_17'], lose: ['sa_18'] },
   mio: { a0: ['mi_01', 'mi_03'], a1: ['mi_02'], a2: ['mi_04'], b: ['mi_05'], jump: ['mi_06'], guard: ['mi_07'], hit: ['mi_08'], hitBig: ['mi_09'],
-    getup: ['mi_10'], ko: ['mi_11'], ex: ['mi_12'], ult: ['mi_13'], select: ['mi_14'], round: ['mi_15'], winMovie: ['mi_16'], win: ['mi_17'], lose: ['mi_18'] }
+    getup: ['mi_10'], ko: ['mi_11'], ex: ['mi_12'], ult: ['mi_13'], select: ['mi_14'], round: ['mi_15'], winMovie: ['mi_16'], win: ['mi_17'], lose: ['mi_18'] },
+  aria: { a0: ['ai_01', 'ai_03'], a1: ['ai_02'], a2: ['ai_04'], b: ['ai_05'], jump: ['ai_06'], guard: ['ai_07'], hit: ['ai_08'], hitBig: ['ai_09'],
+    getup: ['ai_10'], ko: ['ai_11'], ex: ['ai_12'], ult: ['ai_13'], select: ['ai_14'], round: ['ai_15'], winMovie: ['ai_16'], win: ['ai_17'], lose: ['ai_18'] }
 };
 const VOICE = { buf: {}, gain: null, last: {} };
 // BGM ducking bus: music dips while a character is speaking so lines cut through
@@ -516,7 +526,7 @@ function fxDust(x, y, n = 8, pw = 1) { for (let i = 0; i < n; i++) addFx({ k: 'd
 function fxText(x, y, txt, rgb, size = 40, life = 50) { addFx({ k: 'text', x, y, txt, rgb, size, life, t: 0 }); }
 function fxHex(x, y, rgb, face) { addFx({ k: 'hex', x, y, rgb, face, life: 18, t: 0 }); }
 /* SF-mecha energy colours: SUZUNE gold / AOI blue (mirror-match colour swaps keep their own palette) */
-const AURA = { suzune: { rgb: '255,196,64', hot: '255,244,200' }, aoi: { rgb: '64,168,255', hot: '205,240,255' }, arca: { rgb: '46,230,200', hot: '215,255,245' }, sakura: { rgb: '255,150,200', hot: '255,236,246' }, mio: { rgb: '110,180,255', hot: '232,246,255' } };
+const AURA = { suzune: { rgb: '255,196,64', hot: '255,244,200' }, aoi: { rgb: '64,168,255', hot: '205,240,255' }, arca: { rgb: '46,230,200', hot: '215,255,245' }, sakura: { rgb: '255,150,200', hot: '255,236,246' }, mio: { rgb: '110,180,255', hot: '232,246,255' }, aria: { rgb: '245,165,70', hot: '255,240,205' } };
 const auraRgb = f => f.alt ? f.col.rgb : AURA[f.id].rgb;
 const auraHot = f => f.alt ? '255,255,255' : AURA[f.id].hot;
 function fxBolt(x0, y0, x1, y1, rgb, life = 9) {
@@ -604,6 +614,10 @@ function drawFx(layer) {
         ctx.beginPath(); ctx.ellipse(f.x, f.y, r, r * f.sy, 0, 0, TAU); ctx.stroke();
         ctx.strokeStyle = `rgba(255,255,255,${a * .7})`; ctx.lineWidth = f.w * a * .35 + .3; ctx.stroke();
       } else if (f.k === 'arc') { drawArcRibbon(f, p); }
+      else if (f.k === 'wire') {
+        ctx.lineCap = 'round'; ctx.strokeStyle = `rgba(${BRASS.teal},${a * .6})`; ctx.lineWidth = 9 * a; ctx.beginPath(); ctx.moveTo(f.x0, f.y0); ctx.lineTo(f.x1, f.y1); ctx.stroke();
+        ctx.strokeStyle = `rgba(255,240,210,${a})`; ctx.lineWidth = 2.4; ctx.stroke();
+      }
       else if (f.k === 'ember') { ctx.fillStyle = `rgba(${f.rgb},${a})`; ctx.fillRect(f.x, f.y, 3, 3); }
       else if (f.k === 'bit') {
         const al = Math.min(1, f.t / 6) * a;
@@ -720,6 +734,12 @@ const MOVES = {
     ex: { st: 16, act: 44, rec: 16, cost: 50 },
     ult: { st: 0, act: 150, rec: 30, cost: 100 }
   },
+  aria: {
+    a: { st: 4, act: 4, rec: 11, cost: 0 },
+    b: { st: 8, act: 200, rec: 14, cost: 0 },
+    ex: { st: 9, act: 200, rec: 14, cost: 50 },
+    ult: { st: 0, act: 150, rec: 30, cost: 100 }
+  },
   mio: {
     a: { st: 5, act: 4, rec: 12, cost: 0 },
     b: { st: 9, act: 4, rec: 19, cost: 0 },
@@ -781,7 +801,7 @@ function hitTarget(att, tgt, o) {
   const pw = o.power || 1;
   fxCore(hx, hy, att.col.rgb, 70 + 50 * pw, 12 + 4 * pw); fxSpark(hx, hy, att.col.rgb, 10 + 10 * pw, .8 + .5 * pw, fromDir);
   fxRing(hx, hy, att.col.rgb, 10, 60 + 60 * pw, 14 + 6 * pw, 5 + 3 * pw);
-  if (att.id === 'suzune') fxPetals(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'mio') fxPaint(hx, hy, 6 + 6 * pw, .8 + .3 * pw, fromDir); else fxHex(hx, hy, att.col.rgb, fromDir);
+  if (att.id === 'suzune') fxPetals(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'mio') fxPaint(hx, hy, 6 + 6 * pw, .8 + .3 * pw, fromDir); else if (att.id === 'aria') fxGears(hx, hy, 4 + 4 * pw, pw, fromDir); else fxHex(hx, hy, att.col.rgb, fromDir);
   G.hitstop = Math.max(G.hitstop, o.hitstop || (4 + 4 * pw)); shake(4 + 7 * pw);
   if (pw >= 1.4 || o.launch) { quake(3 + 5 * pw, .28 + .12 * pw, pw >= 2 ? 60 : 25); fxBig(hx, hy, auraRgb(att), auraHot(att), Math.max(1.4, pw), fromDir); }
   if (pw >= 2) flash(.35 * pw / 2, '255,230,200');
@@ -839,6 +859,7 @@ function updateMove(f, o, dt) {
   } else if (f.id === 'arca') updateArcaMove(f, o, m, t, k, act, at, dt, first);
   else if (f.id === 'sakura') updateSakuraMove(f, o, m, t, k, act, at, dt, first);
   else if (f.id === 'mio') updateMioMove(f, o, m, t, k, act, at, dt, first);
+  else if (f.id === 'aria') updateAriaMove(f, o, m, t, k, act, at, dt, first);
   else {
     const dx = f.droneX, dy = f.droneY;
     if (k === 'a') {
@@ -1037,6 +1058,167 @@ function updateMioMove(f, o, m, t, k, act, at, dt, first) {
     if (act) { f.vx *= Math.pow(.9, dt); if ((at | 0) % 3 === 0) fxPuddle(f.x + f.face * 150, (at | 0) % 2 ? PAINT.blue : PAINT.deep, 50, 150); }
   } else if (k === 'ult') updateMioUlt(f, o, at, dt, first);
 }
+// ARIA ÉCLUSE: wrench strikes and boot-thruster kicks, a grappling wire that reels the foe in,
+// GRAVITY SLING (EX: wire-slung low flying kick) and ZERO-GRAVITY DRIVE (ULT: the choker cuts gravity, she zips around the
+// floating foe on her wire, then gravity comes back tenfold and slams them into the floor)
+const BRASS = { hot: '255,200,120', glow: '245,165,70', teal: '70,210,225', wire: '210,190,150' };
+function ariaHand(f) { return { x: f.x + f.face * 95, y: f.y - 170 }; }
+function fxGears(x, y, n = 6, pw = 1, dir = 0) {   // brass sparks + tiny gear flecks
+  fxSpark(x, y, BRASS.hot, n * 2, .7 + .3 * pw, dir);
+  for (let i = 0; i < n; i++) { const a = dir ? (dir > 0 ? 0 : Math.PI) + rnd(-1.2, 1.2) : rnd(0, TAU), sp = rnd(5, 14) * pw;
+    addFx({ k: 'shard', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - rnd(2, 6), rot: rnd(0, TAU), vr: rnd(-.5, .5), s: rnd(4, 9), rgb: BRASS.glow, hot: BRASS.hot, life: rnd(22, 40), t: 0 }); }
+}
+function fxThrust(f, x, y, dir, n = 4) {   // boot thruster exhaust: hot core + teal streaks pushed behind her
+  for (let i = 0; i < n; i++) addFx({ k: 'streak', x: x + rnd(-8, 8), y: y + rnd(-10, 10), vx: -dir * rnd(10, 22), vy: rnd(-2, 2), life: rnd(8, 14), t: 0, rgb: i % 2 ? BRASS.teal : BRASS.hot, w: rnd(2.5, 5) });
+}
+function fxWire(x0, y0, x1, y1, life = 10) { addFx({ k: 'wire', x0, y0, x1, y1, life, t: 0 }); }
+function updateAriaMove(f, o, m, t, k, act, at, dt, first) {
+  const hand = ariaHand(f);
+  if (k === 'a') {
+    const c = Math.min(2, f.chain);
+    if (t < m.st) f.vx *= .75;
+    if (first(0)) {
+      f.vx = f.face * [6, 7, 13][c];
+      if (c === 0) fxArc(f.x + f.face * 85, f.y - 150, 95, -.8, .8, f.col.rgb, f.face, 12, 22);
+      else if (c === 1) fxArc(f.x + f.face * 80, f.y - 180, 110, 1.4, -1.5, f.col.rgb, f.face, 14, 26);
+      else { fxArc(f.x + f.face * 100, f.y - 120, 150, 2.0, -1.0, f.col.rgb2, f.face, 16, 40); fxThrust(f, f.x - f.face * 20, f.y - 30, f.face, 10); playS('dash', .5, 1.4); }
+      c === 2 ? sfx.kick() : sfx.swing();
+    }
+    if (c === 2 && act) fxThrust(f, f.x - f.face * 10, f.y - 40, f.face, 2);
+    if (act) { const h = tryHit(f, o, box(f, 20, c === 2 ? 230 : 205, c === 1 ? -280 : -230, c === 2 ? -20 : -80), { dmg: [4, 4.5, 6.5][c], kb: [3, 4, 11][c], stun: [15, 16, 22][c], power: [.7, .85, 1.4][c], launch: c === 1 ? -6 : c === 2 ? -10 : 0 }); if (h) fxGears(o.x - f.face * 30, o.y - 150, 3, .8, f.face); }
+  } else if (k === 'b' || k === 'ex') ariaWireDash(f, o, m, t, k, at, dt, first);
+  else if (k === 'ult') updateAriaUlt(f, o, at, dt, first);
+}
+// WIRE DASH (special) / GRAVITY SLING (EX): fires her wire to the edge of the screen and rockets there, hitting everything on
+// the way; on arrival she fires again at the opposite edge and crosses the whole screen a second time. The EX version
+// hits several times per pass and drags the foe along in her gravity wake.
+function screenEdge(dir) { const half = W / 2 / (G.cam.z || 1); return clamp(G.cam.x + dir * (half - 95), 90, STAGE_W - 90); }
+function ariaWireDash(f, o, m, t, k, at, dt, first) {
+  const EX = k === 'ex', z = m.zip || (m.zip = { pass: 0, phase: 'wind', ft: 0, hit: 0, multi: EX ? 3 : 1, next: 0 });
+  const startPass = () => {
+    z.dir = z.pass === 0 ? f.face : -z.dir; z.tx = screenEdge(z.dir); z.ty = GROUND - 430; z.phase = 'fire'; z.ft = 0; z.hit = 0; z.next = 0; z.x0 = f.x;
+    f.face = z.dir; const h = ariaHand(f); fxWire(h.x, h.y, z.tx + z.dir * 60, z.ty, 14); fxGears(z.tx + z.dir * 60, z.ty, 6, .9, -z.dir);
+    playS('laser_shot', .55, .7); sfx.dash();
+  };
+  if (z.phase === 'wind') { f.vx *= .6; if (at >= 0) startPass(); return; }
+  if (z.phase === 'land') return;   // drops back to the floor under normal gravity
+  z.ft += dt; f.vx = 0; f.vy = -GRAV * dt;   // hangs on the wire: no gravity
+  if (z.phase === 'fire') { if (z.ft >= 6) { z.phase = 'zip'; z.ft = 0; flash(EX ? .3 : .15, BRASS.teal); G.speedlines = 30; shake(5); } return; }
+  if (z.phase === 'zip') {
+    const sp = EX ? 54 : 46, px = f.x, d = z.tx - f.x;
+    f.x += clamp(d, -sp * dt, sp * dt);
+    const span = Math.max(1, Math.abs(z.tx - z.x0)), q = clamp(Math.abs(f.x - z.x0) / span, 0, 1);
+    f.y = GROUND - Math.sin(q * Math.PI) * (EX ? 170 : 120);   // swings in an arc under the wire
+    // effects: live wire, after-images, rail, thruster wash, speed streaks
+    const h = ariaHand(f); fxWire(h.x, h.y, z.tx + z.dir * 60, z.ty, 3);
+    f.trail.push(1); f.rail.push({ x: f.x - z.dir * 30, y: f.y - 60, t: G.frame }); fxThrust(f, f.x - z.dir * 30, f.y - 50, z.dir, 3);
+    for (let i = 0; i < 2; i++) addFx({ k: 'streak', x: f.x + rnd(-40, 40), y: f.y - rnd(20, 280), vx: -z.dir * rnd(20, 34), vy: 0, life: rnd(8, 14), t: 0, rgb: i ? BRASS.teal : f.col.rgb, w: rnd(1.5, 3.5) });
+    if (EX && (G.frame % 3 === 0)) fxRing(f.x, f.y - 140, BRASS.teal, 20, 120, 10, 3, 1);
+    G.speedlines = Math.max(G.speedlines, 10);
+    // hitbox travels with her (swept so a fast pass never skips over the foe)
+    const hb = { x0: Math.min(px, f.x) - 70, x1: Math.max(px, f.x) + 70, y0: f.y - 270, y1: f.y + 10 };
+    if (z.hit < z.multi && z.ft >= z.next && G.phase === 'fight' && overlap(hb, hurt(o))) {
+      z.hit++; z.next = z.ft + 4; const fin = z.pass === 1 && z.hit === z.multi;
+      hitTarget(f, o, { dmg: EX ? 3.6 : 5, kb: fin ? 13 : 4, stun: 26, power: fin ? 1.7 : 1.1, launch: fin ? -11 : 0, hy: clamp(o.y - f.y + 150, 60, 240), unblock: EX && z.hit > 1 });
+      fxGears(o.x, o.y - 150, 6, 1.2, z.dir); fxArc(o.x, o.y - 150, 120, -1.2, 1.2, BRASS.teal, z.dir, 12, 30);
+      if (EX && !fin) o.vx = z.dir * 20;   // gravity wake drags the foe along
+    }
+    if (Math.abs(z.tx - f.x) < 2) {   // arrived at the edge: anchor burst
+      fxRing(f.x + z.dir * 50, f.y - 160, f.col.rgb, 20, 200, 18, 8); fxGears(f.x + z.dir * 60, f.y - 160, 8, 1.2, -z.dir); shake(7); quake(5, .25); playS('arca_armor', .4, 1.4);
+      if (z.pass === 0) { z.pass = 1; z.phase = 'turn'; z.ft = 0; f.face = -z.dir; }
+      else { z.phase = 'land'; z.ft = 0; f.vy = 4; f.t = m.st + m.act; }
+    }
+    return;
+  }
+  if (z.phase === 'turn') { if (z.ft >= 8) startPass(); return; }
+}
+// ULT LUNA SATELLITE RAY: she calls the lunar satellite; the moon rises over the arena, a target lock follows the foe,
+// then a colossal beam comes straight down from orbit and burns the floor before a final detonation.
+const ARIA_ULT = { lock: 8, fire: 46, every: 6, last: 108, end: 126 };
+const LUNA = { core: '235,250,255', blue: '120,200,255', violet: '170,150,255' };
+function updateAriaUlt(f, o, at, dt, first) {
+  const m = f.move, U = ARIA_ULT, live = o && !o.ko && o.hp > 0;
+  if (first(0)) { f.vx = 0; sfx.charge(); G.luna = { t: 0, x: clamp(o.x, 120, STAGE_W - 120), on: false, f }; playS('special_start', .6, .6); }
+  const L = G.luna; if (!L) return;
+  L.t += dt; f.vx *= .7;
+  if (live) L.x = lerp(L.x, o.x, L.on ? .05 : .12);   // the lock trails the foe; once firing it can barely keep up
+  if (at < U.fire) {
+    f.charge = at / U.fire;
+    if ((at | 0) % 6 === 0) fxRing(L.x, GROUND - 4, LUNA.blue, 160, 30, 14, 4, .25);
+    if ((at | 0) % 3 === 0) addFx({ k: 'bit', x: f.x + rnd(-40, 40), y: f.y - rnd(200, 320), vy: -rnd(6, 11), len: rnd(20, 40), w: 2, sq: false, ph: 0, rgb: LUNA.blue, life: 40, t: 0 });
+    if (first(U.lock)) playS('laser_homing', .5, .8);
+  }
+  if (first(U.fire)) {
+    L.on = true; f.charge = 1; sfx.beam(); playS('impact_big', .9, .7); flash(1, LUNA.core); shake(24); quake(26, 1, [140, 50, 140]); zoomKick(.1); G.speedlines = 50;
+    fxRing(L.x, GROUND - 6, LUNA.core, 40, 520, 30, 16, .22); fxCore(L.x, GROUND - 80, LUNA.blue, 360, 26);
+  }
+  if (L.on && at < U.last) {
+    shake(8); if ((at | 0) % 5 === 0) quake(8, .25);
+    if ((at | 0) % 2 === 0) { for (let i = 0; i < 3; i++) { const a = rnd(Math.PI * 1.05, Math.PI * 1.95); addFx({ k: 'streak', x: L.x + rnd(-60, 60), y: GROUND - 10, vx: Math.cos(a) * rnd(8, 20), vy: Math.sin(a) * rnd(10, 26), life: rnd(16, 28), t: 0, rgb: i ? LUNA.blue : LUNA.core, w: rnd(2, 4) }); } fxDust(L.x + rnd(-120, 120), GROUND, 1, 1.2); }
+    if ((at | 0) % 8 === 0) fxRing(L.x, GROUND - 6, LUNA.blue, 60, 300, 16, 6, .22);
+    const hb = { x0: L.x - 120, x1: L.x + 120, y0: -2000, y1: GROUND + 10 };
+    if (m.nextHit === undefined) m.nextHit = U.fire;
+    if (at >= m.nextHit && live && overlap(hb, hurt(o))) { m.nextHit += U.every; hitTarget(f, o, { noScale: true, unblock: true, dmg: 2.4, kb: 0, stun: 24, power: 1, ult: true, hy: 160 }); o.vx *= .2; }
+  }
+  if (first(U.last)) {   // final detonation at the impact point
+    const X = L.x; L.on = false; L.boom = 0;
+    if (live && Math.abs(o.x - X) < 260) hitTarget(f, o, { noScale: true, unblock: true, dmg: 9, kb: 14 * (Math.sign(o.x - f.x) || f.face), launch: -18, power: 3.2, hitstop: 14, ult: true, hy: 160 });
+    sfx.boom(); flash(1, '255,255,255'); shake(28); zoomKick(.14); slowmo(.3, 40); quake(30, 1.2, [160, 60, 120]);
+    for (let r = 0; r < 4; r++) fxRing(X, GROUND - 6, r % 2 ? LUNA.violet : LUNA.core, 30, 320 + r * 180, 30 + r * 8, 14 - r * 2, .22);
+    fxBig(X, GROUND - 160, LUNA.blue, LUNA.core, 3.2, 1); addFx({ k: 'pillar', x: X, y: GROUND, rgb: LUNA.blue, hot: LUNA.core, life: 50, t: 0, w: 260 });
+    for (let i = 0; i < 50; i++) addFx({ k: 'ember', x: X + rnd(-300, 300), y: GROUND - rnd(0, 260), vx: rnd(-1, 1), vy: rnd(-3, -.5), life: rnd(60, 120), t: 0, rgb: LUNA.blue });
+  }
+  if (first(U.end)) { f.inv = 0; G.tintA = 0; f.charge = 0; G.luna = null; f.t = Math.max(f.t, m.st + m.act - 1); }
+}
+// lunar beam (world space, additive) — a column from orbit with a white-hot core, wobbling rings and a scorched footprint
+const lunaLive = () => { const L = G.luna; if (L && !(L.f.state === 'atk' && L.f.move && L.f.move.key === 'ult')) G.luna = null; return G.luna; };
+function drawLunaBeam() {
+  const L = lunaLive(); if (!L) return;
+  const X = L.x, top = GROUND - 1400;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  // lock-on reticle + guide laser
+  if (!L.on && L.t < ARIA_ULT.fire + 2) {
+    const k = Math.min(1, L.t / 20), r = 150 - 60 * k, rot = L.t * .08;
+    ctx.save(); ctx.translate(X, GROUND - 6); ctx.scale(1, .28); ctx.rotate(rot);
+    ctx.strokeStyle = `rgba(${LUNA.blue},${.5 + .5 * k})`; ctx.lineWidth = 5;
+    for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.arc(0, 0, r, i * TAU / 4 + .2, i * TAU / 4 + 1.2); ctx.stroke(); }
+    ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, r * .55, 0, TAU); ctx.stroke();
+    ctx.restore();
+    const thin = (L.t % 8) < 4 ? .6 : .25; ctx.fillStyle = `rgba(${LUNA.blue},${thin * k})`; ctx.fillRect(X - 2, top, 4, GROUND - top);
+  }
+  if (L.on) {
+    const w = 120 + Math.sin(G.frame * 1.3) * 14, g = ctx.createLinearGradient(X - w, 0, X + w, 0);
+    g.addColorStop(0, `rgba(${LUNA.violet},0)`); g.addColorStop(.25, `rgba(${LUNA.blue},.7)`); g.addColorStop(.45, `rgba(${LUNA.core},1)`); g.addColorStop(.55, `rgba(${LUNA.core},1)`); g.addColorStop(.75, `rgba(${LUNA.blue},.7)`); g.addColorStop(1, `rgba(${LUNA.violet},0)`);
+    ctx.fillStyle = g; ctx.fillRect(X - w, top, w * 2, GROUND - top);
+    ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.fillRect(X - w * .14, top, w * .28, GROUND - top);
+    for (let i = 0; i < 7; i++) { const y = GROUND - ((G.frame * 38 + i * 160) % (GROUND - top)); ctx.strokeStyle = `rgba(${LUNA.core},.6)`; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(X, y, w * 1.05, 16, 0, 0, TAU); ctx.stroke(); }
+    const fg = ctx.createRadialGradient(X, GROUND - 20, 0, X, GROUND - 20, 300); fg.addColorStop(0, `rgba(255,255,255,.95)`); fg.addColorStop(.3, `rgba(${LUNA.blue},.7)`); fg.addColorStop(1, `rgba(${LUNA.violet},0)`);
+    ctx.save(); ctx.translate(X, GROUND - 10); ctx.scale(1, .35); ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(0, 0, 300, 0, TAU); ctx.fill(); ctx.restore();
+  }
+  ctx.restore();
+}
+// screen-space sky: the moon swells over the arena and the satellite glints in orbit while the ULT is live
+function drawLunaSky() {
+  const L = lunaLive(); if (!L) return;
+  const k = Math.min(1, L.t / 30), mx = W * .72, my = 96 - (1 - k) * 160, R = 120;
+  ctx.save();
+  ctx.fillStyle = `rgba(4,8,30,${.45 * k})`; ctx.fillRect(0, 0, W, H * .7);
+  ctx.globalCompositeOperation = 'lighter';
+  const halo = ctx.createRadialGradient(mx, my, R * .8, mx, my, R * 3); halo.addColorStop(0, `rgba(${LUNA.blue},${.45 * k})`); halo.addColorStop(1, `rgba(${LUNA.violet},0)`);
+  ctx.fillStyle = halo; ctx.fillRect(mx - R * 3, my - R * 3, R * 6, R * 6);
+  ctx.globalCompositeOperation = 'source-over';
+  const mg = ctx.createRadialGradient(mx - R * .3, my - R * .3, R * .1, mx, my, R); mg.addColorStop(0, `rgba(250,252,255,${k})`); mg.addColorStop(.7, `rgba(200,215,240,${k})`); mg.addColorStop(1, `rgba(150,170,220,${k})`);
+  ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, R, 0, TAU); ctx.fill();
+  ctx.fillStyle = `rgba(120,135,180,${.35 * k})`; [[-.3, .1, .22], [.25, -.25, .14], [.1, .35, .18], [-.45, -.35, .1]].forEach(([dx, dy, r]) => { ctx.beginPath(); ctx.arc(mx + dx * R, my + dy * R, r * R, 0, TAU); ctx.fill(); });
+  // satellite in orbit with a lens glint; when firing, its muzzle flares
+  const sx = mx - R * 1.6 + Math.sin(L.t * .03) * 20, sy = my + R * .9;
+  ctx.fillStyle = `rgba(210,190,140,${k})`; ctx.fillRect(sx - 10, sy - 6, 20, 12); ctx.fillStyle = `rgba(80,140,220,${k})`; ctx.fillRect(sx - 44, sy - 4, 30, 8); ctx.fillRect(sx + 14, sy - 4, 30, 8);
+  ctx.globalCompositeOperation = 'lighter';
+  const fl = L.on ? 1 : .35 + .35 * Math.sin(L.t * .4), gl = ctx.createRadialGradient(sx, sy + 8, 0, sx, sy + 8, 70 * fl + 20); gl.addColorStop(0, `rgba(255,255,255,${k})`); gl.addColorStop(.3, `rgba(${LUNA.blue},${.7 * k})`); gl.addColorStop(1, `rgba(${LUNA.blue},0)`);
+  ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(sx, sy + 8, 70 * fl + 20, 0, TAU); ctx.fill();
+  if (L.on) { ctx.fillStyle = `rgba(${LUNA.core},.8)`; ctx.fillRect(0, sy + 6, W, 2); ctx.fillRect(sx - 1, 0, 2, H * .7); }
+  ctx.restore();
+}
 // ULT timeline (frames after the movie): she sweeps a huge circle of paint, the hound bursts out of it behind her and charges through the foe
 const MIO_ULT = { summon: 40, run: 30, bite: 34 };
 function updateMioUlt(f, o, at, dt, first) {
@@ -1202,6 +1384,16 @@ function updateProj(dt) {
     p.x += p.vx * dt; p.y += p.vy * dt;
     p.trail.push({ x: p.x, y: p.y }); if (p.trail.length > (p.type === 'homing' ? 16 : p.type === 'rail' ? 10 : p.type === 'stroke' ? 14 : 7)) p.trail.shift();
     if (p.type === 'paint' && (p.t | 0) % 3 === 0) addFx({ k: 'paint', x: p.x, y: p.y, vx: -p.vx * .1, vy: rnd(-1, 1), r: rnd(3, 6), rgb: PAINT.deep, life: 30, t: 0 });
+    if (p.type === 'hook') {   // ARIA's grapple: flies out, bites, reels the foe in, then retracts
+      const f = p.owner, h = ariaHand(f);
+      if (p.back) { p.x = lerp(p.x, h.x, .35); p.y = lerp(p.y, h.y, .35); if (Math.abs(p.x - h.x) < 30) { G.proj.splice(i, 1); } continue; }
+      if (overlap({ x0: p.x - 24, x1: p.x + 24, y0: p.y - 30, y1: p.y + 30 }, hurt(o)) && o.inv <= 0 && o.state !== 'down') {
+        const saveX = f.x; f.x = p.x - Math.sign(p.vx) * 40; hitTarget(f, o, { dmg: p.dmg, kb: p.kb, stun: 26, power: 1.1, hy: o.y - p.y }); f.x = saveX;
+        fxGears(p.x, p.y, 6, 1, Math.sign(p.vx)); playS('arca_armor', .35, 1.5); p.back = true; continue;
+      }
+      if (p.t > p.life) p.back = true;
+      continue;
+    }
     if (p.type === 'stroke') {   // MIO's EX: a wave of paint skimming the floor, hitting several times
       const sd = Math.sign(p.vx);
       if ((p.t | 0) % 2 === 0) { fxPuddle(p.x - sd * 40, (p.t | 0) % 4 ? PAINT.blue : PAINT.deep, 80, 150); }
@@ -1231,6 +1423,7 @@ function drawProj() {
   for (const p of G.proj) {
     const tr = p.trail; if (tr.length < 2) continue;
     if (p.type === 'paint' || p.type === 'stroke') { drawPaintProj(p); continue; }
+    if (p.type === 'hook') { drawHook(p); continue; }
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     for (let pass = 0; pass < 2; pass++) {
       ctx.beginPath(); tr.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y));
@@ -1292,6 +1485,18 @@ function drawPaintProj(p) {
   ctx.restore();
 }
 
+function drawHook(p) {
+  const h = ariaHand(p.owner);
+  ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(40,30,20,.9)'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(h.x, h.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+  ctx.strokeStyle = `rgba(${BRASS.wire},.95)`; ctx.lineWidth = 2.2; ctx.stroke();
+  const d = Math.sign(p.vx) || 1; ctx.translate(p.x, p.y); ctx.scale(d, 1);
+  ctx.fillStyle = '#b8823a'; ctx.strokeStyle = '#ffd99a'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-6, -12); ctx.lineTo(-2, 0); ctx.lineTo(-6, 12); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 22); g.addColorStop(0, `rgba(${BRASS.teal},.8)`); g.addColorStop(1, `rgba(${BRASS.teal},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 22, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+
 function onKO(att, tgt) {
   tgt.state = 'air'; tgt.vy = Math.min(tgt.vy, -15); tgt.vx = Math.sign(tgt.x - att.x) * 11; tgt.ko = true;
   const pt = partnerOf(tgt);
@@ -1309,7 +1514,7 @@ function onKO(att, tgt) {
 }
 
 /* SUZUNE's short step-dash: brief invulnerability (slips through AOI's shots), short cooldown */
-const CAN_DASH = { suzune: 1, arca: 1, mio: 1 };
+const CAN_DASH = { suzune: 1, arca: 1, mio: 1, aria: 1 };
 const TAG_CD = 150;
 function doTag(side, forced) {
   const out = G.fighters[side], inn = partnerOf(out);
@@ -1590,7 +1795,7 @@ function poseOf(f) {
 
 function pushApart(a, b) {
   if (a.hidden || b.hidden) return;
-  const passing = x => x.state === 'atk' && x.move && (x.move.key === 'ex' || x.move.key === 'ult') && x.id === 'suzune';
+  const passing = x => x.state === 'atk' && x.move && (((x.move.key === 'ex' || x.move.key === 'ult') && x.id === 'suzune') || (x.id === 'aria' && x.move.zip));
   if (passing(a) || passing(b)) return;
   const dx = b.x - a.x, d = Math.abs(dx), min = 100;
   if (d < min && Math.abs(a.y - b.y) < 200) { const push = (min - d) / 2, s = Math.sign(dx) || 1; a.x -= s * push; b.x += s * push; }
@@ -1625,7 +1830,7 @@ function aiInput(f, o) {
     else set({ [Math.random() < .6 ? toward : away]: true }, 12);
     return out;
   }
-  if (f.id === 'suzune') {
+  if (f.id === 'suzune' || f.id === 'aria') {
     if (f.gauge >= 50 && ad < 460 && Math.random() < .3) { ai.press = 'ex'; return out; }
     if (ad > 190) { if (Math.random() < .18) { set({ [toward]: true, u: true }, 6); } else set({ [toward]: true }, 10 + (Math.random() * 12 | 0)); }
     else if (Math.random() < D.agg) ai.press = Math.random() < .35 ? 'b' : 'a';
@@ -1667,7 +1872,7 @@ async function startMatch() {
 }
 function startRound() {
   makeTeams(); G.tagCd = [0, 0]; G.pendingTag = null; G.benched = [];
-  G.resultShown = false; G.victory = null; G.fx = []; G.proj = []; G.paintFloor = []; G.timer = 99; G.timerF = 0; G.phase = 'intro'; G.phaseT = 0; G.cutin = null; G.rwCut = null; G.freeze = 0; G.tintA = 0; G.slow = 1;
+  G.resultShown = false; G.victory = null; G.fx = []; G.proj = []; G.paintFloor = []; G.luna = null; G.timer = 99; G.timerF = 0; G.phase = 'intro'; G.phaseT = 0; G.cutin = null; G.rwCut = null; G.freeze = 0; G.tintA = 0; G.slow = 1;
   G.cam.x = STAGE_W / 2;
   for (const f of G.fighters) {
     if (f.id === 'arca') { f.boarding = G.round === 1; f._boardFx = f._boardFx2 = f._bootSnd = false; f.state = 'idle'; continue; }
@@ -2214,6 +2419,7 @@ function render() {
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   const c = G.cam;
   if (G.scene === 'game' && stageReady()) drawStage(c.x); else drawBackground(c.x, c.z);
+  if (G.scene === 'game') drawLunaSky();
   if (G.scene !== 'game' || !G.fighters.length) { drawIdleFx(); return; }
   ctx.save(); worldTransform();
   drawFloor();
@@ -2231,6 +2437,7 @@ function render() {
   for (const f of G.fighters) { drawDrone(f); drawDragon(f, true); drawDog(f, true); }
   drawFx('norm');
   ctx.globalCompositeOperation = 'lighter'; drawProj(); drawFx('add'); ctx.globalCompositeOperation = 'source-over';
+  drawLunaBeam();
   ctx.restore();
   if (G.tintA > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(${G.tintC},${G.tintA * .25})`; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'source-over'; }
   if (G.speedlines > 0) drawSpeedLines(G.speedlines);
@@ -2412,7 +2619,7 @@ function exMovieEnd() {
   }, 320);
 }
 /* ---------- match victory movie + telop ---------- */
-const WINQ = { suzune: 'まだまだ、こんなもんじゃないッス！', aoi: '解析完了。――この勝負、わたしの勝ち。', arca: '観測、完了です。……え、もう終わりですか？', sakura: 'わたしの設計に、狂いはないの。', mio: 'ほら、世界がちょっとキレイになった！' };
+const WINQ = { suzune: 'まだまだ、こんなもんじゃないッス！', aoi: '解析完了。――この勝負、わたしの勝ち。', arca: '観測、完了です。……え、もう終わりですか？', sakura: 'わたしの設計に、狂いはないの。', mio: 'ほら、世界がちょっとキレイになった！', aria: 'へへっ、空はあたしの整備場っす！' };
 const WM = { w: null, timers: [], typing: null, ready: false };
 function winMovieStart(w) {
   const box = $('#winMovie'), v = box.querySelector(`video[data-char="${w.id}"]`);
@@ -2601,7 +2808,7 @@ async function boot() {
   buildBg();
   await Promise.all([buildAssets(), buildAnims(), loadBGM().then(() => Promise.all([loadVoices(), loadSfx()]))]);
   document.querySelectorAll('[data-src]').forEach(i => i.src = window.ASSETS[i.dataset.src]);
-  document.querySelectorAll('.card img').forEach(i => { const id = i.closest('.card').dataset.char; i.src = window.ASSETS[{ suzune: 'suci', aoi: 'aoci', arca: 'arcard', sakura: 'sacard', mio: 'micard' }[id]]; });
+  document.querySelectorAll('.card img').forEach(i => { const id = i.closest('.card').dataset.char; i.src = window.ASSETS[{ suzune: 'suci', aoi: 'aoci', arca: 'arcard', sakura: 'sacard', mio: 'micard', aria: 'ar2card' }[id]]; });
   {   // more cards than fit: fade the right edge so it reads as a swipeable row
     const cs = $('.cards'), upd = () => cs.classList.toggle('more', cs.scrollWidth - cs.clientWidth - cs.scrollLeft > 24);
     cs.addEventListener('scroll', upd, { passive: true }); addEventListener('resize', upd); new ResizeObserver(upd).observe(cs); upd();
