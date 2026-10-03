@@ -205,7 +205,7 @@ function pickFrame(f) {
       }
       if (f.id === 'aria') {
         if (m.key === 'a') { const n = ['a1', 'a2', 'a3'][Math.min(2, f.chain)]; return prog(a[n] ? n : 'a', p); }
-        if (m.key === 'b' || m.key === 'ex') { const z = m.zip; if (!z || z.phase === 'wind') return prog('b', Math.min(.55, t / Math.max(1, m.st) * .55)); if (z.phase === 'fire') return prog('b', .55 + .45 * Math.min(1, z.ft / 6)); if (z.phase === 'zip') return loop('ex', AN.fps.ex || 18); if (z.phase === 'turn') return prog('b', .55 + .45 * Math.min(1, z.ft / 8)); return at('jump', 2); }
+        if (m.key === 'b' || m.key === 'ex') { const z = m.zip; if (!z || z.phase === 'wind') return prog('b', Math.min(.55, t / Math.max(1, m.st) * .55)); if (z.phase === 'fire') return prog('b', .55 + .45 * Math.min(1, z.ft / 6)); if (z.phase === 'zip') return loop('ex', AN.fps.ex || 18); if (z.phase === 'turn') return at('b', 99); return at('jump', 2); }
         if (m.key === 'ult') { const u = t - m.st, U = ARIA_ULT; if (u < U.fire) return loop('ultCharge', AN.fps.ultCharge || 10); return prog('ultFire', Math.min(1, (u - U.fire) / 30)); }
       }
       if (f.id === 'mio') {
@@ -1092,23 +1092,23 @@ function updateAriaMove(f, o, m, t, k, act, at, dt, first) {
 // WIRE DASH (special) / GRAVITY SLING (EX): fires her wire to the edge of the screen and rockets there, hitting everything on
 // the way; on arrival she fires again at the opposite edge and crosses the whole screen a second time. The EX version
 // hits several times per pass and drags the foe along in her gravity wake.
+const ARIA_LINE = 70;   // height of the straight wire dash above the floor
 function screenEdge(dir) { const half = W / 2 / (G.cam.z || 1); return clamp(G.cam.x + dir * (half - 95), 90, STAGE_W - 90); }
 function ariaWireDash(f, o, m, t, k, at, dt, first) {
   const EX = k === 'ex', z = m.zip || (m.zip = { pass: 0, phase: 'wind', ft: 0, hit: 0, multi: EX ? 3 : 1, next: 0 });
   const startPass = () => {
-    z.dir = z.pass === 0 ? f.face : -z.dir; z.tx = screenEdge(z.dir); z.ty = GROUND - 430; z.phase = 'fire'; z.ft = 0; z.hit = 0; z.next = 0; z.x0 = f.x;
+    z.dir = z.pass === 0 ? f.face : -z.dir; z.tx = screenEdge(z.dir); z.ty = GROUND - ARIA_LINE - 150; z.phase = 'fire'; z.ft = 0; z.hit = 0; z.next = 0; z.x0 = f.x;
     f.face = z.dir; const h = ariaHand(f); fxWire(h.x, h.y, z.tx + z.dir * 60, z.ty, 14); fxGears(z.tx + z.dir * 60, z.ty, 6, .9, -z.dir);
     playS('laser_shot', .55, .7); sfx.dash();
   };
   if (z.phase === 'wind') { f.vx *= .6; if (at >= 0) startPass(); return; }
   if (z.phase === 'land') return;   // drops back to the floor under normal gravity
   z.ft += dt; f.vx = 0; f.vy = -GRAV * dt;   // hangs on the wire: no gravity
-  if (z.phase === 'fire') { if (z.ft >= 6) { z.phase = 'zip'; z.ft = 0; flash(EX ? .3 : .15, BRASS.teal); G.speedlines = 30; shake(5); } return; }
+  if (z.phase === 'fire') { if (z.ft >= 4) { z.phase = 'zip'; z.ft = 0; flash(EX ? .3 : .15, BRASS.teal); G.speedlines = 30; shake(5); } return; }
   if (z.phase === 'zip') {
     const sp = EX ? 54 : 46, px = f.x, d = z.tx - f.x;
     f.x += clamp(d, -sp * dt, sp * dt);
-    const span = Math.max(1, Math.abs(z.tx - z.x0)), q = clamp(Math.abs(f.x - z.x0) / span, 0, 1);
-    f.y = GROUND - Math.sin(q * Math.PI) * (EX ? 170 : 120);   // swings in an arc under the wire
+    f.y = GROUND - ARIA_LINE;   // reeled in along a dead-straight line
     // effects: live wire, after-images, rail, thruster wash, speed streaks
     const h = ariaHand(f); fxWire(h.x, h.y, z.tx + z.dir * 60, z.ty, 3);
     f.trail.push(1); f.rail.push({ x: f.x - z.dir * 30, y: f.y - 60, t: G.frame }); fxThrust(f, f.x - z.dir * 30, f.y - 50, z.dir, 3);
@@ -1130,7 +1130,7 @@ function ariaWireDash(f, o, m, t, k, at, dt, first) {
     }
     return;
   }
-  if (z.phase === 'turn') { if (z.ft >= 8) startPass(); return; }
+  if (z.phase === 'turn') { if (z.ft >= 3) startPass(); return; }   // fires the next wire at once
 }
 // ULT LUNA SATELLITE RAY: she calls the lunar satellite; the moon rises over the arena, a target lock follows the foe,
 // then a colossal beam comes straight down from orbit and burns the floor before a final detonation.

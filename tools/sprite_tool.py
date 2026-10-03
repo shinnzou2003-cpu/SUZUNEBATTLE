@@ -135,7 +135,11 @@ def pack(cfg):
             bx1, by1 = min(im.width, bx1 + 2), min(im.height, by1 + 2)
             g = cfg['anims'][name].get('group')
             ax, ay = gref[g] if g else (anchorX, ground)
-            crops.append((im.crop((bx0, by0, bx1, by1)), bx0 - ax + cfg['anims'][name].get('dx', 0), by0 - ay + cfg['anims'][name].get('dy', 0)))   # dx/dy: per-clip offset when the source drifted
+            c = im.crop((bx0, by0, bx1, by1)); ox, oy = bx0 - ax, by0 - ay
+            sc = cfg['anims'][name].get('scale', 1)   # scale: the generator zoomed in on this clip; shrink it back to the stance size
+            if sc != 1:
+                c = c.resize((max(1, round(c.width * sc)), max(1, round(c.height * sc))), Image.LANCZOS); ox *= sc; oy *= sc
+            crops.append((c, ox + cfg['anims'][name].get('dx', 0), oy + cfg['anims'][name].get('dy', 0)))   # dx/dy: per-clip offset when the source drifted
         # shelf packing into one atlas
         x = y = pad; rowH = 0; place = []
         for c, ox, oy in crops:
