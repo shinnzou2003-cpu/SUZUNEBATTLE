@@ -1093,40 +1093,62 @@ function updateAriaMove(f, o, m, t, k, act, at, dt, first) {
 // the way; on arrival she fires again at the opposite edge and crosses the whole screen a second time. The EX version
 // hits several times per pass and drags the foe along in her gravity wake.
 const ARIA_LINE = 70;   // height of the straight wire dash above the floor
+const ARIA_SKY = 360;   // EX: how high the sky corner sits above the floor
 function screenEdge(dir) { const half = W / 2 / (G.cam.z || 1); return clamp(G.cam.x + dir * (half - 95), 90, STAGE_W - 90); }
+// WIRE DASH (special): one wire to the screen edge and a dead-straight, low dash there — then it ends.
+// SKY SLING (EX "GRAVITY SLING"): a visibly different move — she shoots the wire up to the far sky corner and flies a straight
+// diagonal up into the air, then fires again at the opposite edge and dives back down across the screen in a straight
+// diagonal, wrapped in a gold/teal comet with sonic-boom rings, a burning trail and a landing blast.
 function ariaWireDash(f, o, m, t, k, at, dt, first) {
   const EX = k === 'ex', z = m.zip || (m.zip = { pass: 0, phase: 'wind', ft: 0, hit: 0, multi: EX ? 3 : 1, next: 0 });
   const startPass = () => {
-    z.dir = z.pass === 0 ? f.face : -z.dir; z.tx = screenEdge(z.dir); z.ty = GROUND - ARIA_LINE - 150; z.phase = 'fire'; z.ft = 0; z.hit = 0; z.next = 0; z.x0 = f.x;
+    z.dir = z.pass === 0 ? f.face : -z.dir; z.tx = screenEdge(z.dir);
+    z.by = EX ? (z.pass === 0 ? GROUND - ARIA_SKY : GROUND) : GROUND - ARIA_LINE;   // where her feet arrive
+    z.ty = z.by - 150; z.phase = 'fire'; z.ft = 0; z.hit = 0; z.next = 0; z.x0 = f.x; z.y0 = f.y;
     f.face = z.dir; const h = ariaHand(f); fxWire(h.x, h.y, z.tx + z.dir * 60, z.ty, 14); fxGears(z.tx + z.dir * 60, z.ty, 6, .9, -z.dir);
-    playS('laser_shot', .55, .7); sfx.dash();
+    playS('laser_shot', .55, EX ? .55 : .7); sfx.dash();
+    if (EX) { flash(.35, BRASS.teal); fxRing(f.x, f.y - 140, BRASS.hot, 20, 260, 18, 8); fxThrust(f, f.x - z.dir * 20, f.y - 30, z.dir, 12); }
   };
-  if (z.phase === 'wind') { f.vx *= .6; if (at >= 0) startPass(); return; }
-  if (z.phase === 'land') return;   // drops back to the floor under normal gravity
+  if (z.phase === 'wind') { f.vx *= .6; if (EX && (t | 0) % 2 === 0) fxRing(f.x, f.y - 140, BRASS.teal, 120, 20, 10, 4, 1); if (at >= 0) startPass(); return; }
+  if (z.phase === 'land') { f.rot = 0; return; }   // drops back to the floor under normal gravity
   z.ft += dt; f.vx = 0; f.vy = -GRAV * dt;   // hangs on the wire: no gravity
-  if (z.phase === 'fire') { if (z.ft >= 4) { z.phase = 'zip'; z.ft = 0; flash(EX ? .3 : .15, BRASS.teal); G.speedlines = 30; shake(5); } return; }
+  if (z.phase === 'fire') { if (z.ft >= (EX ? 5 : 4)) { z.phase = 'zip'; z.ft = 0; if (!EX) { f.y = z.by; z.y0 = z.by; }   // normal dash: snaps onto a flat line
+    flash(EX ? .45 : .15, EX ? BRASS.hot : BRASS.teal); G.speedlines = EX ? 44 : 30; shake(EX ? 10 : 5); if (EX) { quake(10, .4, 40); playS('ult_start', .35, 1.6); } } return; }
   if (z.phase === 'zip') {
-    const sp = EX ? 54 : 46, px = f.x, d = z.tx - f.x;
-    f.x += clamp(d, -sp * dt, sp * dt);
-    f.y = GROUND - ARIA_LINE;   // reeled in along a dead-straight line
-    // effects: live wire, after-images, rail, thruster wash, speed streaks
+    const sp = EX ? 52 : 46, px = f.x, py = f.y, dx = z.tx - f.x, dy = z.by - f.y, L = Math.hypot(dx, dy), stp = Math.min(L, sp * dt);
+    if (L > .01) { f.x += dx / L * stp; f.y += dy / L * stp; }   // dead-straight line to the target
+    const ang = Math.atan2(z.by - z.y0, Math.abs(z.tx - z.x0) + .01); z.rot = EX ? ang : 0;
     const h = ariaHand(f); fxWire(h.x, h.y, z.tx + z.dir * 60, z.ty, 3);
-    f.trail.push(1); f.rail.push({ x: f.x - z.dir * 30, y: f.y - 60, t: G.frame }); fxThrust(f, f.x - z.dir * 30, f.y - 50, z.dir, 3);
-    for (let i = 0; i < 2; i++) addFx({ k: 'streak', x: f.x + rnd(-40, 40), y: f.y - rnd(20, 280), vx: -z.dir * rnd(20, 34), vy: 0, life: rnd(8, 14), t: 0, rgb: i ? BRASS.teal : f.col.rgb, w: rnd(1.5, 3.5) });
-    if (EX && (G.frame % 3 === 0)) fxRing(f.x, f.y - 140, BRASS.teal, 20, 120, 10, 3, 1);
-    G.speedlines = Math.max(G.speedlines, 10);
-    // hitbox travels with her (swept so a fast pass never skips over the foe)
-    const hb = { x0: Math.min(px, f.x) - 70, x1: Math.max(px, f.x) + 70, y0: f.y - 270, y1: f.y + 10 };
-    if (z.hit < z.multi && z.ft >= z.next && G.phase === 'fight' && overlap(hb, hurt(o))) {
-      z.hit++; z.next = z.ft + 4; const fin = z.pass === 1 && z.hit === z.multi;
-      hitTarget(f, o, { dmg: EX ? 3.6 : 5, kb: fin ? 13 : 4, stun: 26, power: fin ? 1.7 : 1.1, launch: fin ? -11 : 0, hy: clamp(o.y - f.y + 150, 60, 240), unblock: EX && z.hit > 1 });
-      fxGears(o.x, o.y - 150, 6, 1.2, z.dir); fxArc(o.x, o.y - 150, 120, -1.2, 1.2, BRASS.teal, z.dir, 12, 30);
-      if (EX && !fin) o.vx = z.dir * 20;   // gravity wake drags the foe along
+    f.trail.push(1); f.rail.push({ x: f.x - z.dir * 30, y: f.y - 60, t: G.frame }); fxThrust(f, f.x - z.dir * 30, f.y - 50, z.dir, EX ? 5 : 3);
+    const ux = (f.x - px) / (stp || 1), uy = (f.y - py) / (stp || 1);   // travel direction
+    for (let i = 0; i < (EX ? 4 : 2); i++) addFx({ k: 'streak', x: f.x + rnd(-40, 40), y: f.y - rnd(20, 280), vx: -ux * rnd(20, 34), vy: -uy * rnd(20, 34), life: rnd(8, 14), t: 0, rgb: i % 2 ? BRASS.teal : f.col.rgb, w: rnd(1.5, 3.5) });
+    if (EX) {   // comet: hot core, burning ribbon, sonic-boom rings, embers
+      fxCore(f.x, f.y - 140, BRASS.hot, 120, 8);
+      addFx({ k: 'wire', x0: px - ux * 60, y0: py - 140 - uy * 60, x1: f.x, y1: f.y - 140, life: 22, t: 0 });
+      if (G.frame % 3 === 0) fxRing(f.x - ux * 40, f.y - 140 - uy * 40, (G.frame % 6) ? BRASS.teal : BRASS.hot, 30, 170, 12, 5, .45);
+      for (let i = 0; i < 3; i++) addFx({ k: 'ember', x: f.x + rnd(-50, 50), y: f.y - rnd(60, 220), vx: -ux * rnd(2, 6), vy: -uy * rnd(2, 6) + rnd(-1, 1), life: rnd(30, 60), t: 0, rgb: i % 2 ? BRASS.hot : BRASS.teal });
+      G.tintA = Math.max(G.tintA, .2); G.tintC = BRASS.glow;
     }
-    if (Math.abs(z.tx - f.x) < 2) {   // arrived at the edge: anchor burst
+    G.speedlines = Math.max(G.speedlines, EX ? 18 : 10);
+    // hitbox travels with her (swept so a fast pass never skips over the foe)
+    const hb = { x0: Math.min(px, f.x) - 80, x1: Math.max(px, f.x) + 80, y0: Math.min(py, f.y) - 280, y1: Math.max(py, f.y) + 20 };
+    if (z.hit < z.multi && z.ft >= z.next && G.phase === 'fight' && overlap(hb, hurt(o))) {
+      z.hit++; z.next = z.ft + 4; const fin = (EX ? z.pass === 1 : true) && z.hit === z.multi;
+      hitTarget(f, o, { dmg: EX ? 3.8 : 6, kb: fin ? 13 : 4, stun: 26, power: fin ? (EX ? 2.2 : 1.5) : 1.1, launch: fin ? -11 : 0, hy: clamp(o.y - f.y + 150, 60, 240), unblock: EX && z.hit > 1 });
+      fxGears(o.x, o.y - 150, EX ? 10 : 6, 1.2, z.dir); fxArc(o.x, o.y - 150, 120, -1.2, 1.2, BRASS.teal, z.dir, 12, 30);
+      if (EX) { fxBig(o.x, o.y - 150, BRASS.glow, BRASS.hot, 1.6, z.dir); if (!fin) { o.vx = z.dir * 20; o.vy = Math.min(o.vy, -6); } }   // gravity wake drags the foe along
+    }
+    if (L < 2) {   // arrived: anchor burst
       fxRing(f.x + z.dir * 50, f.y - 160, f.col.rgb, 20, 200, 18, 8); fxGears(f.x + z.dir * 60, f.y - 160, 8, 1.2, -z.dir); shake(7); quake(5, .25); playS('arca_armor', .4, 1.4);
-      if (z.pass === 0) { z.pass = 1; z.phase = 'turn'; z.ft = 0; f.face = -z.dir; }
-      else { z.phase = 'land'; z.ft = 0; f.vy = 4; f.t = m.st + m.act; }
+      if (EX && z.pass === 0) { z.pass = 1; z.phase = 'turn'; z.ft = 0; f.face = -z.dir; fxBig(f.x, f.y - 160, BRASS.teal, BRASS.hot, 1.6, -z.dir); }
+      else {
+        z.phase = 'land'; z.ft = 0; f.vy = 4; f.t = m.st + m.act; z.rot = 0;
+        if (EX) {   // dives into the floor: landing blast
+          sfx.boom(); flash(.5, BRASS.hot); shake(16); quake(14, .6, 70);
+          for (let r = 0; r < 3; r++) fxRing(f.x, GROUND - 6, r % 2 ? BRASS.teal : BRASS.hot, 30, 260 + r * 150, 24 + r * 6, 12 - r * 2, .22);
+          fxDust(f.x, GROUND, 18, 1.8); fxGears(f.x, GROUND - 40, 14, 1.6); G.tintA = 0;
+        }
+      }
     }
     return;
   }
@@ -1789,6 +1811,7 @@ function poseOf(f) {
     else if (!(f.state === 'atk' && f.move && f.move.key === 'ult')) P.rot *= .25;
     P.top *= .22; P.bot *= .22; P.wave *= .3;
   }
+  if (f.id === 'aria' && f.state === 'atk' && f.move && f.move.zip && f.move.zip.phase === 'zip' && f.move.key === 'ex') { P.rot = f.move.zip.rot || 0; P.sx = 1; P.sy = 1; }   // flies nose-first along the diagonal
   if (f.id === 'arca' && ANIMS.arca) { P.rot = f.state === 'hit' ? P.rot * .3 : 0; P.sx = 1 + (P.sx - 1) * .35; P.sy = 1 + (P.sy - 1) * .35; P.top *= .3; P.bot *= .3; }
   return P;
 }
