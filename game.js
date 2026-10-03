@@ -205,7 +205,7 @@ function pickFrame(f) {
       }
       if (f.id === 'aria') {
         if (m.key === 'a') { const n = ['a1', 'a2', 'a3'][Math.min(2, f.chain)]; return prog(a[n] ? n : 'a', p); }
-        if (m.key === 'b' || m.key === 'ex') { const z = m.zip; if (!z || z.phase === 'fire') return prog('b', z ? z.ft / 10 : t / m.st); if (z.phase === 'zip') return loop('ex', AN.fps.ex || 18); if (z.phase === 'turn') return prog('b', z.ft / 8); return at('jump', 2); }
+        if (m.key === 'b' || m.key === 'ex') { const z = m.zip; if (!z || z.phase === 'wind') return prog('b', Math.min(.55, t / Math.max(1, m.st) * .55)); if (z.phase === 'fire') return prog('b', .55 + .45 * Math.min(1, z.ft / 6)); if (z.phase === 'zip') return loop('ex', AN.fps.ex || 18); if (z.phase === 'turn') return prog('b', .55 + .45 * Math.min(1, z.ft / 8)); return at('jump', 2); }
         if (m.key === 'ult') { const u = t - m.st, U = ARIA_ULT; if (u < U.fire) return loop('ultCharge', AN.fps.ultCharge || 10); return prog('ultFire', Math.min(1, (u - U.fire) / 30)); }
       }
       if (f.id === 'mio') {
