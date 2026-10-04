@@ -21,18 +21,23 @@ def frames(video, t0, t1, fps):
     return [Image.open(os.path.join(d, n)).convert('RGB') for n in sorted(os.listdir(d))]
 
 
-def key(img):
-    """Hard green-screen key: tight threshold, full despill, 1px edge choke, speck removal."""
+def key(img, kp=None):
+    """Hard green-screen key: tight threshold, full despill, 1px edge choke, speck removal.
+    kp (optional) loosens it for green-leaning costumes: {"lo": gd fully opaque, "span": ramp width,
+    "hue": greenish ratio (0 = off), "spill": how far green may exceed max(r, b) before it is clamped}."""
     from scipy import ndimage
+    kp = kp or {}
+    lo, span, hue, spill = kp.get('lo', 6.0), kp.get('span', 20.0), kp.get('hue', 1.12), kp.get('spill', 0.0)
     a = np.asarray(img).astype(np.float32)
     r, g, b = a[..., 0], a[..., 1], a[..., 2]
     mx = np.maximum(r, b)
     gd = g - mx                                   # how much green dominates
-    alpha = np.clip(1.0 - (gd - 6.0) / 20.0, 0, 1)   # gd<=6 opaque, gd>=26 gone
+    alpha = np.clip(1.0 - (gd - lo) / span, 0, 1)   # gd<=lo opaque, gd>=lo+span gone
     # hue-based catch for darker / desaturated green screen pixels
-    sat = (np.maximum(g, mx) - np.minimum(np.minimum(r, g), b)) / (np.maximum(g, mx) + 1e-3)
-    greenish = (g > r * 1.12) & (g > b * 1.12) & (sat > .22)
-    alpha = np.where(greenish, np.minimum(alpha, np.clip(1.0 - (gd + 4) / 18.0, 0, 1)), alpha)
+    if hue:
+        sat = (np.maximum(g, mx) - np.minimum(np.minimum(r, g), b)) / (np.maximum(g, mx) + 1e-3)
+        greenish = (g > r * hue) & (g > b * hue) & (sat > .22)
+        alpha = np.where(greenish, np.minimum(alpha, np.clip(1.0 - (gd + 4) / 18.0, 0, 1)), alpha)
     # choke the matte 1px (removes the green halo) and drop isolated specks
     solid = alpha > .5
     solid = ndimage.binary_opening(solid, iterations=1)
@@ -45,9 +50,9 @@ def key(img):
     alpha = np.where(core, 1.0, np.where(solid, np.minimum(alpha, .55), 0.0))
     alpha = ndimage.gaussian_filter(alpha, .6) * (ndimage.binary_dilation(solid, iterations=1))
     # full despill: green never exceeds max(r, b); edge pixels pulled further toward neutral
-    g2 = np.minimum(g, mx)
+    g2 = np.minimum(g, mx + spill)
     edge = (alpha < .95) & (alpha > 0)
-    g2 = np.where(edge, np.minimum(g2, (r + b) / 2 + 4), g2)
+    g2 = np.where(edge, np.minimum(g2, (r + b) / 2 + 4 + spill * .5), g2)
     out = np.dstack([r, g2, b, alpha * 255]).clip(0, 255).astype(np.uint8)
     out[..., 3][out[..., 3] < 20] = 0
     return Image.fromarray(out, 'RGBA')
@@ -97,11 +102,14 @@ def pack(cfg):
     os.makedirs(outdir, exist_ok=True)
     keyed = {}
     for name, a in cfg['anims'].items():
-        src = a.get('video', video)
+        src, kp = a.get('video', video), a.get('key', cfg.get('key'))
+        # crop: [x0, y0, x1, y1] region of the source frame, upscaled by `zoom` (bust-up cut-in from a full-body clip)
+        cut = (lambda im: im.crop(a['crop']).resize((round((a['crop'][2] - a['crop'][0]) * a.get('zoom', 1)),
+                                                      round((a['crop'][3] - a['crop'][1]) * a.get('zoom', 1))), Image.LANCZOS)) if a.get('crop') else (lambda im: im)
         if a.get('times'):
-            fl = [key(frames(src, t, t + .06, 24)[0]) for t in a['times']]
+            fl = [key(cut(frames(src, t, t + .06, 24)[0]), kp) for t in a['times']]
         else:
-            fl = [key(f) for f in frames(src, a['t0'], a['t1'], a['fps'])]
+            fl = [key(cut(f), kp) for f in frames(src, a['t0'], a['t1'], a['fps'])]
         if a.get('take'):
             fl = [fl[i] for i in a['take'] if i < len(fl)]
         if a.get('reverse'):
@@ -118,7 +126,7 @@ def pack(cfg):
     anchorX = cfg.get('anchorX') or (x0 + x1) / 2
     storeH = cfg.get('storeH') or (y1 - y0)
     meta = {'storeH': round(float(storeH), 1), 'anims': {}}
-    gref = {}
+    gref = {g: tuple(p) for g, p in cfg.get('groupAnchor', {}).items()}   # fixed source-px anchor per group
     for name, a in cfg['anims'].items():
         g = a.get('group')
         if g and g not in gref:
@@ -134,7 +142,7 @@ def pack(cfg):
             bx0, by0 = max(0, bx0 - 2), max(0, by0 - 2)
             bx1, by1 = min(im.width, bx1 + 2), min(im.height, by1 + 2)
             g = cfg['anims'][name].get('group')
-            ax, ay = gref[g] if g else (anchorX, ground)
+            ax, ay = (0, 0) if cfg['anims'][name].get('box') else gref[g] if g else (anchorX, ground)   # box: offsets from the frame's top-left (cut-in clips)
             c = im.crop((bx0, by0, bx1, by1)); ox, oy = bx0 - ax, by0 - ay
             sc = cfg['anims'][name].get('scale', 1)   # scale: the generator zoomed in on this clip; shrink it back to the stance size
             if sc != 1:
@@ -171,8 +179,9 @@ def pack(cfg):
 if __name__ == '__main__':
     if sys.argv[1] == 'sheet':
         sheet(sys.argv[2], sys.argv[3], float(sys.argv[5]) if len(sys.argv) > 5 else 4)
-    elif sys.argv[1] == 'key':   # preview one keyed frame: key VIDEO T OUT.png
+    elif sys.argv[1] == 'key':   # preview one keyed frame: key VIDEO T OUT.png ['{"lo":28,...}']
         f = frames(sys.argv[2], float(sys.argv[3]), float(sys.argv[3]) + .05, 20)[0]
-        bg = Image.new('RGBA', f.size, (40, 40, 60, 255)); k = key(f); bg.alpha_composite(k); bg.save(sys.argv[4])
+        kp = json.loads(sys.argv[5]) if len(sys.argv) > 5 else None
+        bg = Image.new('RGBA', f.size, (40, 40, 60, 255)); k = key(f, kp); bg.alpha_composite(k); bg.save(sys.argv[4])
     else:
         pack(json.load(open(sys.argv[2])))
