@@ -1180,11 +1180,11 @@ function updateAriaUlt(f, o, at, dt, first) {
     if ((at | 0) % 8 === 0) fxRing(L.x, GROUND - 6, LUNA.blue, 60, 300, 16, 6, .22);
     const hb = { x0: L.x - 120, x1: L.x + 120, y0: -2000, y1: GROUND + 10 };
     if (m.nextHit === undefined) m.nextHit = U.fire;
-    if (at >= m.nextHit && live && overlap(hb, hurt(o))) { m.nextHit += U.every; hitTarget(f, o, { noScale: true, unblock: true, dmg: 2.4, kb: 0, stun: 24, power: 1, ult: true, hy: 160 }); o.vx *= .2; }
+    if (at >= m.nextHit && live && overlap(hb, hurt(o))) { m.nextHit += U.every; hitTarget(f, o, { noScale: true, dmg: 2.4, kb: 0, stun: 24, power: 1, ult: true, hy: 160 }); o.vx *= .2; }
   }
   if (first(U.last)) {   // final detonation at the impact point
     const X = L.x; L.on = false; L.boom = 0;
-    if (live && Math.abs(o.x - X) < 260) hitTarget(f, o, { noScale: true, unblock: true, dmg: 9, kb: 14 * (Math.sign(o.x - f.x) || f.face), launch: -18, power: 3.2, hitstop: 14, ult: true, hy: 160 });
+    if (live && Math.abs(o.x - X) < 260) hitTarget(f, o, { noScale: true, dmg: 9, kb: 14 * (Math.sign(o.x - f.x) || f.face), launch: -18, power: 3.2, hitstop: 14, ult: true, hy: 160 });
     sfx.boom(); flash(1, '255,255,255'); shake(28); zoomKick(.14); slowmo(.3, 40); quake(30, 1.2, [160, 60, 120]);
     for (let r = 0; r < 4; r++) fxRing(X, GROUND - 6, r % 2 ? LUNA.violet : LUNA.core, 30, 320 + r * 180, 30 + r * 8, 14 - r * 2, .22);
     fxBig(X, GROUND - 160, LUNA.blue, LUNA.core, 3.2, 1); addFx({ k: 'pillar', x: X, y: GROUND, rgb: LUNA.blue, hot: LUNA.core, life: 50, t: 0, w: 260 });
