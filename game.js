@@ -94,10 +94,10 @@ function pfxDraw(dtMs) {
   gl.bindTexture(gl.TEXTURE_2D, PFX.scene); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, wcv);
   const ultOn = G.ultMono > 0 || G.fighters.some(f => f.state === 'atk' && f.move && (f.move.key === 'ult' || f.move.key === 'ex'));
-  const bloomAmt = (G.scene === 'game' ? .55 : .35) + (ultOn ? .35 : 0) + PFX.bloomBoost;
+  const bloomAmt = (G.scene === 'game' ? .42 : .3) + (ultOn ? .3 : 0) + PFX.bloomBoost;
   if (PFX.q >= 1) {   // bright pass + 2× separable blur at quarter res
     const A = PFX.A, B = PFX.B; gl.viewport(0, 0, A.w, A.h);
-    gl.useProgram(P.bright.p); gl.bindFramebuffer(gl.FRAMEBUFFER, A.f); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, PFX.scene); gl.uniform1i(P.bright.u.t, 0); gl.uniform1f(P.bright.u.th, ultOn ? .55 : .62); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.useProgram(P.bright.p); gl.bindFramebuffer(gl.FRAMEBUFFER, A.f); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, PFX.scene); gl.uniform1i(P.bright.u.t, 0); gl.uniform1f(P.bright.u.th, ultOn ? .6 : .74); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.useProgram(P.blur.p); gl.uniform1i(P.blur.u.t, 0);
     const its = PFX.q >= 2 ? 2 : 1;
     for (let i = 0; i < its; i++) {
