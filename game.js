@@ -195,6 +195,8 @@ async function buildAssets() {
 const ANIMS = {};
 const frameCount = (id, n) => ANIMS[id] && ANIMS[id].a[n] ? ANIMS[id].a[n].length : 0;
 // visual size balance between characters (SUZUNE's source video was framed larger)
+const RESIZE = { suzune: .9, aoi: .9, sakura: .9 };   // 2026-10-04: these three trimmed to sit with the rest of the roster (sprite + hit/hurt boxes + attach points)
+const RS = f => RESIZE[f.id] || 1;
 const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.2, mio: 1.22, aria: .95 };   // AOI stands taller; SUZUNE fights from a low crouch
 const LOAD = { done: 0, total: 0 };
 function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = document.getElementById('loadPct'); if (el) el.textContent = Math.round(LOAD.done / Math.max(1, LOAD.total) * 100) + '%'; return v; }); }
@@ -211,7 +213,7 @@ function loadAnim(id, onTick) {
   if (ANIMS[id]) return Promise.resolve();
   if (ANIM_LOAD[id]) return ANIM_LOAD[id];
   const meta = ANIM_META[id]; if (!meta) return Promise.resolve();
-  const AN = { k: DH / meta.storeH * (CHAR_SCALE[id] || 1), a: {}, fps: {}, atlases: [], alt: [], altBusy: false, cutBox: meta.cutinBox || [564, 420], dragonK: meta.dragonK || 1 };
+  const AN = { k: DH / meta.storeH * (CHAR_SCALE[id] || 1) * (RESIZE[id] || 1), a: {}, fps: {}, atlases: [], alt: [], altBusy: false, cutBox: meta.cutinBox || [564, 420], dragonK: meta.dragonK || 1 };
   const idx = {}, paths = [];
   for (const k in meta.anims) {
     const an = meta.anims[k];
@@ -816,9 +818,9 @@ function makeFighter(id, side, alt) {
   };
 }
 const onGround = f => f.y >= GROUND - .01;
-function hurt(f) { const w = f.ch.hurtW || 58, h = f.ch.hurtH || 280; return { x0: f.x - w, x1: f.x + w, y0: f.y - h, y1: f.y }; }
+function hurt(f) { const r = RS(f), w = (f.ch.hurtW || 58) * r, h = (f.ch.hurtH || 280) * r; return { x0: f.x - w, x1: f.x + w, y0: f.y - h, y1: f.y }; }
 function overlap(a, b) { return a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0; }
-function box(f, x0, x1, y0, y1) { const a = f.x + f.face * x0, b = f.x + f.face * x1; return { x0: Math.min(a, b), x1: Math.max(a, b), y0: f.y + y0, y1: f.y + y1 }; }
+function box(f, x0, x1, y0, y1) { const r = RS(f); x0 *= r; x1 *= r; y0 *= r; y1 *= r; const a = f.x + f.face * x0, b = f.x + f.face * x1; return { x0: Math.min(a, b), x1: Math.max(a, b), y0: f.y + y0, y1: f.y + y1 }; }
 
 const MOVES = {
   suzune: {
@@ -1020,9 +1022,9 @@ function updateArcaMove(f, o, m, t, k, act, at, dt, first) {
   } else if (k === 'ult') updateAoiUlt(f, o, at, dt, first);   // same beam logic, fired from the ARSENAL's railgun
 }
 // SAKURA: drafting-compass strikes, a thrown blueprint disc, and the IDEA DRAGON she draws into being
-function sakuraTip(f) { return { x: f.x + f.face * 140, y: f.y - 243 }; }
+function sakuraTip(f) { const r = RS(f); return { x: f.x + f.face * 140 * r, y: f.y - 243 * r }; }
 // ULT: her blueprint beam and the dragon's breath converge here, then fire as one braided beam
-function sakuraFocus(f) { return { x: f.x + f.face * 396, y: f.y - 220 }; }
+function sakuraFocus(f) { const r = RS(f); return { x: f.x + f.face * 396 * r, y: f.y - 220 * r }; }
 function updateSakuraMove(f, o, m, t, k, act, at, dt, first) {
   const rgb = f.col.rgb, gold = f.col.rgb2, tip = sakuraTip(f);
   if (k === 'a') {
@@ -1045,7 +1047,7 @@ function updateSakuraMove(f, o, m, t, k, act, at, dt, first) {
       sfx.heavySwing();
     }
   } else if (k === 'ex') {
-    if (t < m.st) { f.vx = 0; f.charge = t / m.st; if ((t | 0) % 2 === 0) fxSpark(f.x, f.y - 411, gold, 3, .5); if ((t | 0) % 6 === 0) fxRing(f.x - f.face * 44, f.y - 470, rgb, 20, 147, 16, 3, .3); }
+    if (t < m.st) { f.vx = 0; f.charge = t / m.st; if ((t | 0) % 2 === 0) fxSpark(f.x, f.y - 411 * RS(f), gold, 3, .5); if ((t | 0) % 6 === 0) fxRing(f.x - f.face * 44, f.y - 470 * RS(f), rgb, 20, 147, 16, 3, .3); }
     if (first(0)) { summonDragon(f, o, 'swoop'); f.charge = 0; }
   } else if (k === 'ult') {
     if (first(0)) summonDragon(f, o, 'ult');
@@ -1054,7 +1056,7 @@ function updateSakuraMove(f, o, m, t, k, act, at, dt, first) {
   }
 }
 const DRAGON = { mx: 300, my: -24 };   // jaw position relative to the dragon's body centre in source sprite px (facing right)
-const dragonScale = f => { const AN = ANIMS[f.id]; return AN ? AN.k * AN.dragonK : .9; };
+const dragonScale = f => { const AN = ANIMS[f.id]; return AN ? AN.k * AN.dragonK / RS(f) : .9; };   // the dragon keeps its size
 function summonDragon(f, o, mode) {
   const back = -f.face;
   f.dragon = mode === 'swoop'
@@ -1856,8 +1858,8 @@ function stepFighter(f, o, inp, dt) {
   // drone follows
   if (f.id === 'aoi') {
     f.droneA += .05 * dt;
-    let tx = f.x + f.face * 70, ty = f.y - 330 + Math.sin(f.droneA) * 10;
-    if (f.move && f.move.key === 'ult') { tx = f.x + f.face * 140; ty = f.y - 200; }
+    const r = RS(f); let tx = f.x + f.face * 70 * r, ty = f.y - 330 * r + Math.sin(f.droneA) * 10;
+    if (f.move && f.move.key === 'ult') { tx = f.x + f.face * 140 * r; ty = f.y - 200 * r; }
     if (f.state === 'win') { f.droneA += .06 * dt; tx = f.x + Math.cos(f.droneA * 1.5) * 150; ty = f.y - 250 + Math.sin(f.droneA * 1.5) * 40; }
     if (f.state === 'atk' && f.move && f.move.key === 'a' && f.t >= f.move.st && f.t < f.move.st + 4) tx -= f.face * 26;
     f.droneX = lerp(f.droneX || tx, tx, .18); f.droneY = lerp(f.droneY || ty, ty, .18);
