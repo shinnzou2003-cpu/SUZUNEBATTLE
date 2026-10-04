@@ -1722,7 +1722,7 @@ function stepFighter(f, o, inp, dt) {
       f.vy = 0;
     }
   }
-  const sep = W / G.cam.z - 150;
+  const sep = W / G.cam.z - 320;   // keep both fighters inside the (zoomed) frame
   if (f.state !== 'tagin') f.x = clamp(f.x, 70, STAGE_W - 70);
   if (Math.abs(f.x - o.x) > sep && !f.hidden && !o.hidden && f.state !== 'dashin' && o.state !== 'dashin' && f.state !== 'tagin' && o.state !== 'tagin' && f.state !== 'dash') f.x = o.x + Math.sign(f.x - o.x) * sep;
   if (f.trail.length) { f.trail.length = 0; f.ghosts = f.ghosts || []; { const pf = pickFrame(f); f.ghosts.push({ x: f.x, y: f.y, face: f.face, rot: f.rot, sx: f.sx, sy: f.sy, top: f.top, bot: f.bot, t: 0, fr: pf && pf.fr }); } }
@@ -1896,7 +1896,7 @@ async function startMatch() {
 function startRound() {
   makeTeams(); G.tagCd = [0, 0]; G.pendingTag = null; G.benched = [];
   G.resultShown = false; G.victory = null; G.fx = []; G.proj = []; G.paintFloor = []; G.luna = null; G.timer = 99; G.timerF = 0; G.phase = 'intro'; G.phaseT = 0; G.cutin = null; G.rwCut = null; G.freeze = 0; G.tintA = 0; G.slow = 1;
-  G.cam.x = STAGE_W / 2;
+  G.cam.x = STAGE_W / 2; G.cam.z = 1;
   for (const f of G.fighters) {
     if (f.id === 'arca') { f.boarding = G.round === 1; f._boardFx = f._boardFx2 = f._bootSnd = false; f.state = 'idle'; continue; }
     f.x -= f.face * 400; f.vx = f.face * 28; f.state = 'dashin';
@@ -2011,7 +2011,7 @@ function stageReady() { const v = STAGE.v; return v && v.readyState >= 2 && v.vi
 // the video fills the screen with a little margin so the camera can pan across it (parallax) and zoom/shake with the fight
 function drawStage(camX) {
   const v = STAGE.v, c = G.cam, sh = c.shake, z = c.z + c.kick;
-  const base = 1.1 * z, w = W * base, h = H * base;
+  const base = Math.max(1.04, 1.1 * (1 + (z - 1) * .75)), w = W * base, h = H * base;   // the backdrop zooms a bit less than the fighters (depth), never below full-screen
   const px = -(camX - STAGE_W / 2) * .09 + (sh ? rnd(-sh, sh) * .6 : 0), py = sh ? rnd(-sh, sh) * .4 : 0;
   ctx.drawImage(v, (W - w) / 2 + px, (H - h) * .62 + py, w, h);
   ctx.fillStyle = 'rgba(8,6,20,.12)'; ctx.fillRect(0, 0, W, H);                   // slight grade so fighters pop
@@ -2522,17 +2522,26 @@ function simStep(dt) {
   stepFighter(a, b, ia, sdt); stepFighter(b, a, ib, sdt); pushApart(a, b);
   updateProj(sdt); updateFx(sdt); updateFlow(sdt); updateTeams(sdt);
 }
+const CAM = { zMax: 1.3, zMin: .76, zWin: 1.22, near: 360, far: 1250, in: .035, out: .09 };
+function smooth01(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
 function updateCamera() {
   const c = G.cam, [a, b] = G.fighters;
   if (a && b) {
     const vis = [a, b].filter(f => !f.hidden); const cx = f => f.state === 'tagin' && f.tg ? f.tg.x1 : f.x;
     let mid = vis.length ? vis.reduce((s, f) => s + cx(f), 0) / vis.length : c.x;
     const wf = vis.find(f => f.state === 'win'); if (wf) mid = wf.x;
-    const d = vis.length === 2 ? Math.abs(a.x - b.x) : 300;
-    c.z = 1;
+    const d = vis.length === 2 ? Math.abs(cx(a) - cx(b)) : 600;
+    // Art-of-Fighting style camera: close in when the fighters are near, pull back when they spread out
+    const big = G.fighters.some(f => f.state === 'atk' && f.move && (f.move.key === 'ult' || f.move.key === 'ex')) || G.luna || G.phase === 'intro' || vis.some(f => f.state === 'tagin' || f.state === 'dashin');
+    let zt = CAM.zMax - (CAM.zMax - CAM.zMin) * smooth01((d - CAM.near) / (CAM.far - CAM.near));
+    if (big) zt = Math.min(zt, 1);                                   // big moves and entrances need the wide shot
+    if (wf) zt = CAM.zWin;                                           // victory pose: push in on the winner
+    if (!c.z) c.z = 1;
+    c.z = lerp(c.z, zt, zt < c.z ? CAM.out : CAM.in);                // pull back quickly so nobody leaves the frame, push in slowly
+    if (Math.abs(c.z - zt) < .001) c.z = zt;
     const half = W / 2 / c.z;
     c.x = lerp(c.x, clamp(mid, half, STAGE_W - half), .12);
-    const hi = Math.max(...vis.map(f => f.state === 'tagin' ? 0 : GROUND - f.y), 0); c.y = lerp(c.y || 0, Math.max(0, hi - 140) * .7, .14);   // tilt up for big jumps
+    const hi = Math.max(...vis.map(f => f.state === 'tagin' ? 0 : GROUND - f.y), 0); c.y = lerp(c.y || 0, Math.max(0, hi - 120 / c.z) * .7 * c.z, .14);   // tilt up for big jumps
   }
   c.shake *= .86; if (c.shake < .3) c.shake = 0;
   c.kick *= .8;
