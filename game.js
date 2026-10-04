@@ -7,7 +7,7 @@ const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const lerp = (a, b, t) => a + (b - a) * t;
 const TAU = Math.PI * 2;
 
-const cv = $('#game'), ctx = cv.getContext('2d');
+const cv = $('#game'); let ctx = cv.getContext('2d');
 let scale = 1, dpr = 1;
 function resize() {
   const vw = innerWidth, vh = innerHeight;
@@ -17,8 +17,113 @@ function resize() {
   cv.style.width = (W * scale) + 'px'; cv.style.height = (H * scale) + 'px';
   const portrait = vh > vw * 1.05;
   document.body.classList.toggle('portrait', portrait);
+  if (PFX.on) pfxResize();
 }
 addEventListener('resize', resize);
+/* ---------- WebGL post-processing: the 2D world is drawn off-screen, then bloomed / distorted / graded on the GPU ----------
+   layers (bottom → top): #fxgl (world after post-fx) · #game (HUD, transparent).  No WebGL → everything stays on #game as before. */
+const PFX = { on: false, gl: null, q: 2, waves: [], ca: 0, radial: 0, rcx: .5, rcy: .5, impact: 0, impRgb: [1, .25, .3], bloomBoost: 0, ms: [], last: 0 };
+const wcv = document.createElement('canvas'), wctx = wcv.getContext('2d');
+const hudctx = ctx;
+function pfxInit() {
+  if (/[?&]fx=0/.test(location.search)) return;
+  const c = document.createElement('canvas'); c.id = 'fxgl'; c.setAttribute('aria-hidden', 'true');
+  const gl = c.getContext('webgl', { alpha: false, antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' });
+  if (!gl) return;
+  const VS = 'attribute vec2 p;varying vec2 v;void main(){v=p*.5+.5;gl_Position=vec4(p,0.,1.);}';
+  const BRIGHT = `precision mediump float;varying vec2 v;uniform sampler2D t;uniform float th;
+    void main(){vec3 c=texture2D(t,v).rgb;float l=max(c.r,max(c.g,c.b));float k=smoothstep(th,th+.25,l);gl_FragColor=vec4(c*k,1.);}`;
+  const BLUR = `precision mediump float;varying vec2 v;uniform sampler2D t;uniform vec2 d;
+    void main(){vec3 c=texture2D(t,v).rgb*.227;c+=(texture2D(t,v+d*1.385).rgb+texture2D(t,v-d*1.385).rgb)*.316;c+=(texture2D(t,v+d*3.231).rgb+texture2D(t,v-d*3.231).rgb)*.07;gl_FragColor=vec4(c,1.);}`;
+  const FINAL = `precision mediump float;varying vec2 v;uniform sampler2D t,b;uniform float asp,ca,rad,bloom,imp,q;uniform vec2 rc;uniform vec4 wv[6];uniform vec3 irgb;
+    vec3 S(vec2 u){return texture2D(t,clamp(u,0.,1.)).rgb;}
+    void main(){vec2 u=v;
+      for(int i=0;i<6;i++){vec4 w=wv[i];if(w.w>0.){vec2 dd=u-w.xy;dd.x*=asp;float r=length(dd);float x=(r-w.z)/(.045+w.z*.18);float s=w.w*exp(-x*x)*x;u-=normalize(dd+1e-5)*s*.035*vec2(1./asp,1.);}}
+      vec3 col;vec2 dc=u-.5;
+      if(rad>.001){vec3 acc=vec3(0.);vec2 dr=(u-rc)*min(rad,2.)*.035;for(int i=0;i<10;i++){acc+=S(u-dr*float(i));}col=acc*.1;}
+      else col=S(u);
+      if(ca>.001){vec2 o=dc*min(ca,2.5)*.0032;col.r=mix(col.r,S(u+o).r,.7);col.b=mix(col.b,S(u-o).b,.7);}
+      if(q>.5){vec3 bl=texture2D(b,u).rgb;col+=bl*bloom;}
+      col=(col-.5)*1.06+.5;float L=dot(col,vec3(.299,.587,.114));col=mix(vec3(L),col,1.08);
+      float vg=smoothstep(.95,.32,length(dc*vec2(1.,.82)));col*=mix(.6,1.,vg);
+      if(imp>.001){float m=smoothstep(.40,.52,L);col=imp>.5?mix(vec3(1.,.97,.94),irgb*.25,m):mix(vec3(.03,.02,.05),mix(irgb,vec3(1.),.55),m);}
+      gl_FragColor=vec4(col,1.);}`;
+  const mkS = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.warn(gl.getShaderInfoLog(s)); return null; } return s; };
+  const mkP = fs => { const vs = mkS(gl.VERTEX_SHADER, VS), f = mkS(gl.FRAGMENT_SHADER, fs); if (!vs || !f) return null; const p = gl.createProgram(); gl.attachShader(p, vs); gl.attachShader(p, f); gl.bindAttribLocation(p, 0, 'p'); gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) return null; const u = {}; const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS); for (let i = 0; i < n; i++) { const a = gl.getActiveUniform(p, i), nm = a.name.replace(/\[0\]$/, ''); u[nm] = gl.getUniformLocation(p, a.name); } return { p, u }; };
+  const P = { bright: mkP(BRIGHT), blur: mkP(BLUR), fin: mkP(FINAL) };
+  if (!P.bright || !P.blur || !P.fin) return;
+  const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  const tex = () => { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v); return t; };
+  const fbo = () => { const t = tex(), f = gl.createFramebuffer(); return { t, f, w: 0, h: 0 }; };
+  Object.assign(PFX, { gl, c, P, scene: tex(), A: fbo(), B: fbo(), on: true });
+  cv.parentNode.insertBefore(c, cv);
+  document.body.classList.add('pfx');
+  pfxResize();
+}
+function pfxResize() {
+  if (!PFX.on) return;
+  const gl = PFX.gl;
+  PFX.c.width = wcv.width = cv.width; PFX.c.height = wcv.height = cv.height;
+  PFX.c.style.width = cv.style.width; PFX.c.style.height = cv.style.height;
+  const bw = Math.max(64, cv.width >> 2), bh = Math.max(36, cv.height >> 2);
+  for (const F of [PFX.A, PFX.B]) { gl.bindTexture(gl.TEXTURE_2D, F.t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, bw, bh, 0, gl.RGB, gl.UNSIGNED_BYTE, null); gl.bindFramebuffer(gl.FRAMEBUFFER, F.f); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, F.t, 0); F.w = bw; F.h = bh; }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+function pfxOff() {   // runtime fallback: go back to plain 2D on the visible canvas
+  if (!PFX.on) return; PFX.on = false; ctx = hudctx; PFX.c.remove(); document.body.classList.remove('pfx');
+}
+// world-space shockwave (x,y in stage px); amp ≈ .5 small hit … 2 ULT blast
+function pfxWave(x, y, amp = 1, life = 34) {
+  if (!PFX.on) return; if (PFX.waves.length >= 6) PFX.waves.shift();
+  PFX.waves.push({ x, y, amp, life, t: 0 });
+}
+function pfxKick(o) {   // { ca, radial, x, y (world), impact(ms), bloom }
+  if (o.ca) PFX.ca = Math.max(PFX.ca, o.ca);
+  if (o.radial) { PFX.radial = Math.max(PFX.radial, o.radial); if (o.x !== undefined) { const s = w2s(o.x, o.y); PFX.rcx = s[0] / W; PFX.rcy = s[1] / H; } else { PFX.rcx = .5; PFX.rcy = .5; } }
+  if (o.impact) PFX.impact = Math.max(PFX.impact, o.impact);
+  if (o.bloom) PFX.bloomBoost = Math.max(PFX.bloomBoost, o.bloom);
+  if (o.rgb) PFX.impRgb = o.rgb.split(',').map(n => +n / 255);
+}
+function w2s(x, y) { const c = G.cam, z = c.z + c.kick; return [W / 2 + (x - c.x - (c.push || 0)) * z, GY + (c.y || 0) + (y - GROUND) * z]; }
+function pfxDraw(dtMs) {
+  const gl = PFX.gl, P = PFX.P, cw = PFX.c.width, ch = PFX.c.height, k = dtMs / 16.67;
+  // adaptive quality: a slow device first loses bloom, then the whole GL layer
+  PFX.ms.push(dtMs); if (PFX.ms.length > 90) PFX.ms.shift();
+  if (PFX.ms.length === 90 && G.scene === 'game' && !G.paused && !/[?&]fx=1/.test(location.search)) { const avg = PFX.ms.reduce((a, b) => a + b, 0) / 90; if (avg > 26) { PFX.ms.length = 0; if (PFX.q > 1) PFX.q = 1; else if (PFX.q === 1) PFX.q = 0; else { pfxOff(); return; } } }
+  gl.bindTexture(gl.TEXTURE_2D, PFX.scene); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, wcv);
+  const ultOn = G.ultMono > 0 || G.fighters.some(f => f.state === 'atk' && f.move && (f.move.key === 'ult' || f.move.key === 'ex'));
+  const bloomAmt = (G.scene === 'game' ? .55 : .35) + (ultOn ? .35 : 0) + PFX.bloomBoost;
+  if (PFX.q >= 1) {   // bright pass + 2× separable blur at quarter res
+    const A = PFX.A, B = PFX.B; gl.viewport(0, 0, A.w, A.h);
+    gl.useProgram(P.bright.p); gl.bindFramebuffer(gl.FRAMEBUFFER, A.f); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, PFX.scene); gl.uniform1i(P.bright.u.t, 0); gl.uniform1f(P.bright.u.th, ultOn ? .55 : .62); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.useProgram(P.blur.p); gl.uniform1i(P.blur.u.t, 0);
+    const its = PFX.q >= 2 ? 2 : 1;
+    for (let i = 0; i < its; i++) {
+      const s = 1 + i * 1.6;
+      gl.bindFramebuffer(gl.FRAMEBUFFER, B.f); gl.bindTexture(gl.TEXTURE_2D, A.t); gl.uniform2f(P.blur.u.d, s / A.w, 0); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, A.f); gl.bindTexture(gl.TEXTURE_2D, B.t); gl.uniform2f(P.blur.u.d, 0, s / A.h); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+  }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, cw, ch);
+  const F = P.fin; gl.useProgram(F.p);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, PFX.scene); gl.uniform1i(F.u.t, 0);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, PFX.A.t); gl.uniform1i(F.u.b, 1); gl.activeTexture(gl.TEXTURE0);
+  gl.uniform1f(F.u.asp, W / H); gl.uniform1f(F.u.q, PFX.q >= 1 ? 1 : 0); gl.uniform1f(F.u.bloom, bloomAmt);
+  gl.uniform1f(F.u.ca, PFX.ca); gl.uniform1f(F.u.rad, PFX.radial); gl.uniform2f(F.u.rc, PFX.rcx, 1 - PFX.rcy);
+  gl.uniform1f(F.u.imp, PFX.impact > 0 ? (PFX.impact > 45 ? 1 : .4) : 0); gl.uniform3f(F.u.irgb, PFX.impRgb[0], PFX.impRgb[1], PFX.impRgb[2]);
+  const wv = new Float32Array(24);
+  PFX.waves.forEach((w, i) => { const s = w2s(w.x, w.y), u = w.t / w.life; wv.set([s[0] / W, 1 - s[1] / H, u * (.25 + .25 * w.amp), w.amp * (1 - u) * (1 - u)], i * 4); });
+  gl.uniform4fv(F.u.wv, wv);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  // decay (real time, so hitstop/slow-mo freezes still read)
+  for (const w of PFX.waves) w.t += k * (G.hitstop > 0 ? .35 : 1); PFX.waves = PFX.waves.filter(w => w.t < w.life);
+  PFX.ca *= Math.pow(.8, k); if (PFX.ca < .01) PFX.ca = 0;
+  PFX.radial *= Math.pow(.84, k); if (PFX.radial < .01) PFX.radial = 0;
+  PFX.bloomBoost *= Math.pow(.9, k);
+  PFX.impact = Math.max(0, PFX.impact - dtMs);
+}
 
 /* ---------- assets ---------- */
 function mk(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
@@ -506,7 +611,7 @@ function readHuman(side) {
 /* ---------- state ---------- */
 const G = {
   scene: 'title', mode: 'cpu', diff: 1, picks: ['suzune', 'aoi'], fighters: [], fx: [], proj: [], frame: 0,
-  cam: { x: STAGE_W / 2, z: 1, shake: 0, kick: 0 }, hitstop: 0, slow: 1, slowT: 0, flash: 0, flashCol: '255,255,255', freeze: 0, cutin: null,
+  cam: { x: STAGE_W / 2, z: 1, shake: 0, kick: 0, tilt: 0, push: 0 }, hitstop: 0, slow: 1, slowT: 0, flash: 0, flashCol: '255,255,255', freeze: 0, cutin: null,
   round: 1, timer: 99, timerF: 0, phase: 'intro', phaseT: 0, banner: null, paused: false, speedlines: 0, tintA: 0, tintC: '110,195,255', matchOver: false
 };
 
@@ -519,7 +624,7 @@ function fxSpark(x, y, rgb, n = 14, pw = 1, dir = 0) {
   }
 }
 function fxCore(x, y, rgb, r = 90, life = 14) { addFx({ k: 'core', x, y, rgb, r, life, t: 0 }); }
-function fxRing(x, y, rgb, r0, r1, life = 20, w = 6, sy = 1) { addFx({ k: 'ring', x, y, rgb, r0, r1, life, t: 0, w, sy }); }
+function fxRing(x, y, rgb, r0, r1, life = 20, w = 6, sy = 1) { addFx({ k: 'ring', x, y, rgb, r0, r1, life, t: 0, w, sy }); if (r1 >= 450 && G.frame - (PFX.ringF || -99) > 10) { PFX.ringF = G.frame; pfxWave(x, y, Math.min(2, r1 / 400), 40); } }
 function fxArc(x, y, r, a0, a1, rgb, face, life = 18, w = 40) { addFx({ k: 'arc', x, y, r, a0, a1, rgb, face, life, t: 0, w }); }
 function fxPetals(x, y, n = 10, pw = 1) { for (let i = 0; i < n; i++) addFx({ k: 'petal', x, y, vx: rnd(-6, 6) * pw, vy: rnd(-9, -1) * pw, rot: rnd(0, TAU), vr: rnd(-.3, .3), life: rnd(50, 90), t: 0, s: rnd(5, 9) }); }
 function fxDust(x, y, n = 8, pw = 1) { for (let i = 0; i < n; i++) addFx({ k: 'dust', x: x + rnd(-30, 30), y: y - 4, vx: rnd(-5, 5) * pw, vy: rnd(-2.5, -.2) * pw, life: rnd(22, 40), t: 0, r: rnd(10, 26) * pw }); }
@@ -562,13 +667,13 @@ function quake(amp, dur = .5, buzz = 0) {
 function quakeNow(now) { const u = (now - QUAKE.t0) / QUAKE.dur; return u >= 1 ? 0 : QUAKE.amp * (1 - u) * (1 - u); }
 function applyQuake() {
   const a = G.paused ? 0 : quakeNow(performance.now());
-  if (a < .3) { if (cv.style.transform) cv.style.transform = ''; return; }
+  if (a < .3) { if (cv.style.transform) { cv.style.transform = ''; if (PFX.c) PFX.c.style.transform = ''; } return; }
   const dx = rnd(-a, a), dy = rnd(-a, a) * .8, r = rnd(-a, a) * .045, sc = 1 + a / 300;
-  cv.style.transform = `translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px) rotate(${r.toFixed(2)}deg) scale(${sc.toFixed(3)})`;
+  cv.style.transform = `translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px) rotate(${r.toFixed(2)}deg) scale(${sc.toFixed(3)})`; if (PFX.on) PFX.c.style.transform = cv.style.transform;
 }
 function flash(a, rgb = '255,255,255') { if (a >= G.flash) { G.flash = a; G.flashCol = rgb; } }
 function slowmo(s, frames) { G.slow = s; G.slowT = frames; }
-function zoomKick(v) { G.cam.kick = Math.max(G.cam.kick, v); }
+function zoomKick(v) { G.cam.kick = Math.max(G.cam.kick, v); PFX.radial = Math.max(PFX.radial, v * 4); }
 
 function updateFx(dt) {
   const arr = G.fx;
@@ -785,7 +890,7 @@ function hitTarget(att, tgt, o) {
     tgt.hp = Math.max(1, tgt.hp - o.dmg * (o.ult ? .2 : .05)); tgt.vx = fromDir * (o.kb || 4) * (o.ult ? .5 : .4); tgt.stun = o.ult ? 9 : 7; tgt.t = 0;   // stronger guard: small chip, short blockstun, little pushback
     tgt.gauge = Math.min(100, tgt.gauge + o.dmg * .6); att.gauge = Math.min(100, att.gauge + o.dmg * .4);
     fxHex(tgt.x - fromDir * 40, tgt.y - 150, tgt.col.rgb, -fromDir); fxSpark(hx, hy, '180,220,255', 8, .6, -fromDir); fxRing(hx, hy, '180,220,255', 10, 70, 12, 4);
-    G.hitstop = Math.max(G.hitstop, 4); shake(4); sfx.guard(); voice(tgt, 'guard', { p: .5, cd: 240 });
+    G.hitstop = Math.max(G.hitstop, 4); shake(4); sfx.guard(); pfxKick({ ca: o.ult ? 1.2 : .45 }); voice(tgt, 'guard', { p: .5, cd: 240 });
     return true;
   }
   tgt.combo = (tgt.state === 'hit' || tgt.state === 'air') ? tgt.combo + 1 : 1;
@@ -805,11 +910,15 @@ function hitTarget(att, tgt, o) {
   G.hitstop = Math.max(G.hitstop, o.hitstop || (4 + 4 * pw)); shake(4 + 7 * pw);
   if (pw >= 1.4 || o.launch) { quake(3 + 5 * pw, .28 + .12 * pw, pw >= 2 ? 60 : 25); fxBig(hx, hy, auraRgb(att), auraHot(att), Math.max(1.4, pw), fromDir); }
   if (pw >= 2) flash(.35 * pw / 2, '255,230,200');
+  pfxKick({ ca: Math.min(2.6, .35 + pw * .55) });                                    // colour split on every clean hit
+  if (pw >= 1.3 || o.launch) { pfxWave(hx, hy, Math.min(2, .45 + pw * .4), 26 + 6 * pw); G.cam.push += fromDir * Math.min(40, 10 + 10 * pw); }
+  if (pw >= 2.2 && !o.ult) pfxKick({ impact: 70, rgb: auraHot(att) });
   sfx.hit(pw);
   if (o.ult) {
     playLoud('impact_big', .55 + .25 * Math.min(2, pw), rnd(.85, 1.05));
     if (pw >= 2.3 || tgt.hp <= 0) {   // ULT finisher
       ultBlast(1.15); flash(1, auraHot(att)); G.speedlines = 60; zoomKick(.14); G.ultMono = 0;
+      pfxWave(tgt.x, tgt.y - 150, 2.2, 46); pfxKick({ radial: 1.7, x: tgt.x, y: tgt.y - 150, impact: 95, rgb: auraHot(att), bloom: .8, ca: 3.4 });
       addFx({ k: 'pillar', x: tgt.x, y: GROUND, rgb: auraRgb(att), hot: auraHot(att), life: 50, t: 0, w: 260 });
       fxRing(tgt.x, GROUND - 4, auraRgb(att), 30, 620, 40, 14, .25); fxText(tgt.x, tgt.y - 420, 'FINISH!', auraHot(att), 60, 60);
     }
@@ -1525,12 +1634,14 @@ function onKO(att, tgt) {
   if (pt && pt.hp > 0) {   // one member down: partner jumps in, the round continues
     fxBig(tgt.x, tgt.y - 170, auraRgb(att), auraHot(att), 2.4, Math.sign(tgt.x - att.x) || 1);
     slowmo(.3, 40); flash(.7); shake(18); zoomKick(.1); sfx.ko(); quake(22, .9, [90, 40, 120]);
+    pfxWave(tgt.x, tgt.y - 170, 1.8, 40); pfxKick({ radial: 1.2, x: tgt.x, y: tgt.y - 170, impact: 80, rgb: auraHot(att), ca: 2.6 });
     G.banner = { txt: `${tgt.ch.name} DOWN`, t: 0, rgb: tgt.col.rgb };
     G.pendingTag = { side: tgt.side, t: 0 };
     return;
   }
   fxBig(tgt.x, tgt.y - 170, auraRgb(att), auraHot(att), 3.2, Math.sign(tgt.x - att.x) || 1);
   G.phase = 'ko'; G.phaseT = 0; slowmo(.22, 80); flash(1); shake(24); zoomKick(.14); sfx.ko(); quake(34, 1.4, [120, 60, 220]);
+  pfxWave(tgt.x, tgt.y - 170, 2.4, 52); pfxKick({ radial: 2, x: tgt.x, y: tgt.y - 170, impact: 110, rgb: auraHot(att), bloom: 1, ca: 4 }); G.koCam = { f: tgt, t: 0 };
   G.banner = { txt: 'K.O.', t: 0, big: true }; voice('sys', 'ko', { delay: .45 });
   G.wins[att.side]++; for (const f of G.teams[att.side]) f.wins = G.wins[att.side];
 }
@@ -1896,7 +2007,7 @@ async function startMatch() {
 function startRound() {
   makeTeams(); G.tagCd = [0, 0]; G.pendingTag = null; G.benched = [];
   G.resultShown = false; G.victory = null; G.fx = []; G.proj = []; G.paintFloor = []; G.luna = null; G.timer = 99; G.timerF = 0; G.phase = 'intro'; G.phaseT = 0; G.cutin = null; G.rwCut = null; G.freeze = 0; G.tintA = 0; G.slow = 1;
-  G.cam.x = STAGE_W / 2; G.cam.z = 1;
+  G.cam.x = STAGE_W / 2; G.cam.z = 1; G.cam.tilt = 0; G.cam.push = 0; G.koCam = null;
   for (const f of G.fighters) {
     if (f.id === 'arca') { f.boarding = G.round === 1; f._boardFx = f._boardFx2 = f._bootSnd = false; f.state = 'idle'; continue; }
     f.x -= f.face * 400; f.vx = f.face * 28; f.state = 'dashin';
@@ -1997,7 +2108,9 @@ function drawBackground(camX, z) {
 function worldTransform() {
   const c = G.cam, sh = c.shake;
   const ox = sh ? rnd(-sh, sh) : 0, oy = sh ? rnd(-sh, sh) * .7 : 0, z = c.z + c.kick;
-  ctx.translate(W / 2 + ox, GY + oy + (c.y || 0)); ctx.scale(z, z); ctx.translate(-c.x, -GROUND);
+  ctx.translate(W / 2 + ox, GY + oy + (c.y || 0));
+  if (c.tilt) { ctx.translate(0, -H * .35); ctx.rotate(c.tilt); ctx.translate(0, H * .35); }
+  ctx.scale(z, z); ctx.translate(-c.x - (c.push || 0), -GROUND);
 }
 /* ---------- video stages: chosen by 1P's character ---------- */
 const STAGE = { v: null, id: null };
@@ -2011,9 +2124,11 @@ function stageReady() { const v = STAGE.v; return v && v.readyState >= 2 && v.vi
 // the video fills the screen with a little margin so the camera can pan across it (parallax) and zoom/shake with the fight
 function drawStage(camX) {
   const v = STAGE.v, c = G.cam, sh = c.shake, z = c.z + c.kick;
-  const base = Math.max(1.04, 1.1 * (1 + (z - 1) * .75)), w = W * base, h = H * base;   // the backdrop zooms a bit less than the fighters (depth), never below full-screen
+  const base = Math.max(1.04, 1.1 * (1 + (z - 1) * .75)) * (1 + Math.abs(c.tilt || 0) * 1.9), w = W * base, h = H * base;
+  if (c.tilt) { ctx.save(); ctx.translate(W / 2, GY - H * .35); ctx.rotate(c.tilt * .8); ctx.translate(-W / 2, -(GY - H * .35)); }   // the backdrop zooms a bit less than the fighters (depth), never below full-screen
   const px = -(camX - STAGE_W / 2) * .09 + (sh ? rnd(-sh, sh) * .6 : 0), py = sh ? rnd(-sh, sh) * .4 : 0;
   ctx.drawImage(v, (W - w) / 2 + px, (H - h) * .62 + py, w, h);
+  if (c.tilt) ctx.restore();
   ctx.fillStyle = 'rgba(8,6,20,.12)'; ctx.fillRect(0, 0, W, H);                   // slight grade so fighters pop
   if (G.ultMono > 0) {   // ULT: the world drains to grey and darkens, only the fighters and the move keep their colour
     const a = Math.min(1, G.ultMono / 20);
@@ -2086,6 +2201,17 @@ function drawSolid(src, fr, x, y, w, h, color) {
   WSX.globalCompositeOperation = 'source-over';
   ctx.drawImage(WS, 0, 0, hw, hh, x, y, w, h);
 }
+// procedural secondary motion at full frame rate on top of the sprite animation: breathing, lean into movement, hit recoil, speed stretch
+function secMotion(f) {
+  let r = 0, sx = 1, sy = 1;
+  const fwd = f.vx * f.face, sp = Math.abs(f.vx);
+  if (f.state === 'idle' || f.state === 'guard') sy = 1 + .007 * Math.sin(G.frame * .065 + f.side * 2);
+  if (f.state === 'walk' || f.state === 'dash' || f.state === 'dashin') r += clamp(fwd / 260, -.03, .045);
+  if (f.state === 'hit') r -= .085 * Math.max(0, 1 - f.t / 16);
+  if (sp > 12 && f.state !== 'hit' && f.state !== 'air') { const k = Math.min(.08, (sp - 12) / 180); sx *= 1 + k; sy *= 1 - k * .45; }
+  if (f.state === 'air' && f.ko) r -= .06;
+  return { r, sx, sy };
+}
 function drawFighter(f, reflect) {
   if (f.hidden) return;
   const g = f.gfx, pf = pickFrame(f), fr = pf && pf.fr, K = fr ? ANIMS[f.id].k : 0;
@@ -2094,7 +2220,7 @@ function drawFighter(f, reflect) {
   const bx = fr.ox * K, by = fr.oy * K, bw = fr.w * K, bh = fr.h * K;
   if (reflect) {
     ctx.save(); ctx.globalAlpha = .22; ctx.translate(f.x, GROUND); ctx.scale(1, -.55); ctx.translate(-f.x, -GROUND);
-    setT(f.x, f.y, f.face, f.rot, f.sx, f.sy);
+    const sm = secMotion(f); setT(f.x, f.y, f.face, f.rot + sm.r, f.sx * sm.sx, f.sy * sm.sy);
     drawFrame(src, fr, bx, by, bw, bh, false); ctx.restore(); ctx.globalAlpha = 1; return;
   }
   const air = Math.max(0, GROUND - f.y);
@@ -2111,7 +2237,8 @@ function drawFighter(f, reflect) {
   const bd = boardState(f), pwr = bd ? bd.power : 1;
   if (pwr > .5) drawHoloBase(f, arg, ahot, hotA);
   if (bd) drawBoarding(f, bd, false);
-  ctx.save(); setT(f.x + f.ox, f.y, f.face, f.rot, f.sx, f.sy);
+  const sm = secMotion(f);
+  ctx.save(); setT(f.x + f.ox, f.y, f.face, f.rot + sm.r, f.sx * sm.sx, f.sy * sm.sy);
   const beat = .5 + .5 * Math.sin(G.frame * .09 + f.side * 2);
   const pulse = f.gauge >= 100 ? .85 + .15 * Math.sin(G.frame * .2) : f.state === 'atk' ? .75 : .45 + .15 * beat;
   ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = pulse * pwr;
@@ -2438,12 +2565,22 @@ function drawHUD2() {
 }
 
 function render() {
+  if (PFX.on) ctx = wctx;
+  const game = renderWorld();
+  if (PFX.on) {
+    pfxDraw(PFX.dt || 16.67); ctx = hudctx;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+  }
+  if (game) renderHUD();
+}
+function renderWorld() {
   ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   const c = G.cam;
   if (G.scene === 'game' && stageReady()) drawStage(c.x); else drawBackground(c.x, c.z);
   if (G.scene === 'game') drawLunaSky();
-  if (G.scene !== 'game' || !G.fighters.length) { drawIdleFx(); return; }
+  if (G.scene !== 'game' || !G.fighters.length) { drawIdleFx(); return false; }
+  const lerpBack = interpBegin();
   ctx.save(); worldTransform();
   drawFloor();
   ctx.save(); ctx.beginPath(); ctx.rect(-5000, GROUND, 10000 + STAGE_W, 2000); ctx.clip();
@@ -2464,11 +2601,26 @@ function render() {
   ctx.restore();
   if (G.tintA > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(${G.tintC},${G.tintA * .25})`; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'source-over'; }
   if (G.speedlines > 0) drawSpeedLines(G.speedlines);
-  // vignette
-  const vg = ctx.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, H * .95); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(8,4,18,.55)');
-  ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  if (!PFX.on) {   // vignette (the GL layer does its own)
+    const vg = ctx.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, H * .95); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(8,4,18,.55)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  }
+  lerpBack();
+  return true;
+}
+// draw fighters between the last two 60 Hz sim steps, so 90/120/144 Hz screens get genuinely smooth motion
+function interpBegin() {
+  if (G.paused || G.exPause || G.hitstop > 0 || G.freeze > 0) return () => { };
+  const a = clamp(acc / (1000 / 60), 0, 1), saved = [];
+  for (const f of [...G.fighters, ...(G.benched || []).map(b => b.f)]) {
+    if (f.px === undefined || Math.abs(f.x - f.px) > 160 || Math.abs(f.y - f.py) > 160) continue;   // teleports snap
+    saved.push([f, f.x, f.y]); f.x = lerp(f.px, f.x, a); f.y = lerp(f.py, f.y, a);
+  }
+  return () => { for (const [f, x, y] of saved) { f.x = x; f.y = y; } };
+}
+function renderHUD() {
   if (G.victory) drawVictory(); else { drawHUD2(); drawCutin(); drawBanner(); drawRwCut(); }
-  if (G.flash > 0) { ctx.fillStyle = `rgba(${G.flashCol},${Math.min(1, G.flash)})`; ctx.fillRect(0, 0, W, H); }
+  if (G.flash > 0 && !(PFX.on && PFX.impact > 0)) { ctx.fillStyle = `rgba(${G.flashCol},${Math.min(1, G.flash)})`; ctx.fillRect(0, 0, W, H); }   // the impact frame replaces the white-out
   ctx.font = `600 12px 'Chakra Petch', sans-serif`; ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fillText('© SZOU', W - 14, H - 8);
 }
 function drawVictory() {
@@ -2510,6 +2662,8 @@ function drawIdleFx() {
 /* ---------- main loop ---------- */
 let last = 0, acc = 0;
 function simStep(dt) {
+  for (const f of G.fighters) { f.px = f.x; f.py = f.y; }
+  for (const b of G.benched || []) { b.f.px = b.f.x; b.f.py = b.f.y; }
   G.frame++;
   if (G.cutin) { G.cutin.t += 1; }
   if (G.freeze > 0) { G.freeze -= 1; if (G.freeze <= 0) G.cutin = null; updateFx(dt * .3); return; }
@@ -2536,15 +2690,18 @@ function updateCamera() {
     let zt = CAM.zMax - (CAM.zMax - CAM.zMin) * smooth01((d - CAM.near) / (CAM.far - CAM.near));
     if (big) zt = Math.min(zt, 1);                                   // big moves and entrances need the wide shot
     if (wf) zt = CAM.zWin;                                           // victory pose: push in on the winner
+    const kc = G.koCam; if (kc) { kc.t++; if (G.phase === 'ko' && kc.t < 90) { zt = 1.45; mid = kc.f.x; } else G.koCam = null; }   // final KO: crash in on the loser
     if (!c.z) c.z = 1;
     c.z = lerp(c.z, zt, zt < c.z ? CAM.out : CAM.in);                // pull back quickly so nobody leaves the frame, push in slowly
     if (Math.abs(c.z - zt) < .001) c.z = zt;
     const half = W / 2 / c.z;
-    c.x = lerp(c.x, clamp(mid, half, STAGE_W - half), .12);
+    c.x = lerp(c.x, clamp(mid, half, STAGE_W - half), G.koCam ? .2 : .12);
+    const ua = G.fighters.find(f => f.state === 'atk' && f.move && f.move.key === 'ult');   // dutch angle while a ULT plays
+    c.tilt = lerp(c.tilt || 0, ua ? -ua.face * .045 : 0, .06);
     const hi = Math.max(...vis.map(f => f.state === 'tagin' ? 0 : GROUND - f.y), 0); c.y = lerp(c.y || 0, Math.max(0, hi - 120 / c.z) * .7 * c.z, .14);   // tilt up for big jumps
   }
   c.shake *= .86; if (c.shake < .3) c.shake = 0;
-  c.kick *= .8;
+  c.kick *= .8; c.push = (c.push || 0) * .84; if (Math.abs(c.push) < .3) c.push = 0;
   G.flash *= .86; if (G.flash < .01) G.flash = 0;
   if (G.ultMono > 0) { G.ultMono -= 1; if (!G.fighters.some(f => f.state === 'atk' && f.move && f.move.key === 'ult')) G.ultMono = Math.min(G.ultMono, 20); }
   if (G.speedlines > 0) G.speedlines -= 1;
@@ -2567,7 +2724,7 @@ function updateTouchLabels() {
 }
 function loop(ts) {
   applyQuake();
-  const dt = Math.min(100, ts - (last || ts)); last = ts;
+  const dt = Math.min(100, ts - (last || ts)); last = ts; PFX.dt = dt || 16.67;
   if (G.scene === 'game' && !G.paused && !G.exPause) {
     acc += dt; let n = 0;
     while (acc >= 1000 / 60 && n < 4) { simStep(1); acc -= 1000 / 60; n++; }
@@ -2646,7 +2803,7 @@ function exMovieEnd() {
     EXM.hold = false; const f = EXM.f;
     G.exPause = false; acc = 0; flash(1, f ? auraHot(f) : '255,255,255'); shake(22); quake(26, 1, 140); zoomKick(.12); G.speedlines = 50;
     ultBlast(1); bgmVolume(bv !== null ? bv : .5, .9);
-    if (f) { fxText(f.x, f.y - 470, f.ch.ultName, auraRgb(f), 54, 70); G.ultMono = 150; }
+    if (f) { fxText(f.x, f.y - 470, f.ch.ultName, auraRgb(f), 54, 70); G.ultMono = 150; pfxWave(f.x, f.y - 160, 2, 44); pfxKick({ radial: 1.4, x: f.x, y: f.y - 160, bloom: .9, ca: 2.5 }); }
     EXM.f = null;
   }, 320);
 }
@@ -2836,6 +2993,7 @@ function setupUI() {
 }
 
 async function boot() {
+  try { pfxInit(); } catch (e) { console.warn('postfx off', e); PFX.on = false; }
   resize();
   buildBg();
   await Promise.all([buildAssets(), buildAnims(), loadBGM().then(() => Promise.all([loadVoices(), loadSfx()]))]);
