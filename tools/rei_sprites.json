@@ -1,27 +1,230 @@
-{"id": "rei", "video": "C:/Users/szou/rei_work/moves.mp4", "out": "anim", "quality": 80,
- "storeH": 427, "anchorX": 540, "ground": 458,
+{
+ "id": "rei",
+ "video": "C:/Users/szou/rei_work/moves2.mp4",
+ "out": "anim",
+ "quality": 80,
+ "storeH": 427,
+ "anchorX": 275,
+ "ground": 459,
  "anims": {
-  "idle": {"t0": 0.5, "t1": 2.5, "fps": 8, "pingpong": true},
-  "walk": {"t0": 3.0, "t1": 6.0, "fps": 8},
-  "guard": {"times": [24.0], "dx": 50},
-  "jump": {"times": [22.3, 22.6, 23.0], "dx": 87},
-  "a1": {"t0": 7.2, "t1": 8.1, "fps": 14, "dx": -6, "edgeFade": 30},
-  "a2": {"t0": 8.8, "t1": 9.9, "fps": 14, "dx": 24, "edgeFade": 30},
-  "a3": {"t0": 10.2, "t1": 12.3, "fps": 12, "dx": 59, "edgeFade": 30},
-  "b": {"t0": 12.9, "t1": 13.8, "fps": 14, "dx": 158, "edgeFade": 30},
-  "ex": {"t0": 13.6, "t1": 17.0, "fps": 10, "dx": 149, "edgeFade": 30},
-  "hit": {"t0": 17.2, "t1": 17.7, "fps": 24, "dx": 35},
-  "air": {"t0": 17.2, "t1": 18.5, "fps": 18, "dx": 35},
-  "down": {"times": [19.5, 20.2], "dx": 40, "edgeFade": 30},
-  "getup": {"t0": 20.6, "t1": 22.2, "fps": 12, "dx": 40, "edgeFade": 30},
-  "ultCharge": {"t0": 23.6, "t1": 25.6, "fps": 8, "pingpong": true, "dx": 50},
-  "ultFire": {"t0": 27.2, "t1": 28.2, "fps": 12, "dx": 50},
-  "winPose": {"t0": 28.0, "t1": 30.0, "fps": 12, "play": 12, "dx": 70, "edgeFade": 20},
-  "cutin": {"t0": 28.6, "t1": 29.6, "fps": 24, "crop": [340, 0, 640, 170], "zoom": 2.8, "box": true},
-  "rRise": {"video": "C:/Users/szou/enjo_work/rindo.mp4", "group": "rindo", "t0": 0.4, "t1": 3.2, "fps": 10, "edgeFade": 40},
-  "rCoil": {"video": "C:/Users/szou/enjo_work/rindo.mp4", "group": "rindo", "t0": 3.4, "t1": 7.0, "fps": 8, "edgeFade": 40},
-  "rRoar": {"video": "C:/Users/szou/enjo_work/rindo.mp4", "group": "rindo", "t0": 8.2, "t1": 10.5, "fps": 10, "edgeFade": 40},
-  "rSink": {"video": "C:/Users/szou/enjo_work/rindo.mp4", "group": "rindo", "t0": 12.6, "t1": 14.8, "fps": 10, "edgeFade": 40}
+  "idle": {
+   "t0": 0.3,
+   "t1": 2.3,
+   "fps": 8,
+   "pingpong": true,
+   "edgeFade": 30
+  },
+  "walk": {
+   "t0": 5.6,
+   "t1": 6.6,
+   "fps": 10,
+   "dx": -107,
+   "edgeFade": 30
+  },
+  "dash": {
+   "t0": 6.0,
+   "t1": 6.7,
+   "fps": 12,
+   "dx": -125,
+   "edgeFade": 30
+  },
+  "guard": {
+   "times": [
+    24.5
+   ],
+   "dx": -173
+  },
+  "jump": {
+   "times": [
+    23.3,
+    23.55,
+    23.8
+   ],
+   "dx": -70
+  },
+  "a1": {
+   "t0": 7.4,
+   "t1": 8.2,
+   "fps": 14,
+   "dx": -38,
+   "edgeFade": 30
+  },
+  "a2": {
+   "t0": 8.2,
+   "t1": 9.0,
+   "fps": 14,
+   "dx": -165,
+   "edgeFade": 30
+  },
+  "a3": {
+   "t0": 9.0,
+   "t1": 10.3,
+   "fps": 14,
+   "dx": -103,
+   "edgeFade": 30
+  },
+  "b": {
+   "t0": 10.4,
+   "t1": 12.3,
+   "fps": 12,
+   "dx": -125,
+   "edgeFade": 30
+  },
+  "ex": {
+   "times": [
+    14.0,
+    14.1,
+    14.2,
+    14.3,
+    14.4,
+    14.5,
+    14.6,
+    14.7,
+    14.8,
+    14.9,
+    15.0,
+    15.1,
+    15.2,
+    15.3,
+    15.4,
+    15.5,
+    15.6,
+    15.7,
+    15.8,
+    15.9,
+    16.0,
+    16.1,
+    16.2,
+    16.3,
+    16.4,
+    16.5,
+    16.6,
+    17.5,
+    17.6,
+    17.7,
+    17.8,
+    17.9,
+    18.0,
+    18.1,
+    18.2,
+    18.3,
+    18.4,
+    18.5,
+    18.6,
+    18.7,
+    18.8,
+    18.9,
+    19.0,
+    19.1,
+    19.2
+   ],
+   "dx": -19,
+   "edgeFade": 30
+  },
+  "hit": {
+   "t0": 20.45,
+   "t1": 20.9,
+   "fps": 24,
+   "dx": 90,
+   "edgeFade": 30
+  },
+  "air": {
+   "t0": 20.45,
+   "t1": 21.4,
+   "fps": 18,
+   "dx": 90,
+   "edgeFade": 30
+  },
+  "down": {
+   "times": [
+    21.6,
+    22.0
+   ],
+   "dx": 90,
+   "edgeFade": 30
+  },
+  "getup": {
+   "t0": 22.0,
+   "t1": 22.9,
+   "fps": 12,
+   "dx": 90,
+   "edgeFade": 30
+  },
+  "ultCharge": {
+   "t0": 24.3,
+   "t1": 26.0,
+   "fps": 8,
+   "pingpong": true,
+   "dx": -173
+  },
+  "ultFire": {
+   "t0": 26.8,
+   "t1": 28.0,
+   "fps": 12,
+   "dx": -168
+  },
+  "winPose": {
+   "t0": 28.0,
+   "t1": 30.0,
+   "fps": 12,
+   "play": 12,
+   "dx": -53,
+   "edgeFade": 20
+  },
+  "cutin": {
+   "t0": 28.6,
+   "t1": 29.6,
+   "fps": 24,
+   "crop": [
+    150,
+    0,
+    520,
+    208
+   ],
+   "zoom": 2.27,
+   "box": true
+  },
+  "rRise": {
+   "video": "C:/Users/szou/enjo_work/rindo.mp4",
+   "group": "rindo",
+   "t0": 0.4,
+   "t1": 3.2,
+   "fps": 10,
+   "edgeFade": 40
+  },
+  "rCoil": {
+   "video": "C:/Users/szou/enjo_work/rindo.mp4",
+   "group": "rindo",
+   "t0": 3.4,
+   "t1": 7.0,
+   "fps": 8,
+   "edgeFade": 40
+  },
+  "rRoar": {
+   "video": "C:/Users/szou/enjo_work/rindo.mp4",
+   "group": "rindo",
+   "t0": 8.2,
+   "t1": 10.5,
+   "fps": 10,
+   "edgeFade": 40
+  },
+  "rSink": {
+   "video": "C:/Users/szou/enjo_work/rindo.mp4",
+   "group": "rindo",
+   "t0": 12.6,
+   "t1": 14.8,
+   "fps": 10,
+   "edgeFade": 40
+  }
  },
- "groupAnchor": {"rindo": [427, 480]},
- "cutinBox": [840, 476]}
+ "groupAnchor": {
+  "rindo": [
+   427,
+   480
+  ]
+ },
+ "cutinBox": [
+  840,
+  472
+ ]
+}

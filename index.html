@@ -310,6 +310,23 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 #matchLoad[hidden]{display:none}
 #loading{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:var(--dusk);font-family:var(--serif);font-size:20px}
 @media (prefers-reduced-motion: reduce){.mbtn,.card{transition:none}}
+/* select v2 (2026-10-05): 4×2 grid of large 16:9 cards so every fighter's action clip is visible at once;
+   name + moves sit in a bar UNDER the clip so no text covers a face */
+#select{--bar:clamp(30px,5.2vh,46px);--gap:clamp(6px,1.1vw,14px);gap:clamp(6px,1.6vh,14px);padding:clamp(6px,1.5vh,16px) 0}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap);overflow:visible;padding:0;scroll-snap-type:none;max-width:none;
+  width:min(96vw,1800px,calc(((100vh - 150px - var(--gap)) / 2 - var(--bar)) * 16 / 9 * 4 + 3 * var(--gap)))}
+.cards.more{-webkit-mask-image:none;mask-image:none}
+.card{flex:none;width:auto;aspect-ratio:auto;height:auto;transform:none;border-radius:6px;padding-bottom:calc(56.25% + var(--bar))}
+.card:hover,.card:focus-visible{transform:translateY(-3px)}
+.card.confirm{transform:scale(1.03)}
+.card img,.card video{inset:0 0 var(--bar) 0;height:auto;width:100%;bottom:var(--bar);transform:none;object-fit:cover;object-position:50% 40%}
+.card[data-char] video{object-position:50% 50%}
+.card::after{display:none}
+.card .sv-flash{bottom:var(--bar)}
+.card .info{left:0;right:0;bottom:0;height:var(--bar);transform:none;display:flex;align-items:center;gap:.6em;padding:0 .7em;background:linear-gradient(90deg,rgba(12,8,24,.98),rgba(24,16,40,.94));box-sizing:border-box;overflow:hidden}
+.card b{font-size:clamp(13px,1.9vw,24px)}
+.card span{margin:0;font-size:clamp(9px,.95vw,12px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.card[data-tag]::before,.card.p1::before{top:6px;left:6px;transform:none}
 </style>
 </head>
 <body>
@@ -340,7 +357,7 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
   <div class="brand">
     <h1>CHRONO<br>FIGHT</h1>
     <p>SUZUNE・AOI・ARCA-07・SAKURA・MIO-07・ARIA・ENJO・REI、2029年の東京スカイデッキで。<br>攻撃と必殺、2つのボタンで戦う2ラウンド先取バトル。</p>
-    <div class="keys">ボタンは「攻撃」と「必殺」だけ。攻撃連打で自動コンボ、必殺はゲージで 強攻撃→EX→ULT に変化。<br>1P：A D 移動 / W ジャンプ / J 攻撃 / K 必殺　2P：矢印キー / , 攻撃 / . 必殺　相手と反対に押すとガード<br>SUZUNE・ARCA-07：ダッシュ（1P I・2P / ・左右2回押しでもOK）　2人1組のチーム戦：交代 1P U・2P '　ULTは体力50%以下で解放</div>
+    <div class="keys">ボタンは「攻撃」と「必殺」だけ。攻撃連打で自動コンボ、必殺はゲージで 強攻撃→EX→ULT に変化。<br>1P：A D 移動 / W ジャンプ / J 攻撃 / K 必殺　2P：矢印キー / , 攻撃 / . 必殺　相手と反対に押すとガード<br>ダッシュ（SUZUNE・ARCA-07・MIO-07・ARIA・ENJO・REI　1P I・2P / ・左右2回押しでもOK）　2人1組のチーム戦：交代 1P U・2P '　ULTは体力50%以下で解放</div>
   </div>
   <nav class="menu" aria-label="モード選択">
     <button class="mbtn" data-mode="cpu">CPUと対戦 <small>1人で遊ぶ</small></button>
@@ -360,7 +377,7 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
     <button class="card" data-char="mio"><img alt="MIO-07"><video class="sv-intro" src="media/select_mio_intro.mp4" poster="media/select_mio_poster.jpg" muted playsinline preload="auto"></video><video class="sv-confirm" preload="metadata" src="media/select_mio_confirm.mp4" muted playsinline></video><span class="sv-flash"></span><div class="info"><b>MIO-07</b><span>巨大筆・絵具　EX ブルー・ストローク／ULT キャンバス・ハウンド</span></div></button>
     <button class="card" data-char="aria"><img alt="ARIA"><video class="sv-intro" src="media/select_aria_intro.mp4" poster="media/select_aria_poster.jpg" muted playsinline preload="auto"></video><video class="sv-confirm" preload="metadata" src="media/select_aria_confirm.mp4" muted playsinline></video><span class="sv-flash"></span><div class="info"><b>ARIA</b><span>ワイヤー・重力制御　EX グラビティ・スリング／ULT ルナ・サテライト・レイ</span></div></button>
     <button class="card" data-char="enjo"><img alt="ENJO"><video class="sv-intro" src="media/select_enjo_intro.mp4" poster="media/select_enjo_poster.jpg" muted playsinline preload="auto"></video><video class="sv-confirm" preload="metadata" src="media/select_enjo_confirm.mp4" muted playsinline></video><span class="sv-flash"></span><div class="info"><b>ENJO</b><span>煙管・召喚の胴元　EX 骸獅子・ガシラ／ULT 浮世斬・リンドウ</span></div></button>
-    <button class="card" data-char="rei"><img alt="REI"><video class="sv-intro" src="media/select_rei_intro.mp4" poster="media/select_rei_poster.jpg" muted playsinline preload="auto"></video><video class="sv-confirm" preload="metadata" src="media/select_rei_confirm.mp4" muted playsinline></video><span class="sv-flash"></span><div class="info"><b>REI</b><span>大太刀・墨龍　EX 顎門・哭喰／ULT 墨龍・彼岸</span></div></button>
+    <button class="card" data-char="rei"><img alt="REI"><video class="sv-intro" src="media/select_rei_intro.mp4" poster="media/select_rei_poster.jpg" muted playsinline preload="auto"></video><video class="sv-confirm" preload="metadata" src="media/select_rei_confirm.mp4" muted playsinline></video><span class="sv-flash"></span><div class="info"><b>REI</b><span>大太刀・墨龍　EX 顎門・砲哮／ULT 墨龍・彼岸</span></div></button>
   </div>
   <p id="selNote"></p>
   <div class="selrow">
@@ -438,6 +455,6 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 <div id="loading">読み込み中… <span id="loadPct">0%</span></div>
 
 <script>window.ASSETS={"su": "assets/suzune.webp", "ao": "assets/aoi.webp", "drone": "assets/drone.webp", "suci": "assets/suzune_cutin.webp", "aoci": "assets/aoi_cutin.webp", "ar": "assets/arca.webp", "arci": "assets/arca_cutin.webp", "arp": "assets/arca_pilot.webp", "arcard": "assets/arca_card.webp", "tsu": "assets/title_suzune.webp", "tao": "assets/title_aoi.webp", "tar": "assets/title_arca.webp", "tsa": "assets/title_sakura.webp", "sa": "assets/sakura.webp", "saci": "assets/sakura_cutin.webp", "sacard": "assets/sakura_card.webp", "mi": "assets/mio.webp", "mici": "assets/mio_cutin.webp", "micard": "assets/mio_card.webp", "ar2": "assets/aria.webp", "ar2ci": "assets/aria_cutin.webp", "ar2card": "assets/aria_card.webp", "tari": "assets/title_aria.webp", "en": "assets/enjo.webp", "enci": "assets/enjo_cutin.webp", "encard": "assets/enjo_card.webp", "enskull": "assets/enjo_skull.webp", "tenj": "assets/title_enjo.webp", "re": "assets/rei.webp", "reci": "assets/rei_cutin.webp", "recard": "assets/rei_card.webp", "trei": "assets/title_rei.webp", "tmi": "assets/title_mio.webp"};</script>
-<script src="game.js?v=20261005rei"></script>
+<script src="game.js?v=20261005b"></script>
 </body>
 </html>

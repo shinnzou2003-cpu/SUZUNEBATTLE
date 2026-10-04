@@ -171,7 +171,7 @@ const CHARS = {
   enjo: { id: 'enjo', name: 'ENJO', role: '煙管・召喚の胴元', c1: '#5fd3bc', c2: '#c9a24a', rgb: '95,211,188', rgb2: '201,162,74', speed: 4.6, jump: -23.5, anchor: .55, hurtW: 50, hurtH: 285, exName: '骸獅子・ガシラ', ultName: '浮世斬・リンドウ' },
   // REI 月白 零 "THE LAST TEAR" (UKIYO): half-cyborg swordswoman with KOKUSHOKU-HIGAN, a 3m mechanical odachi that is really
   // the coffin of an ink dragon. Every full deployment costs her one tear of blood
-  rei: { id: 'rei', name: 'REI', role: '大太刀・墨龍', c1: '#e8463c', c2: '#e9e4d8', rgb: '232,70,60', rgb2: '233,228,216', speed: 5.0, jump: -24.0, anchor: .55, hurtW: 50, hurtH: 280, exName: '顎門・哭喰', ultName: '墨龍・彼岸' }
+  rei: { id: 'rei', name: 'REI', role: '大太刀・墨龍', c1: '#e8463c', c2: '#e9e4d8', rgb: '232,70,60', rgb2: '233,228,216', speed: 5.0, jump: -24.0, anchor: .55, hurtW: 50, hurtH: 280, exName: '顎門・砲哮', ultName: '墨龍・彼岸' }
 };
 const ALT = {
   suzune: { c1: '#7fd8ff', c2: '#4f7bff', rgb: '130,215,255', rgb2: '90,120,255', test: (h, s, l) => (h > 33 && h < 64 && s > .3) || ((h < 12 || h > 340) && s > .55), shift: 175 },
@@ -204,7 +204,7 @@ async function buildAssets() {
 const ANIMS = {};
 const frameCount = (id, n) => ANIMS[id] && ANIMS[id].a[n] ? ANIMS[id].a[n].length : 0;
 // visual size balance between characters (SUZUNE's source video was framed larger)
-const RESIZE = { suzune: .9, aoi: .9, sakura: .9 };   // 2026-10-04: these three trimmed to sit with the rest of the roster (sprite + hit/hurt boxes + attach points)
+const RESIZE = { suzune: .9, aoi: .9, sakura: .9, enjo: 1.15, rei: 1.15 };   // ENJO / REI enlarged 2026-10-05; their summoned beasts keep their size   // 2026-10-04: these three trimmed to sit with the rest of the roster (sprite + hit/hurt boxes + attach points)
 const RS = f => RESIZE[f.id] || 1;
 const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.2, mio: 1.22, aria: .95, enjo: 1.0, rei: 1.0 };   // AOI stands taller; SUZUNE fights from a low crouch
 const LOAD = { done: 0, total: 0 };
@@ -288,6 +288,8 @@ function pickFrame(f) {
     case 'jump': return f.vy < -8 && f.t < 10 ? at('jump', 0) : at('jump', 1);
     case 'dash': if (f.id === 'arca') return f.dashDir === f.face ? loop('walk', 20) : at('guard', 0);
       if (f.id === 'mio') return f.dashDir === f.face ? loop('walk', 26) : at('guard', 0);
+      if (f.id === 'enjo') return loop('idle', AN.fps.idle || 8);   // she dissolves into smoke and re-forms (drawn faint)
+      if (a.dash) return f.dashDir === f.face ? prog('dash', t / DASH.len) : at('guard', 0);
       return f.dashDir === f.face ? at('ex', 99) : at('guard', 0);
     case 'tagin': if (f.id === 'arca') return loop('walk', 20); return f.t < f.tg.L * .45 ? at('jump', 0) : at('jump', 1);
     case 'dashin': return f.id !== 'suzune' ? loop('walk', (AN.fps.walk || 12) * 1.2) : at('ex', 99);
@@ -333,7 +335,7 @@ function pickFrame(f) {
       if (f.id === 'rei') {
         if (m.key === 'a') { const n = ['a1', 'a2', 'a3'][Math.min(2, f.chain)]; return prog(a[n] ? n : 'a', p); }
         if (m.key === 'b') return prog('b', p);
-        if (m.key === 'ex') { const L = m.st + 14; return t < L ? prog('ex', t / L * .7) : m.maw && m.maw.caught ? prog('ex', .7 + .3 * Math.min(1, m.maw.ct / 40)) : at('ex', Math.round(((a.ex || a.idle).length - 1) * .7)); }   // jaw open, then it bites down on the catch
+        if (m.key === 'ex') return prog('ex', p);   // blade opens into the cannon, fires, recoils, folds back
         if (m.key === 'ult') { const u = t - m.st; if (u < ENJO_ULT.rise) return loop('ultCharge', AN.fps.ultCharge || 10); return prog('ultFire', Math.min(1, (u - ENJO_ULT.rise) / 30)); }
       }
       if (f.id === 'mio') {
@@ -877,9 +879,9 @@ const MOVES = {
     ult: { st: 0, act: 150, rec: 30, cost: 100 }
   },
   rei: {
-    a: { st: 6, act: 4, rec: 13, cost: 0 },
-    b: { st: 12, act: 6, rec: 22, cost: 0 },
-    ex: { st: 10, act: 90, rec: 16, cost: 50 },
+    a: { st: 6, act: 5, rec: 13, cost: 0 },
+    b: { st: 14, act: 6, rec: 22, cost: 0 },
+    ex: { st: 20, act: 10, rec: 26, cost: 50 },
     ult: { st: 0, act: 230, rec: 30, cost: 100 }
   },
   enjo: {
@@ -1510,7 +1512,7 @@ function drawShishi(f, front) {
   if ((d.mode !== 'win') !== front) return;   // the victory lion sits behind her; the charging lion runs in front
   const fr = shishiFrame(f), AN = ANIMS[f.id];
   ctx.save(); ctx.translate(d.x, d.y); ctx.scale(d.face, 1); ctx.globalAlpha = d.a;
-  if (fr) { const K = AN.k * SHISHI_K, ref = AN.a.gRun[0], foot = (ref.oy + ref.h) * K; ctx.drawImage(frameSrc(fr, f), fr.sx, fr.sy, fr.w, fr.h, fr.ox * K, fr.oy * K - foot, fr.w * K, fr.h * K); }
+  if (fr) { const K = AN.k * SHISHI_K / RS(f), ref = AN.a.gRun[0], foot = (ref.oy + ref.h) * K; ctx.drawImage(frameSrc(fr, f), fr.sx, fr.sy, fr.w, fr.h, fr.ox * K, fr.oy * K - foot, fr.w * K, fr.h * K); }
   else { ctx.fillStyle = `rgba(${JADE.gold},.9)`; ctx.beginPath(); ctx.ellipse(0, -150, 230, 100, 0, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.ellipse(210, -230, 80, 70, 0, 0, TAU); ctx.fill(); }
   ctx.restore(); ctx.globalAlpha = 1;
 }
@@ -1590,13 +1592,14 @@ function drawRindo(f) {
   ctx.translate(R.x, GROUND); ctx.scale(R.face, 1);
   if (R.mode === 'dive') { const q = Math.min(1, u / 10); ctx.translate(140 * q, 60 * q); ctx.rotate(.3 * q); }
   ctx.globalAlpha = R.mode === 'rise' ? Math.min(1, u / 6) : R.mode === 'sink' ? Math.max(0, 1 - u / 28) : 1;
-  if (fr) { const K = AN.k * RINDO_K; ctx.drawImage(frameSrc(fr, f), fr.sx, fr.sy, fr.w, fr.h, fr.ox * K, fr.oy * K, fr.w * K, fr.h * K); }
+  if (fr) { const K = AN.k * RINDO_K / RS(f); ctx.drawImage(frameSrc(fr, f), fr.sx, fr.sy, fr.w, fr.h, fr.ox * K, fr.oy * K, fr.w * K, fr.h * K); }
   else { ctx.strokeStyle = 'rgba(20,16,16,.95)'; ctx.lineWidth = 70; ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(-200, -300, 200, -500, 60, -760); ctx.stroke(); }
   ctx.restore(); ctx.globalAlpha = 1;
 }
-// REI 月白 零: odachi strikes whose pistons fire a second, delayed shock; 二の太刀 sends that shock along the floor as ink;
-// 顎門 (EX) opens the beast-jaw guard and casts its cables to catch, swallow and spit out the foe; the ULT frees the ink
-// dragon sealed in the blade (shares ENJO's dragon timeline). Each full deployment sheds one tear of blood.
+// REI 月白 零: fights from a low ready stance, whirling the 3m greatsword with its weight (the third swing is a full spin and its
+// pistons fire a second, delayed shock); 二の太刀 is a leaping slam whose shock races along the floor as ink;
+// EX turns the blade into a cannon (the blade splits into three prongs around a barrel) and fires a shell; the ULT frees
+// the ink dragon sealed in the blade (shares ENJO's dragon timeline). Each full deployment sheds one tear of blood.
 const SHU = { rgb: '232,70,60', hot: '255,214,200', moon: '233,228,216', brass: '201,162,74' };
 function reiTip(f) { const r = RS(f); return { x: f.x + f.face * 230 * r, y: f.y - 150 * r }; }
 function fxTear(f) {   // one drop of blood from the red mechanical eye
@@ -1605,92 +1608,58 @@ function fxTear(f) {   // one drop of blood from the red mechanical eye
 function reiShock(f, o, x, y, big) {   // the pistons inside the blade fire a beat after the cut
   fxRing(x, y, SHU.rgb, 10, big ? 220 : 150, 16, 8, .7); fxCore(x, y, SHU.hot, big ? 160 : 110, 12); fxSmoke(x, y, big ? 10 : 6, 1.4, 0, JADE.ink);
   shake(big ? 10 : 7); playS('hit_heavy', .5, 1.3);
-  if (G.phase === 'fight' && Math.abs(o.x - x) < 150 && Math.abs((o.y - 150) - y) < 200) hitTarget(f, o, { dmg: big ? 5 : 4, kb: 7, launch: -9, power: 1.6, hy: 150 });
+  if (G.phase === 'fight' && Math.abs(o.x - x) < 170 && Math.abs((o.y - 150) - y) < 220) hitTarget(f, o, { dmg: big ? 5 : 4, kb: 7, launch: -9, power: 1.6, hy: 150 });
 }
 function updateReiMove(f, o, m, t, k, act, at, dt, first) {
-  const tip = reiTip(f);
+  const r = RS(f);
   if (k === 'a') {
     const c = Math.min(2, f.chain);
     if (t < m.st) f.vx *= .7;
     if (first(0)) {
-      f.vx = f.face * [4, 5, 8][c];
-      if (c === 0) fxArc(f.x + f.face * 120, f.y - 150, 170, -.9, .9, f.col.rgb, f.face, 14, 30);
-      else if (c === 1) fxArc(f.x + f.face * 110, f.y - 170, 190, 1.4, -1.5, f.col.rgb, f.face, 16, 34);
-      else { fxArc(f.x + f.face * 120, f.y - 170, 230, -2.3, 1.1, f.col.rgb, f.face, 20, 54); fxArc(f.x + f.face * 120, f.y - 160, 215, -2.1, .9, SHU.moon, f.face, 16, 12); }
-      c === 2 ? sfx.heavySwing() : sfx.swing();
+      f.vx = f.face * [5, 6, 7][c];
+      if (c === 0) { fxArc(f.x + f.face * 60 * r, f.y - 150 * r, 250 * r, -1.6, 1.2, f.col.rgb, f.face, 16, 44); fxArc(f.x + f.face * 60 * r, f.y - 150 * r, 235 * r, -1.4, 1.0, SHU.moon, f.face, 12, 10); }
+      else if (c === 1) { fxArc(f.x + f.face * 70 * r, f.y - 170 * r, 250 * r, 1.6, -1.7, f.col.rgb, f.face, 16, 46); }
+      else {   // full spin: a ring of steel all the way round her
+        fxArc(f.x, f.y - 150 * r, 300 * r, -Math.PI, Math.PI, f.col.rgb, f.face, 22, 50); fxArc(f.x, f.y - 150 * r, 285 * r, -Math.PI, Math.PI, SHU.moon, f.face, 18, 12);
+        fxRing(f.x, f.y - 6, f.col.rgb, 30, 320 * r, 22, 8, .22); fxDust(f.x, f.y, 10, 1.2); G.speedlines = 14;
+      }
+      c === 0 ? sfx.swing() : sfx.heavySwing();
     }
-    if (c === 2 && first(3)) { fxDust(f.x + f.face * 240, f.y, 8, 1.1); shake(6); }
     if (act) {
-      const h = tryHit(f, o, box(f, 20, c === 2 ? 330 : 300, c === 1 ? -330 : -280, c === 2 ? 0 : -40), { dmg: [4.5, 5, 6][c], kb: [3, 4, 9][c], stun: [16, 17, 22][c], power: [.75, .9, 1.4][c], launch: c === 1 ? -6 : c === 2 ? -9 : 0 });
-      if (h && c === 2 && !m.shock) m.shock = { at: at + 10, x: o.x, y: o.y - 150 };
+      const hb = c === 2 ? box(f, -300, 330, -320, 0) : c === 1 ? box(f, 0, 320, -340, -20) : box(f, -40, 330, -300, -30);
+      const h = tryHit(f, o, hb, { dmg: [4.5, 5, 3.5][c], kb: [3, 4, 6][c], stun: [16, 17, 22][c], power: [.8, .95, 1.2][c], launch: c === 1 ? -6 : 0 }, c === 2 ? 2 : 1, 3);
+      if (h && c === 2 && !m.shock) m.shock = { at: at + 12, x: o.x, y: o.y - 150 };
     }
-    if (m.shock && !m.shock.done && at >= m.shock.at) { m.shock.done = true; reiShock(f, o, m.shock.x, m.shock.y, false); }
-  } else if (k === 'b') {   // 二の太刀: a lunging cut, then the delayed shock races along the floor as a wave of ink
-    if (t < m.st) { f.vx *= .7; f.charge = t / m.st; }
-    if (first(0)) { f.vx = f.face * 14; f.charge = 0; fxArc(f.x + f.face * 120, f.y - 140, 240, -2.0, 1.0, f.col.rgb, f.face, 18, 56); sfx.heavySwing(); fxDust(f.x, f.y, 6, .9); }
-    if (act) { f.vx *= Math.pow(.88, dt); tryHit(f, o, box(f, 20, 330, -300, -10), { dmg: 6, kb: 6, stun: 22, power: 1.2 }); }
-    if (first(10)) {
-      G.proj.push({ owner: f, x: f.x + f.face * 220, y: GROUND - 70, vx: f.face * 16, vy: 0, dmg: 5, type: 'inkwave', pw: 1.3, kb: 9, life: 30, t: 0, trail: [], rgb: f.col.rgb });
-      fxRing(f.x + f.face * 220, GROUND - 6, f.col.rgb, 20, 200, 18, 8, .22); shake(8); playS('hit_heavy', .5, .9);
+    if (m.shock && !m.shock.done && at >= m.shock.at) { m.shock.done = true; reiShock(f, o, m.shock.x, m.shock.y, true); }
+  } else if (k === 'b') {   // 二の太刀: hop and slam the blade into the floor; the delayed shock races on as a wave of ink
+    if (t < m.st) { f.vx = f.face * 5; f.charge = t / m.st; }
+    if (first(0)) { f.vx = f.face * 6; f.charge = 0; fxArc(f.x + f.face * 120 * r, f.y - 200 * r, 230 * r, -2.4, .6, f.col.rgb, f.face, 18, 56); sfx.heavySwing(); }
+    if (first(3)) { const X = f.x + f.face * 230 * r; fxDust(X, f.y, 14, 1.5); fxRing(X, GROUND - 6, f.col.rgb, 20, 260, 20, 10, .22); fxSmoke(X, GROUND - 40, 10, 1.6, 0, JADE.ink); shake(12); quake(8, .4, 50); }
+    if (act) { f.vx *= Math.pow(.8, dt); tryHit(f, o, box(f, 40, 340, -320, 0), { dmg: 6, kb: 5, stun: 24, power: 1.3, launch: -7 }); }
+    if (first(12)) {
+      G.proj.push({ owner: f, x: f.x + f.face * 260 * r, y: GROUND - 70, vx: f.face * 16, vy: 0, dmg: 5, type: 'inkwave', pw: 1.3, kb: 9, life: 30, t: 0, trail: [], rgb: f.col.rgb });
+      playS('hit_heavy', .5, .9);
     }
-  } else if (k === 'ex') updateReiMaw(f, o, m, at, dt, first, tip);
-  else if (k === 'ult') {
+  } else if (k === 'ex') {   // 顎門・砲哮: the blade opens into a cannon and fires one heavy shell
+    if (t < m.st) { f.vx *= .6; if ((t | 0) % 3 === 0) fxSpark(f.x + f.face * 200 * r, f.y - 150 * r, SHU.rgb, 3, .5); }
+    if (first(0)) {
+      fxTear(f);
+      const mx = f.x + f.face * 300 * r, my = f.y - 160 * r;
+      G.proj.push({ owner: f, x: mx, y: my, vx: f.face * 24, vy: 0, dmg: 12, type: 'shell', pw: 2.2, kb: 14, launch: -12, life: 70, t: 0, trail: [], rgb: f.col.rgb });
+      f.vx = -f.face * 16;   // recoil
+      fxCore(mx, my, SHU.hot, 220, 14); fxRing(mx, my, f.col.rgb, 10, 220, 16, 10, 1); fxSmoke(mx, my, 14, 2.2, f.face, JADE.ink); fxSpark(mx, my, SHU.rgb, 24, 1.6, f.face);
+      sfx.boom(); playS('impact_big', .7, .9); shake(16); quake(14, .5, 70); zoomKick(.06); flash(.35, SHU.rgb);
+    }
+    if (act) f.vx *= Math.pow(.85, dt);
+  } else if (k === 'ult') {
     if (first(0)) fxTear(f);
     updateEnjoUlt(f, o, at, dt, first);   // the blade unseals the ink dragon: same pool → rise → coil → dive timeline as ENJO's RINDO
     if (first(ENJO_ULT.dive)) G.inkWash = { t: 0, life: 46 };   // the world is swallowed by ink for a moment
   }
 }
-// 顎門・哭喰: the guard's beast jaw opens and the blade spine splits into cables that shoot out, bind the foe, drag them into
-// the jaw, turn them to ink, then spit them back out. Guarded or missed, the cables snap back.
-function updateReiMaw(f, o, m, at, dt, first, tip) {
-  if (at < 0) { f.vx = 0; return; }
-  const z = m.maw || (m.maw = { phase: 'shoot', x: tip.x, y: tip.y, t: 0, ct: 0, hits: 0, caught: false });
-  if (first(0)) { fxTear(f); fxRing(tip.x, tip.y, f.col.rgb, 10, 140, 16, 6, 1); playS('laser_shot', .45, .5); sfx.dash(); }
-  z.t += dt;
-  const end = () => { f.t = Math.max(f.t, m.st + m.act - 1); };
-  if (z.phase === 'shoot') {
-    z.x += f.face * 26 * dt; z.y = tip.y;
-    if ((z.t | 0) % 2 === 0) fxSmoke(z.x, z.y, 1, .5, -f.face, JADE.ink);
-    if (G.phase === 'fight' && o.inv <= 0 && o.state !== 'down' && overlap({ x0: z.x - 40, x1: z.x + 40, y0: z.y - 90, y1: z.y + 90 }, hurt(o))) {
-      const h = hitTarget(f, o, { dmg: 2, kb: 0, stun: 60, power: .8, hy: o.y - z.y });
-      if (h && !o.ko && o.state === 'hit') { z.phase = 'pull'; z.caught = true; z.t = 0; playS('arca_armor', .4, 1.2); }
-      else { z.phase = 'back'; z.t = 0; }
-    } else if (z.t > 14) { z.phase = 'back'; z.t = 0; }
-    return;
-  }
-  if (z.phase === 'back') { z.x = lerp(z.x, tip.x, .35); if (z.t > 8) end(); return; }
-  // caught: hold the foe at the jaw
-  const hold = () => { o.x = lerp(o.x, tip.x + f.face * 60, .3); o.vx = 0; o.vy = 0; o.y = lerp(o.y, GROUND, .3); if (o.state !== 'down' && !o.ko) { o.state = 'hit'; o.stun = Math.max(o.stun, 20); } };
-  z.x = lerp(z.x, tip.x + f.face * 40, .3); z.y = tip.y;
-  if (o.ko || o.hp <= 0) { end(); return; }
-  if (z.phase === 'pull') { hold(); if (z.t > 12) { z.phase = 'eat'; z.t = 0; } return; }
-  if (z.phase === 'eat') {   // swallowed into ink: three crunches inside the jaw
-    hold(); z.ct += dt;
-    if ((z.t | 0) % 2 === 0) fxSmoke(o.x + rnd(-60, 60), o.y - rnd(40, 260), 2, 1.3, 0, JADE.ink);
-    if (z.hits < 3 && z.t >= 6 + z.hits * 9) { z.hits++; hitTarget(f, o, { dmg: 2.5, kb: 0, stun: 40, power: 1, hy: 150 }); fxPetals(o.x, o.y - 160, 3, 1, !f.alt); shake(7); }
-    if (z.t > 34) {   // spat back out of the black ukiyo
-      z.phase = 'spit'; z.t = 0;
-      hitTarget(f, o, { dmg: 7, kb: 14, launch: -15, power: 2.2, hitstop: 10, hy: 150 });
-      fxSmoke(o.x, o.y - 150, 18, 2.4, f.face, JADE.ink); fxRing(o.x, o.y - 150, f.col.rgb, 20, 280, 22, 10, .6); sfx.boom(); zoomKick(.06); quake(12, .5, 60);
-    }
-    return;
-  }
-  if (z.phase === 'spit' && z.t > 10) end();
-}
-function drawReiMaw(f) {
-  if (f.id !== 'rei' || f.hidden || f.state !== 'atk' || !f.move || f.move.key !== 'ex' || !f.move.maw) return;
-  const z = f.move.maw, tip = reiTip(f), open = z.phase === 'eat' ? .25 + .2 * Math.abs(Math.sin(z.t * .35)) : z.phase === 'spit' ? 1 : .8;
-  ctx.save(); ctx.lineCap = 'round';
-  for (let i = 0; i < 3; i++) {   // the split spine: three cables
-    const off = (i - 1) * 12, wob = Math.sin(G.frame * .4 + i * 2) * 10;
-    ctx.beginPath(); ctx.moveTo(tip.x, tip.y + off); ctx.quadraticCurveTo((tip.x + z.x) / 2, (tip.y + z.y) / 2 + off + wob, z.x, z.y + off * .4);
-    ctx.strokeStyle = 'rgba(16,13,12,.95)'; ctx.lineWidth = 7; ctx.stroke(); ctx.strokeStyle = `rgba(${SHU.brass},.8)`; ctx.lineWidth = 1.6; ctx.stroke();
-  }
-  ctx.translate(z.x, z.y); ctx.scale(f.face, 1);   // brass beast jaw with a red core
-  const fang = (s) => { ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(46, s * 6); ctx.lineTo(40, s * 22); ctx.lineTo(28, s * 12); ctx.lineTo(16, s * 26); ctx.lineTo(-10, s * 16); ctx.closePath(); ctx.fillStyle = '#2a2420'; ctx.fill(); ctx.strokeStyle = `rgb(${SHU.brass})`; ctx.lineWidth = 2; ctx.stroke(); };
-  ctx.save(); ctx.rotate(-open * .7); fang(-1); ctx.restore(); ctx.save(); ctx.rotate(open * .7); fang(1); ctx.restore();
-  ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 30); g.addColorStop(0, `rgba(${f.col.rgb},.9)`); g.addColorStop(1, `rgba(${f.col.rgb},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 30, 0, TAU); ctx.fill();
-  ctx.restore();
+function shellBurst(p) {   // the cannon shell detonates
+  fxBig(p.x, p.y, SHU.rgb, SHU.hot, 2.4, Math.sign(p.vx) || 1); fxSmoke(p.x, p.y, 16, 2.4, 0, JADE.ink); fxPetals(p.x, p.y, 10, 1.6, !p.owner.alt);
+  sfx.boom(); shake(18); quake(16, .6, 80);
 }
 function drawInkWash() {   // screen space: the dragon's swallow floods the screen with ink, then drains
   const w = G.inkWash; if (!w) return;
@@ -1893,11 +1862,12 @@ function updateProj(dt) {
       continue;
     }
     let dead = p.t > p.life || p.x < -100 || p.x > STAGE_W + 100 || p.y > GROUND + 20;
-    if (!dead) { const cb = clashBox(o); if (cb && overlap({ x0: p.x - 24, x1: p.x + 24, y0: p.y - 24, y1: p.y + 24 }, cb)) { clashFx(p.x, p.y, o, p.owner); if (p.type === 'paint') fxPaint(p.x, p.y, 18, 1.3); G.proj.splice(i, 1); continue; } }
+    if (!dead && p.type !== 'shell') { const cb = clashBox(o); if (cb && overlap({ x0: p.x - 24, x1: p.x + 24, y0: p.y - 24, y1: p.y + 24 }, cb)) { clashFx(p.x, p.y, o, p.owner); if (p.type === 'paint') fxPaint(p.x, p.y, 18, 1.3); G.proj.splice(i, 1); continue; } }
     if (!dead && overlap({ x0: p.x - 16, x1: p.x + 16, y0: p.y - 16, y1: p.y + 16 }, hurt(o)) && o.inv <= 0 && o.state !== 'down' && o.state !== 'ko') {
       const f = p.owner, saveX = f.x; f.x = p.x - Math.sign(p.vx) * 40;
-      hitTarget(f, o, { dmg: p.dmg, kb: p.kb || 5, stun: 16, power: p.pw || (p.type === 'homing' ? 1.1 : .8), hy: o.y - p.y }); f.x = saveX; dead = true;
+      hitTarget(f, o, { dmg: p.dmg, kb: p.kb || 5, stun: 16, power: p.pw || (p.type === 'homing' ? 1.1 : .8), launch: p.launch || 0, hy: o.y - p.y }); f.x = saveX; dead = true;
     }
+    if (dead && p.type === 'shell') { shellBurst(p); G.proj.splice(i, 1); continue; }
     if (dead) { if (p.type === 'paint') { fxPaint(p.x, p.y, 18, 1.3); if (p.y > GROUND - 40) fxPuddle(p.x, PAINT.blue, 110); } else fxCore(p.x, p.y, p.rgb, 50, 8); G.proj.splice(i, 1); }
   }
 }
@@ -1906,6 +1876,13 @@ function drawProj() {
     const tr = p.trail; if (tr.length < 2) continue;
     if (p.type === 'paint' || p.type === 'stroke') { drawPaintProj(p); continue; }
     if (p.type === 'hook') { drawHook(p); continue; }
+    if (p.type === 'shell') {   // REI's cannon shell: a black slug in a red corona with a long trail
+      ctx.lineCap = 'round'; ctx.beginPath(); tr.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y));
+      ctx.strokeStyle = `rgba(${p.rgb},.75)`; ctx.lineWidth = 34; ctx.stroke(); ctx.strokeStyle = 'rgba(255,230,220,.9)'; ctx.lineWidth = 8; ctx.stroke();
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 70); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(.35, `rgba(${p.rgb},.9)`); g.addColorStop(1, `rgba(${p.rgb},0)`);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, 70, 0, TAU); ctx.fill();
+      continue;
+    }
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     for (let pass = 0; pass < 2; pass++) {
       ctx.beginPath(); tr.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y));
@@ -1998,7 +1975,7 @@ function onKO(att, tgt) {
 }
 
 /* SUZUNE's short step-dash: brief invulnerability (slips through AOI's shots), short cooldown */
-const CAN_DASH = { suzune: 1, arca: 1, mio: 1, aria: 1 };
+const CAN_DASH = { suzune: 1, arca: 1, mio: 1, aria: 1, enjo: 1, rei: 1 };
 const TAG_CD = 150;
 function doTag(side, forced) {
   const out = G.fighters[side], inn = partnerOf(out);
@@ -2112,8 +2089,13 @@ function stepFighter(f, o, inp, dt) {
     }
   } else if (f.state === 'dash') {
     f.vx *= Math.pow(.91, dt);
-    f.trail.push(1); f.rail.push({ x: f.x - f.dashDir * 20, y: f.y - 10, t: G.frame });
-    if (G.frame % 3 === 0) fxDust(f.x - f.dashDir * 40, f.y, 1, .6);
+    if (f.id === 'enjo') {   // smoke warp: no after-images, a jade smoke trail instead
+      fxSmoke(f.x - f.dashDir * rnd(0, 60), f.y - rnd(40, 300), 2, 1, -f.dashDir, f.col.rgb);
+      if (f.t < 1) { fxSmoke(f.x, f.y - 160, 10, 1.6, 0, f.col.rgb); playS('dash', .5, .7); }
+    } else {
+      f.trail.push(1); f.rail.push({ x: f.x - f.dashDir * 20, y: f.y - 10, t: G.frame });
+      if (G.frame % 3 === 0) fxDust(f.x - f.dashDir * 40, f.y, 1, .6);
+    }
     if (f.id === 'mio' && G.frame % 2 === 0) { fxPaint(f.x - f.dashDir * 50, GROUND - 14, 2, .7, -f.dashDir); if (G.frame % 4 === 0) fxPuddle(f.x - f.dashDir * 30, PAINT.blue, 46, 90); }
     // dash-cancel: attacks come out of the back half of the dash so it leads straight into close range
     if (canAct && f.t >= DASH.cancel) {
@@ -2122,7 +2104,7 @@ function stepFighter(f, o, inp, dt) {
       else if (f.buf.a > 0) { f.buf.a = 0; startMove(f, 'a'); }
       else if (f.buf.u > 0 && f.id !== 'arca') { f.buf.u = 0; f.state = 'jump'; f.vy = f.ch.jump; f.vx = f.dashDir * f.ch.speed * 1.4; sfx.jump(); }
     }
-    if (f.state === 'dash' && f.t >= DASH.len) { f.state = 'idle'; f.land = 6; f.vx *= .3; fxDust(f.x, f.y, 4, .7); }
+    if (f.state === 'dash' && f.t >= DASH.len) { f.state = 'idle'; f.land = 6; f.vx *= .3; if (f.id === 'enjo') fxSmoke(f.x, f.y - 160, 10, 1.4, 0, f.col.rgb); else fxDust(f.x, f.y, 4, .7); }
   } else if (f.state === 'tagin') {   // arcing leap in from off-screen
     const g = f.tg, q = Math.min(1, f.t / g.L), e = 1 - Math.pow(1 - q, 2);
     f.x = lerp(g.x0, g.x1, e); f.y = g.y0 + (GROUND - g.y0) * q * q - Math.sin(q * Math.PI) * 160; f.vx = 0; f.vy = 0;
@@ -2606,6 +2588,7 @@ function drawFighter(f, reflect) {
   if (pwr > 0) drawGlow(src, fr, bx, by, bw, bh, arg);
   if (hotA) { ctx.globalAlpha = .35 + .2 * beat; drawGlow(src, fr, bx - 6, by - 6, bw + 12, bh + 12, ahot); }
   ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = f.inv > 0 && f.inv < 900 && f.state !== 'atk' && f.state !== 'getup' && f.state !== 'dash' ? (G.frame % 6 < 3 ? .5 : 1) : 1;
+  if (f.id === 'enjo' && f.state === 'dash') { const q = f.t / DASH.len; ctx.globalAlpha = .12 + .88 * Math.abs(q * 2 - 1); }   // smoke warp: fades out, then re-forms
   if (pwr < 1) ctx.filter = `brightness(${(.3 + .7 * pwr).toFixed(2)}) saturate(${(.5 + .5 * pwr).toFixed(2)})`;
   drawFrame(src, fr, bx, by, bw, bh, f.glitch > 0);
   if (pf.fr2 !== pf.fr && pf.mix > .04) {
@@ -2955,7 +2938,7 @@ function renderWorld() {
   for (const f of G.fighters) { drawDragon(f, false); drawDog(f, false); drawShishi(f, false); }
   for (const b of G.benched || []) drawFighter(b.f, false);
   for (const f of order) drawFighter(f, false);
-  for (const f of G.fighters) { drawDrone(f); drawSkull(f); drawDragon(f, true); drawDog(f, true); drawShishi(f, true); drawRindo(f); drawReiMaw(f); }
+  for (const f of G.fighters) { drawDrone(f); drawSkull(f); drawDragon(f, true); drawDog(f, true); drawShishi(f, true); drawRindo(f); }
   drawFx('norm');
   ctx.globalCompositeOperation = 'lighter'; drawProj(); drawFx('add'); ctx.globalCompositeOperation = 'source-over';
   drawLunaBeam();
