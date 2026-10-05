@@ -383,7 +383,7 @@ function audioInit() {
 }
 let noiseBuf = null;
 function noise(dur, f0, f1, q, vol, type = 'bandpass') {
-  const ac = SND.ac; if (!ac || !SND.on) return;
+  const ac = SND.ac; if (!ac || !SND.on) return; sfxBus();
   if (!noiseBuf) { noiseBuf = ac.createBuffer(1, ac.sampleRate * 1.5, ac.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
   const t = ac.currentTime, s = ac.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
   const f = ac.createBiquadFilter(); f.type = type; f.Q.value = q; f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(Math.max(30, f1), t + dur);
@@ -391,7 +391,7 @@ function noise(dur, f0, f1, q, vol, type = 'bandpass') {
   s.connect(f); f.connect(g); g.connect(SND.master); s.start(t); s.stop(t + dur + .05);
 }
 function tone(dur, f0, f1, vol, type = 'sine', delay = 0) {
-  const ac = SND.ac; if (!ac || !SND.on) return;
+  const ac = SND.ac; if (!ac || !SND.on) return; sfxBus();
   const t = ac.currentTime + delay, o = ac.createOscillator(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
   const g = ac.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
   o.connect(g); g.connect(SND.master); o.start(t); o.stop(t + dur + .05);
@@ -537,9 +537,20 @@ function playLoud(name, vol = 1, rate = 1, delay = 0) {
   const s = ac.createBufferSource(), g = ac.createGain(); s.buffer = b; s.playbackRate.value = rate; g.gain.value = vol;
   s.connect(g); g.connect(bus); s.start(ac.currentTime + delay); return true;
 }
+// effects bus: hits/impacts boosted to sit level with the (boosted) voices and cutscene scores, limited so stacks never clip
+function sfxBus() {
+  const ac = SND.ac; if (!ac) return null;
+  if (!SFXB.gain) {
+    SFXB.gain = ac.createGain(); SFXB.gain.gain.value = 2.0;
+    const c = ac.createDynamicsCompressor(); c.threshold.value = -10; c.knee.value = 6; c.ratio.value = 10; c.attack.value = .002; c.release.value = .14;
+    const mk = ac.createGain(); mk.gain.value = 1.2; SFXB.gain.connect(c); c.connect(mk); mk.connect(ac.destination);
+    if (SND.master) { try { SND.master.disconnect(); } catch (e) { } SND.master.gain.value = .85; SND.master.connect(SFXB.gain); }
+  }
+  return SFXB.gain;
+}
 function playS(name, vol = 1, rate = 1, delay = 0) {
   const ac = SND.ac, b = SFXB.buf[name]; if (!ac || !b) return false; if (!SND.on) return true;
-  if (!SFXB.gain) { SFXB.gain = ac.createGain(); SFXB.gain.gain.value = .9; SFXB.gain.connect(ac.destination); }
+  sfxBus();
   const s = ac.createBufferSource(), g = ac.createGain(); s.buffer = b;
   s.playbackRate.value = rate * (.95 + Math.random() * .1); g.gain.value = vol;
   s.connect(g); g.connect(SFXB.gain); s.start(ac.currentTime + delay); return true;
@@ -600,13 +611,33 @@ const sfx = {
   kick() { playS('whoosh_kick', .95) || _synth.heavySwing(); },
   heavyKick() { playS('whoosh_kick_heavy', 1) || _synth.heavySwing(); },
   heavySwing() { playS('whoosh_punch', .95, .78) || _synth.heavySwing(); },
-  hit(p = 1) { (p < .95 ? playS('hit_light', .9) : p < 1.7 ? playS('hit_mid', 1) : playS('hit_heavy', 1)) || _synth.hit(p); },
-  guard() { playS('guard', .7) || _synth.guard(); },
+  hit(p = 1) {   // sample + sub thump on every clean hit; heavy hits add a crack and a low impact
+    (p < .95 ? playS('hit_light', 1) : p < 1.7 ? playS('hit_mid', 1.1) : playS('hit_heavy', 1.15)) || _synth.hit(p);
+    tone(.14 + .08 * p, 150 + 40 * p, 42, .35 + .25 * Math.min(2, p));
+    if (p >= 1.3) { noise(.1, 4200, 900, .7, .35); playS('impact_big', .45 + .2 * Math.min(2, p), 1.3); }
+    if (p >= 2) { playS('impact_big', .8, .72, .02); tone(.6, 90, 26, .7); }
+  },
+  explode(big = 1) {   // explosions: low boom, sub drop, debris crackle
+    if (G.frame - (SFXB.lastBoom || -99) < 5) return; SFXB.lastBoom = G.frame;
+    playS('impact_big', .9 * big, .68 + Math.random() * .1); noise(.9 + .4 * big, 1600, 50, .5, .75 * big, 'lowpass'); tone(.9, 95, 24, .8 * big);
+    playS('hit_heavy', .55 * big, .6, .06); noise(.35, 6000, 2500, 1.2, .22 * big, 'highpass');
+  },
+  awaken() {   // 覚醒: impossible to miss — rising roar, double impact, a ringing power chord, sub drop
+    const ac = SND.ac, bus = loudBus(); if (!ac || !SND.on || !bus) return;
+    playLoud('ult_start', 1.4, .9); playLoud('impact_big', 1.5, .6, .12); playLoud('impact_big', 1, 1.15, .18); playLoud('beam', .6, 1.3, .1);
+    const t = ac.currentTime;
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 5; lp.frequency.setValueAtTime(250, t); lp.frequency.exponentialRampToValueAtTime(5200, t + .5); lp.frequency.exponentialRampToValueAtTime(900, t + 1.8);
+    const g = ac.createGain(); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.5, t + .14); g.gain.exponentialRampToValueAtTime(.001, t + 2); lp.connect(g); g.connect(bus);
+    for (const [f, d] of [[110, 0], [164.8, 3], [220, -4], [329.6, 5]]) { const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = d; o.connect(lp); o.start(t); o.stop(t + 2.1); }
+    const sub = ac.createOscillator(), sg = ac.createGain(); sub.frequency.setValueAtTime(70, t + .12); sub.frequency.exponentialRampToValueAtTime(28, t + 1.2);
+    sg.gain.setValueAtTime(.0001, t); sg.gain.setValueAtTime(1, t + .12); sg.gain.exponentialRampToValueAtTime(.001, t + 1.4); sub.connect(sg); sg.connect(bus); sub.start(t); sub.stop(t + 1.5);
+  },
+  guard() { (playS('guard', 1) || _synth.guard()); tone(.22, 1700, 1250, .14, 'triangle'); },
   laser() { playS('laser_shot', .6) || _synth.laser(); },
   homing() { playS('laser_homing', .7) || _synth.laser(); },
   charge() { playS('charge', .7) || _synth.charge(); },
   beam() { playS('beam', .95) || _synth.beam(); },
-  boom() { playS('impact_big', .95) || _synth.boom(); },
+  boom() { sfx.explode(1); },
   dash() { playS('dash', .8) || _synth.dash(); },
   cutin() { playS('special_start', .55) || _synth.cutin(); },
   special() { playS('special_start', 1) || _synth.cutin(); },
@@ -674,6 +705,7 @@ function fxBolt(x0, y0, x1, y1, rgb, life = 9) {
 }
 // big-impact package: anamorphic flare, light pillar, radial spikes, hex/diamond shards, arcs of lightning
 function fxBig(x, y, rgb, hot, pw = 2, dir = 1) {
+  sfx.explode(Math.min(1.4, .6 + pw * .25));
   const q = Math.min(1.6, pw / 2);
   addFx({ k: 'flare', x, y, rgb, hot, life: 22 + 8 * q, t: 0, len: 520 + 520 * q });
   addFx({ k: 'pillar', x, y: Math.min(GROUND, y + 140), rgb, hot, life: 26 + 10 * q, t: 0, w: 70 + 50 * q });
@@ -2864,7 +2896,7 @@ function telop(kind, f) {
   TEL.list = TEL.list.filter(t => !(t.f === f && t.kind === kind));
   if (kind === 'ult') TEL.list = TEL.list.filter(t => t.kind !== 'ex');
   TEL.list.push({ kind, f, t0: performance.now(), seed: Math.random() * 1000 });
-  if (kind === 'awake') { playLoud('ult_start', .55, 1.2); pfxKick({ ca: .8 }); }
+  if (kind === 'awake') { sfx.awaken(); pfxKick({ ca: 1.6, bloom: .5 }); shake(12); quake(10, .5, [60, 30, 90]); flash(.35, '255,60,70'); }
 }
 const easeOut = x => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
 function spaced(txt, x, y, sp, align) {   // letter-spaced text (canvas letterSpacing is not everywhere yet)
