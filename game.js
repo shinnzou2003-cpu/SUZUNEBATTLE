@@ -174,7 +174,10 @@ const CHARS = {
   rei: { id: 'rei', name: 'REI', role: '大太刀・墨龍', c1: '#e8463c', c2: '#e9e4d8', rgb: '232,70,60', rgb2: '233,228,216', speed: 5.0, jump: -24.0, anchor: .55, hurtW: 50, hurtH: 280, exName: '顎門・砲哮', ultName: '墨龍・彼岸' },
   // KANNA 花守りの神機 GARDEN GOD-MACHINE: a giant pearl-and-gold biomechanical goddess (≈2.5× a person) who slept for
   // centuries guarding the last colour — a garden of orange flowers inside her chest. Silent, serene, and very fast for her size
-  kanna: { id: 'kanna', name: 'KANNA', role: '花弁冠・巨大神機', c1: '#ff8c28', c2: '#e8b85a', rgb: '255,140,40', rgb2: '232,184,90', speed: 6.6, jump: -25.0, anchor: .5, hurtW: 118, hurtH: 590, exName: '開花・花冠', ultName: '開花 ― ORANGE' }
+  kanna: { id: 'kanna', name: 'KANNA', role: '花弁冠・巨大神機', c1: '#ff8c28', c2: '#e8b85a', rgb: '255,140,40', rgb2: '232,184,90', speed: 6.6, jump: -25.0, anchor: .5, hurtW: 118, hurtH: 590, exName: '開花・花冠', ultName: '開花 ― ORANGE' },
+  // ICHIKA: SUZUNE's second little sister. Stamps her lace-up boots and the world runs slow for ONE SECOND — only she keeps
+  // moving at normal speed (SUZUNE is fast herself; ICHIKA makes the world slow). Black × gold like her sister
+  ichika: { id: 'ichika', name: 'ICHIKA', role: '時間操作・1秒スロー', c1: '#f2c14e', c2: '#fff0c8', rgb: '242,193,78', rgb2: '255,240,200', speed: 5.8, jump: -25.5, anchor: .55, hurtW: 50, hurtH: 275, exName: 'ONE SECOND', ultName: 'ZERO SECOND' }
 };
 const ALT = {
   suzune: { c1: '#7fd8ff', c2: '#4f7bff', rgb: '130,215,255', rgb2: '90,120,255', test: (h, s, l) => (h > 33 && h < 64 && s > .3) || ((h < 12 || h > 340) && s > .55), shift: 175 },
@@ -185,16 +188,17 @@ const ALT = {
   aria: { c1: '#7fd0ff', c2: '#ff7a9a', rgb: '130,200,255', rgb2: '255,120,150', test: (h, s, l) => h > 15 && h < 50 && s > .25, shift: 180 },
   enjo: { c1: '#c99aff', c2: '#e0e0e8', rgb: '200,150,255', rgb2: '224,224,232', test: (h, s, l) => h > 145 && h < 200 && s > .18, shift: 120 },
   rei: { c1: '#5ab8ff', c2: '#e9e4d8', rgb: '90,184,255', rgb2: '233,228,216', test: (h, s, l) => (h < 20 || h > 340) && s > .3, shift: 205 },
-  kanna: { c1: '#7fd8ff', c2: '#b8c8e8', rgb: '130,215,255', rgb2: '184,200,232', test: (h, s, l) => h > 12 && h < 52 && s > .3, shift: 175 }
+  kanna: { c1: '#7fd8ff', c2: '#b8c8e8', rgb: '130,215,255', rgb2: '184,200,232', test: (h, s, l) => h > 12 && h < 52 && s > .3, shift: 175 },
+  ichika: { c1: '#ff7aa8', c2: '#ffd0e0', rgb: '255,122,168', rgb2: '255,208,224', test: (h, s, l) => h > 30 && h < 62 && s > .3, shift: 300 }
 };
 const GFX = {};
 async function buildAssets() {
   const A = window.ASSETS;
-  const [su, ao, drone, suci, aoci, ar, arci, arp, sa, saci, mi, mici, ari, arici, en, enci, ensk, re, reci, ka, kaci] = await Promise.all([A.su, A.ao, A.drone, A.suci, A.aoci, A.ar, A.arci, A.arp, A.sa, A.saci, A.mi, A.mici, A.ar2, A.ar2ci, A.en, A.enci, A.enskull, A.re, A.reci, A.ka, A.kaci].map(p => track(loadImg(p))));
-  const base = { suzune: { img: su, ci: suci }, aoi: { img: ao, ci: aoci }, arca: { img: ar, ci: arci }, sakura: { img: sa, ci: saci }, mio: { img: mi, ci: mici }, aria: { img: ari, ci: arici }, enjo: { img: en, ci: enci }, rei: { img: re, ci: reci }, kanna: { img: ka, ci: kaci } };
+  const [su, ao, drone, suci, aoci, ar, arci, arp, sa, saci, mi, mici, ari, arici, en, enci, ensk, re, reci, ka, kaci, ic, icci] = await Promise.all([A.su, A.ao, A.drone, A.suci, A.aoci, A.ar, A.arci, A.arp, A.sa, A.saci, A.mi, A.mici, A.ar2, A.ar2ci, A.en, A.enci, A.enskull, A.re, A.reci, A.ka, A.kaci, A.ic, A.icci].map(p => track(loadImg(p))));
+  const base = { suzune: { img: su, ci: suci }, aoi: { img: ao, ci: aoci }, arca: { img: ar, ci: arci }, sakura: { img: sa, ci: saci }, mio: { img: mi, ci: mici }, aria: { img: ari, ci: arici }, enjo: { img: en, ci: enci }, rei: { img: re, ci: reci }, kanna: { img: ka, ci: kaci }, ichika: { img: ic, ci: icci } };
   GFX.arcaPilot = arp; GFX.skull = ensk; GFX.skullAlt = null;
   GFX.skullAltLazy = () => GFX.skullAlt || (GFX.skullAlt = recolor(ensk, ALT.enjo.test, ALT.enjo.shift));
-  for (const id of ['suzune', 'aoi', 'arca', 'sakura', 'mio', 'aria', 'enjo', 'rei', 'kanna']) {
+  for (const id of ['suzune', 'aoi', 'arca', 'sakura', 'mio', 'aria', 'enjo', 'rei', 'kanna', 'ichika']) {
     const ch = CHARS[id], al = ALT[id];
     const make = (img, ci, c1, rgb) => ({ img, ci, white: silhouette(img, '#fff'), tint: silhouette(img, c1), glow: glowOf(img, `rgb(${rgb})`) });
     GFX[id] = [make(base[id].img, base[id].ci, ch.c1, ch.rgb), null];
@@ -210,7 +214,7 @@ const frameCount = (id, n) => ANIMS[id] && ANIMS[id].a[n] ? ANIMS[id].a[n].lengt
 // visual size balance between characters (SUZUNE's source video was framed larger)
 const RESIZE = { suzune: .9, aoi: .9, sakura: .9, enjo: 1.15, rei: 1.15 };   // ENJO / REI enlarged 2026-10-05; their summoned beasts keep their size   // 2026-10-04: these three trimmed to sit with the rest of the roster (sprite + hit/hurt boxes + attach points)
 const RS = f => RESIZE[f.id] || 1;
-const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.2, mio: 1.22, aria: .95, enjo: 1.0, rei: 1.0, kanna: 2.1 };   // AOI stands taller; SUZUNE fights from a low crouch; KANNA is a giant (≈2.5× SUZUNE)
+const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.2, mio: 1.22, aria: .95, enjo: 1.0, rei: 1.0, kanna: 2.1, ichika: 1.0 };   // AOI stands taller; SUZUNE fights from a low crouch; KANNA is a giant (≈2.5× SUZUNE)
 const LOAD = { done: 0, total: 0 };
 function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = document.getElementById('loadPct'); if (el) el.textContent = Math.round(LOAD.done / Math.max(1, LOAD.total) * 100) + '%'; return v; }); }
 // Atlases are NOT decoded at boot any more: only the fighters in the current match are kept in memory,
@@ -342,6 +346,19 @@ function pickFrame(f) {
         if (m.key === 'ex') return prog('ex', p);   // blade opens into the cannon, fires, recoils, folds back
         if (m.key === 'ult') { const u = t - m.st; if (u < ENJO_ULT.rise) return loop('ultCharge', AN.fps.ultCharge || 10); return prog('ultFire', Math.min(1, (u - ENJO_ULT.rise) / 30)); }
       }
+      if (f.id === 'ichika') {
+        if (m.key === 'a') { const n = ['a1', 'a2', 'a3'][Math.min(2, f.chain)]; return prog(a[n] ? n : 'a', p); }
+        if (m.key === 'b') return prog('b', p);
+        if (m.key === 'ex') return prog('ex', p);
+        if (m.key === 'ult') {   // stamp → one kick per blink round the frozen foe → landing
+          const u = t - m.st, U = ICHIKA_ULT;
+          if (u < U.first) return prog(a.ultCharge ? 'ultCharge' : 'ex', u / U.first);
+          if (u < U.resume) { const i = Math.min(U.hits - 1, Math.floor((u - U.first) / U.every)), q = ((u - U.first) % U.every) / U.every;
+            if (a.ultFire) return prog('ultFire', (i + q) / U.hits);
+            return prog(['a2', 'a3', 'a2', 'b', 'a3', 'b'][i], q); }
+          return prog(a.ultEnd ? 'ultEnd' : 'ex', Math.min(1, (u - U.resume) / 30));
+        }
+      }
       if (f.id === 'kanna') {
         if (m.key === 'a') { const n = ['a1', 'a2', 'a3'][Math.min(2, f.chain)]; return prog(a[n] ? n : 'a', p); }
         if (m.key === 'b') return prog('b', p);
@@ -463,7 +480,9 @@ const VOICE_MAP = {
     getup: ['re_10'], ko: ['re_11'], ex: ['re_12'], ult: ['re_13'], select: ['re_14'], round: ['re_15'], winMovie: ['re_16'], win: ['re_17'], lose: ['re_18'] },
   // KANNA is silent: breaths and hums only, plus 「ひらいて」 (EX) and her one line 「こわして」 (ULT)
   kanna: { a0: ['ka_01', 'ka_03'], a1: ['ka_02'], a2: ['ka_04'], b: ['ka_05'], jump: ['ka_06'], guard: ['ka_07'], hit: ['ka_08'], hitBig: ['ka_09'],
-    getup: ['ka_10'], ko: ['ka_11'], ex: ['ka_12'], ult: ['ka_13'], select: ['ka_14'], round: ['ka_15'], winMovie: ['ka_16'], win: ['ka_17'], lose: ['ka_18'] }
+    getup: ['ka_10'], ko: ['ka_11'], ex: ['ka_12'], ult: ['ka_13'], select: ['ka_14'], round: ['ka_15'], winMovie: ['ka_16'], win: ['ka_17'], lose: ['ka_18'] },
+  ichika: { a0: ['ic_01', 'ic_03'], a1: ['ic_02'], a2: ['ic_04'], b: ['ic_05'], jump: ['ic_06'], guard: ['ic_07'], hit: ['ic_08'], hitBig: ['ic_09'],
+    getup: ['ic_10'], ko: ['ic_11'], ex: ['ic_12'], ult: ['ic_13'], select: ['ic_14'], round: ['ic_15'], winMovie: ['ic_16'], win: ['ic_17'], lose: ['ic_18'] }
 };
 const VOICE = { buf: {}, gain: null, last: {} };
 // BGM ducking bus: music dips while a character is speaking so lines cut through
@@ -709,7 +728,7 @@ function fxDust(x, y, n = 8, pw = 1) { for (let i = 0; i < n; i++) addFx({ k: 'd
 function fxText(x, y, txt, rgb, size = 40, life = 50) { addFx({ k: 'text', x, y, txt, rgb, size, life, t: 0 }); }
 function fxHex(x, y, rgb, face) { addFx({ k: 'hex', x, y, rgb, face, life: 18, t: 0 }); }
 /* SF-mecha energy colours: SUZUNE gold / AOI blue (mirror-match colour swaps keep their own palette) */
-const AURA = { suzune: { rgb: '255,196,64', hot: '255,244,200' }, aoi: { rgb: '64,168,255', hot: '205,240,255' }, arca: { rgb: '46,230,200', hot: '215,255,245' }, sakura: { rgb: '255,150,200', hot: '255,236,246' }, mio: { rgb: '110,180,255', hot: '232,246,255' }, aria: { rgb: '245,165,70', hot: '255,240,205' }, enjo: { rgb: '95,211,188', hot: '225,255,246' }, rei: { rgb: '232,70,60', hot: '255,214,200' }, kanna: { rgb: '255,140,40', hot: '255,228,176' } };
+const AURA = { suzune: { rgb: '255,196,64', hot: '255,244,200' }, aoi: { rgb: '64,168,255', hot: '205,240,255' }, arca: { rgb: '46,230,200', hot: '215,255,245' }, sakura: { rgb: '255,150,200', hot: '255,236,246' }, mio: { rgb: '110,180,255', hot: '232,246,255' }, aria: { rgb: '245,165,70', hot: '255,240,205' }, enjo: { rgb: '95,211,188', hot: '225,255,246' }, rei: { rgb: '232,70,60', hot: '255,214,200' }, kanna: { rgb: '255,140,40', hot: '255,228,176' }, ichika: { rgb: '242,193,78', hot: '255,240,200' } };
 const auraRgb = f => f.alt ? f.col.rgb : AURA[f.id].rgb;
 const auraHot = f => f.alt ? '255,255,255' : AURA[f.id].hot;
 function fxBolt(x0, y0, x1, y1, rgb, life = 9) {
@@ -939,6 +958,12 @@ const MOVES = {
     ex: { st: 20, act: 10, rec: 26, cost: 50 },
     ult: { st: 0, act: 230, rec: 30, cost: 100 }
   },
+  ichika: {
+    a: { st: 4, act: 4, rec: 11, cost: 0 },
+    b: { st: 8, act: 16, rec: 14, cost: 0 },
+    ex: { st: 6, act: 6, rec: 10, cost: 50 },
+    ult: { st: 0, act: 190, rec: 30, cost: 100 }
+  },
   kanna: {
     a: { st: 6, act: 5, rec: 13, cost: 0 },
     b: { st: 12, act: 6, rec: 20, cost: 0 },
@@ -1018,7 +1043,7 @@ function hitTarget(att, tgt, o) {
   const pw = o.power || 1;
   fxCore(hx, hy, att.col.rgb, 70 + 50 * pw, 12 + 4 * pw); fxSpark(hx, hy, att.col.rgb, 10 + 10 * pw, .8 + .5 * pw, fromDir);
   fxRing(hx, hy, att.col.rgb, 10, 60 + 60 * pw, 14 + 6 * pw, 5 + 3 * pw);
-  if (att.id === 'suzune') fxPetals(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'mio') fxPaint(hx, hy, 6 + 6 * pw, .8 + .3 * pw, fromDir); else if (att.id === 'aria') fxGears(hx, hy, 4 + 4 * pw, pw, fromDir); else if (att.id === 'enjo') fxSmoke(hx, hy, 3 + 3 * pw, pw, fromDir, att.col.rgb); else if (att.id === 'rei') { fxSmoke(hx, hy, 2 + 2 * pw, pw, fromDir, JADE.ink); fxPetals(hx, hy, 1 + 2 * pw, pw, !att.alt); } else if (att.id === 'kanna') fxBloom(hx, hy, 3 + 4 * pw, pw); else fxHex(hx, hy, att.col.rgb, fromDir);
+  if (att.id === 'suzune') fxPetals(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'mio') fxPaint(hx, hy, 6 + 6 * pw, .8 + .3 * pw, fromDir); else if (att.id === 'aria') fxGears(hx, hy, 4 + 4 * pw, pw, fromDir); else if (att.id === 'enjo') fxSmoke(hx, hy, 3 + 3 * pw, pw, fromDir, att.col.rgb); else if (att.id === 'rei') { fxSmoke(hx, hy, 2 + 2 * pw, pw, fromDir, JADE.ink); fxPetals(hx, hy, 1 + 2 * pw, pw, !att.alt); } else if (att.id === 'kanna') fxBloom(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'ichika') { fxSpark(hx, hy, ICHI.hot, 6 + 6 * pw, .8 + .4 * pw, fromDir); fxRing(hx, hy, ICHI.rgb, 6, 50 + 40 * pw, 10, 3); } else fxHex(hx, hy, att.col.rgb, fromDir);
   G.hitstop = Math.max(G.hitstop, o.hitstop || (4 + 4 * pw)); shake(4 + 7 * pw);
   if (pw >= 1.4 || o.launch) { quake(3 + 5 * pw, .28 + .12 * pw, pw >= 2 ? 60 : 25); fxBig(hx, hy, auraRgb(att), auraHot(att), Math.max(1.4, pw), fromDir); }
   if (pw >= 2) flash(.35 * pw / 2, '255,230,200');
@@ -1084,6 +1109,7 @@ function updateMove(f, o, dt) {
   else if (f.id === 'enjo') updateEnjoMove(f, o, m, t, k, act, at, dt, first);
   else if (f.id === 'rei') updateReiMove(f, o, m, t, k, act, at, dt, first);
   else if (f.id === 'kanna') updateKannaMove(f, o, m, t, k, act, at, dt, first);
+  else if (f.id === 'ichika') updateIchikaMove(f, o, m, t, k, act, at, dt, first);
   else {
     const dx = f.droneX, dy = f.droneY;
     if (k === 'a') {
@@ -1730,6 +1756,92 @@ function drawInkWash() {   // screen space: the dragon's swallow floods the scre
   ctx.save(); ctx.fillStyle = `rgba(6,5,5,${.88 * a})`; ctx.fillRect(0, 0, W, H);
   ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(${SHU.rgb},${.25 * a})`; ctx.fillRect(0, H * .5 - 2, W, 4); ctx.restore();
 }
+// ICHIKA (SUZUNE's second little sister): she stamps her lace-up boots, the boot lines flare gold and the world around her
+// runs slow for ONE SECOND while she alone moves at normal speed (SUZUNE is fast herself; ICHIKA makes the world slow).
+// The look is fixed: stamp → boot lines glow → a perspective "ONE SECOND" comic caption crosses the screen → the world goes
+// monochrome and slow → only ICHIKA keeps her colour. Rough, momentum-driven kicks; the ULT stops time completely.
+const ICHI = { rgb: '242,193,78', hot: '255,240,200' };
+// G.chrono = { owner, k, t, life }: every fighter on the other side (with their projectiles and summons) runs at k× speed
+function chronoK(f) { const c = G.chrono; return c && f && c.owner.side !== f.side ? c.k : 1; }
+const chronoGrey = f => !!(G.chrono && f.side !== G.chrono.owner.side);
+function startChrono(f, k, life, caption) {
+  G.chrono = { owner: f, k, t: 0, life };
+  if (caption) G.oneSec = { t: 0, life: 64, dir: f.face, txt: caption };
+}
+function updateChrono(dt) {
+  const c = G.chrono; if (!c) return;
+  c.t += dt;
+  if (c.t >= c.life || c.owner.hp <= 0 || G.phase !== 'fight') { G.chrono = null; playS('whoosh_punch2', .45, .6); }
+}
+function fxStomp(f, big) {   // the boot lines flare and a ring of gold runs out along the floor
+  const x = f.x + f.face * 20;
+  fxRing(x, GROUND - 4, ICHI.rgb, 10, big ? 520 : 260, big ? 30 : 20, big ? 12 : 8, .2); fxRing(x, GROUND - 4, ICHI.hot, 6, big ? 300 : 150, 18, 4, .2);
+  fxCore(x, GROUND - 20, ICHI.hot, big ? 160 : 90, 12); fxSpark(x, GROUND - 10, ICHI.rgb, big ? 24 : 12, 1.2);
+  fxDust(x, GROUND, big ? 14 : 8, 1.2); shake(big ? 14 : 8); playS('impact_big', big ? .6 : .35, 1.4);
+  if (big) { flash(.35, ICHI.hot); quake(10, .4, 50); }
+}
+function drawOneSecond() {   // screen space: the perspective comic caption that slides across the screen
+  const o = G.oneSec; if (!o) return;
+  o.t += 1; if (o.t >= o.life) { G.oneSec = null; return; }
+  const p = o.t / o.life, slide = p < .18 ? 1 - Math.pow(1 - p / .18, 3) : p > .8 ? 1 + Math.pow((p - .8) / .2, 2) * 1.2 : 1, a = p > .85 ? 1 - (p - .85) / .15 : 1;
+  const x = W / 2 + o.dir * (1 - slide) * W * 1.1, y = H * .42;
+  ctx.save(); ctx.globalAlpha = a; ctx.translate(x, y); ctx.transform(1, -.08, -.32, 1, 0, 0); ctx.scale(1 + .08 * Math.sin(p * 9), 1);
+  ctx.fillStyle = 'rgba(10,8,6,.55)'; ctx.fillRect(-W * .62, -70, W * 1.24, 140);
+  ctx.strokeStyle = `rgba(${ICHI.rgb},.9)`; ctx.lineWidth = 3;
+  for (let i = 0; i < 9; i++) { const yy = -60 + i * 15; ctx.beginPath(); ctx.moveTo(-W * .6, yy); ctx.lineTo(-W * .6 + 120 + (i * 53 % 200), yy); ctx.stroke(); }
+  ctx.font = "900 italic 112px 'Chakra Petch', 'Shippori Mincho B1', sans-serif"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round'; ctx.lineWidth = 16; ctx.strokeStyle = '#0c0906'; ctx.strokeText(o.txt, 8, 8); ctx.strokeText(o.txt, 0, 0);
+  const g = ctx.createLinearGradient(0, -56, 0, 56); g.addColorStop(0, '#fff6d8'); g.addColorStop(.45, '#f2c14e'); g.addColorStop(1, '#a8701c');
+  ctx.fillStyle = g; ctx.fillText(o.txt, 0, 0);
+  ctx.restore();
+}
+function updateIchikaMove(f, o, m, t, k, act, at, dt, first) {
+  const r = RS(f), rgb = f.col.rgb;
+  if (k === 'a') {   // jab → roundhouse → axe kick (launches)
+    const c = Math.min(2, f.chain);
+    if (t < m.st) f.vx *= .7;
+    if (first(0)) {
+      f.vx = f.face * [6, 8, 9][c];
+      if (c === 0) { fxArc(f.x + f.face * 70 * r, f.y - 190 * r, 70 * r, -.4, .4, rgb, f.face, 10, 18); sfx.swing(); }
+      else if (c === 1) { fxArc(f.x + f.face * 40 * r, f.y - 210 * r, 150 * r, -2.4, .5, rgb, f.face, 14, 34); sfx.kick(); }
+      else { fxArc(f.x + f.face * 90 * r, f.y - 200 * r, 140 * r, -1.9, 1.3, rgb, f.face, 14, 38); sfx.kick(); }
+    }
+    if (act) tryHit(f, o, c === 0 ? box(f, 20, 175, -250, -150) : c === 1 ? box(f, 0, 215, -290, -140) : box(f, 20, 215, -300, -40),
+      { dmg: [4, 5, 7][c], kb: [3, 5, 9][c], stun: [14, 16, 22][c], power: [.7, .9, 1.4][c], launch: c === 2 ? -10 : 0 });
+  } else if (k === 'b') {   // 踏み込み: stamp — for half a breath the world lags — then a flying side kick through the gap
+    if (t < m.st) f.vx *= .6;
+    if (first(0)) { fxStomp(f, false); startChrono(f, .35, 24, null); f.vx = f.face * 22; sfx.dash(); }
+    if (act) {
+      f.vx = f.face * Math.max(6, 22 - at * 1.1); if ((at | 0) % 2 === 0) f.trail.push(1);
+      tryHit(f, o, box(f, 0, 200, -270, -90), { dmg: 8, kb: 12, launch: -9, power: 1.5, stun: 22 });
+    }
+  } else if (k === 'ex') {   // ONE SECOND: the stamp slows the whole world for one second; she plays on at full speed
+    if (first(0)) { fxStomp(f, true); startChrono(f, .14, 78, 'ONE SECOND'); f.inv = 10; G.speedlines = 20; }
+  } else if (k === 'ult') updateIchikaUlt(f, o, at, dt, first);
+}
+// ZERO SECOND (after the movie): stamp → time stops outright. She blinks round the frozen foe landing kick after kick (the
+// blows are stored, nothing moves), then time resumes and every stored hit lands at once
+const ICHIKA_ULT = { stamp: 16, first: 30, hits: 6, every: 15, resume: 30 + 6 * 15 + 14, end: 30 + 6 * 15 + 50 };
+function updateIchikaUlt(f, o, at, dt, first) {
+  const m = f.move, U = ICHIKA_ULT;
+  if (first(0)) f.vx = 0;
+  if (first(U.stamp)) { fxStomp(f, true); startChrono(f, .02, 999, 'ZERO SECOND'); m.store = 0; G.speedlines = 30; }
+  for (let i = 0; i < U.hits; i++) if (first(U.first + i * U.every)) {
+    f.trail.push(1);   // afterimage where she was
+    const s = i % 2 ? 1 : -1, last = i === U.hits - 1;
+    f.x = clamp(o.x + s * (last ? 170 : 140), 60, STAGE_W - 60); f.face = Math.sign(o.x - f.x) || 1; f.vx = 0;
+    const hx = o.x - f.face * 30, hy = o.y - rnd(120, 230);
+    fxArc(hx, hy, 120, -2.2 + i * .4, 1.0 + i * .2, ICHI.rgb, f.face, 26, 30); fxCore(hx, hy, ICHI.hot, 90, 20); fxSpark(hx, hy, ICHI.rgb, 10, .5, f.face);
+    fxRing(hx, hy, ICHI.rgb, 10, 90, 22, 5); m.store += last ? 6 : 4.5; sfx.kick(); shake(5);
+  }
+  if (first(U.resume)) {   // time flows again: every stored blow lands at once
+    G.chrono = null; f.inv = 30;
+    if (G.phase === 'fight') { f.hitIds.clear(); hitTarget(f, o, { dmg: m.store + 6, kb: 14, launch: -16, power: 2.8, ult: true, noScale: true, hy: 160 }); }
+    fxBig(o.x, o.y - 160, ICHI.rgb, ICHI.hot, 2.6, f.face); fxRing(o.x, GROUND - 4, ICHI.rgb, 30, 640, 30, 14, .22);
+    flash(.8, ICHI.hot); quake(22, .8, 120); zoomKick(.12); G.speedlines = 40;
+  }
+  if (first(U.end)) { f.inv = 0; G.tintA = 0; f.t = Math.max(f.t, m.st + m.act - 1); }
+}
 // KANNA 花守りの神機 GARDEN GOD-MACHINE: a giant pearl-and-gold god-machine (≈2.5× a person) who fights with flowers.
 // Her petal-blade wings "bloom" on every attack and leave petal-shaped arcs of light (always arcs, never straight sword
 // trails). 花弁射出 (b) launches wing blades that home in; 開花・花冠 (EX) cuts all round her, then flowers erupt along the
@@ -2033,9 +2145,9 @@ function clashFx(x, y, a, b) {
 function spawnBolt(f, x, y, vx, vy, dmg, type) {
   G.proj.push({ owner: f, x, y, vx, vy, dmg, type, life: type === 'homing' ? 110 : 80, t: 0, trail: [], rgb: type === 'homing' ? f.col.rgb2 : f.col.rgb });
 }
-function updateProj(dt) {
+function updateProj(dt0) {
   for (let i = G.proj.length - 1; i >= 0; i--) {
-    const p = G.proj[i], o = G.fighters[1 - p.owner.side];
+    const p = G.proj[i], o = G.fighters[1 - p.owner.side], dt = dt0 * chronoK(p.owner);
     p.t += dt;
     if ((p.type === 'homing' || p.type === 'petal') && p.t > 10) {
       const tx = o.x, ty = o.y - 160, a = Math.atan2(ty - p.y, tx - p.x), cur = Math.atan2(p.vy, p.vx);
@@ -2198,7 +2310,7 @@ function onKO(att, tgt) {
 }
 
 /* SUZUNE's short step-dash: brief invulnerability (slips through AOI's shots), short cooldown */
-const CAN_DASH = { suzune: 1, arca: 1, mio: 1, aria: 1, enjo: 1, rei: 1, kanna: 1 };
+const CAN_DASH = { suzune: 1, arca: 1, mio: 1, aria: 1, enjo: 1, rei: 1, kanna: 1, ichika: 1 };
 const TAG_CD = 150;
 function doTag(side, forced) {
   const out = G.fighters[side], inn = partnerOf(out);
@@ -2530,6 +2642,11 @@ function aiInput(f, o) {
     if (ad > 190) { if (Math.random() < .18) { set({ [toward]: true, u: true }, 6); } else set({ [toward]: true }, 10 + (Math.random() * 12 | 0)); }
     else if (Math.random() < D.agg) ai.press = Math.random() < .35 ? 'b' : 'a';
     else set({ [away]: true }, 8);
+  } else if (f.id === 'ichika') {   // rushes in; spends ONE SECOND as soon as she is close enough to use it
+    if (f.gauge >= 50 && ad < 420 && !G.chrono && Math.random() < .35) { ai.press = 'ex'; return out; }
+    if (ad > 200) { if (ad < 480 && Math.random() < .3) ai.press = 'b'; else set({ [toward]: true }, 10 + (Math.random() * 10 | 0)); }
+    else if (Math.random() < D.agg) ai.press = Math.random() < .25 ? 'b' : 'a';
+    else set({ [away]: true }, 8);
   } else if (f.id === 'kanna') {   // huge reach: blooms the crown up close, petal blades from mid range, flowers whenever it can
     if (f.gauge >= 50 && ad < 1000 && Math.random() < .3) { ai.press = 'ex'; return out; }
     if (ad > 700) { if (Math.random() < D.agg * .6) ai.press = 'b'; else if (Math.random() < .3) { set({ [toward]: true }, 6); ai.press = 'dh'; } else set({ [toward]: true }, 12); }
@@ -2577,7 +2694,7 @@ async function startMatch() {
 }
 function startRound() {
   makeTeams(); G.tagCd = [0, 0]; G.pendingTag = null; G.benched = [];
-  G.resultShown = false; G.victory = null; G.fx = []; G.proj = []; G.paintFloor = []; G.bloomFloor = []; G.orange = null; G.luna = null; G.ink = null; G.inkWash = null; G.timer = 99; G.timerF = 0; G.phase = 'intro'; G.phaseT = 0; G.cutin = null; G.rwCut = null; G.freeze = 0; G.tintA = 0; G.slow = 1;
+  G.resultShown = false; G.victory = null; G.fx = []; G.proj = []; G.paintFloor = []; G.bloomFloor = []; G.orange = null; G.chrono = null; G.oneSec = null; G.luna = null; G.ink = null; G.inkWash = null; G.timer = 99; G.timerF = 0; G.phase = 'intro'; G.phaseT = 0; G.cutin = null; G.rwCut = null; G.freeze = 0; G.tintA = 0; G.slow = 1;
   G.cam.x = STAGE_W / 2; G.cam.z = 1; G.comboHud = [null, null]; TEL.list = []; G.cam.tilt = 0; G.cam.push = 0; G.koCam = null;
   for (const f of G.fighters) {
     if (f.id === 'arca') { f.boarding = G.round === 1; f._boardFx = f._boardFx2 = f._bootSnd = false; f.state = 'idle'; continue; }
@@ -2701,6 +2818,7 @@ function drawStage(camX) {
   ctx.drawImage(v, (W - w) / 2 + px, (H - h) * .62 + py, w, h);
   if (c.tilt) ctx.restore();
   ctx.fillStyle = 'rgba(8,6,20,.12)'; ctx.fillRect(0, 0, W, H);                   // slight grade so fighters pop
+  if (G.chrono) { ctx.save(); ctx.globalCompositeOperation = 'saturation'; ctx.fillStyle = 'rgb(128,128,128)'; ctx.fillRect(0, 0, W, H); ctx.restore(); }   // ICHIKA's slowed world is monochrome
   if (G.ultMono > 0) {   // ULT: the world drains to grey and darkens, only the fighters and the move keep their colour
     const a = Math.min(1, G.ultMono / 20);
     ctx.save(); ctx.globalCompositeOperation = 'saturation'; ctx.fillStyle = `rgba(128,128,128,${a})`; ctx.fillRect(0, 0, W, H);
@@ -2783,7 +2901,11 @@ function secMotion(f) {
   if (f.state === 'air' && f.ko) r -= .06;
   return { r, sx, sy };
 }
-function drawFighter(f, reflect) {
+function drawFighter(f, reflect) {   // the side caught in ICHIKA's slowed second is drawn in greyscale
+  if (!chronoGrey(f)) return drawFighterBody(f, reflect);
+  ctx.save(); ctx.filter = 'grayscale(1) brightness(.85)'; drawFighterBody(f, reflect); ctx.restore();
+}
+function drawFighterBody(f, reflect) {
   if (f.hidden) return;
   const g = f.gfx, pf = pickFrame(f), fr = pf && pf.fr, K = fr ? ANIMS[f.id].k : 0;
   if (!fr) return drawFighterStill(f, reflect);
@@ -3366,7 +3488,7 @@ function renderWorld() {
   drawLunaBeam();
   ctx.restore();
   if (G.tintA > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(${G.tintC},${G.tintA * .25})`; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'source-over'; }
-  drawInkWash(); drawOrange();
+  drawInkWash(); drawOrange(); drawOneSecond();
   if (G.speedlines > 0) drawSpeedLines(G.speedlines);
   if (!PFX.on) {   // vignette (the GL layer does its own)
     const vg = ctx.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, H * .95); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(8,4,18,.55)');
@@ -3441,8 +3563,8 @@ function simStep(dt) {
   const [a, b] = G.fighters;
   const ia = G.mode === 'watch' ? aiInput(a, b) : readHuman(0);
   const ib = G.mode === 'pvp' ? readHuman(1) : aiInput(b, a);
-  stepFighter(a, b, ia, sdt); stepFighter(b, a, ib, sdt); pushApart(a, b);
-  updateProj(sdt); updateFx(sdt); updateFlow(sdt); updateTeams(sdt);
+  stepFighter(a, b, ia, sdt * chronoK(a)); stepFighter(b, a, ib, sdt * chronoK(b)); pushApart(a, b);   // ICHIKA's ONE SECOND: the other side runs slow
+  updateProj(sdt); updateFx(sdt); updateFlow(sdt); updateTeams(sdt); updateChrono(sdt);
 }
 const CAM = { zGiant: .84, zMax: 1.3, zMin: .76, zWin: 1.22, near: 360, far: 1250, in: .035, out: .09 };
 function smooth01(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
@@ -3577,7 +3699,7 @@ function exMovieEnd() {
   }, 320);
 }
 /* ---------- match victory movie + telop ---------- */
-const WINQ = { suzune: 'まだまだ、こんなもんじゃないッス！', aoi: '解析完了。――この勝負、わたしの勝ち。', arca: '観測、完了です。……え、もう終わりですか？', sakura: 'わたしの設計に、狂いはないの。', mio: 'ほら、世界がちょっとキレイになった！', aria: 'へへっ、空はあたしの整備場っす！', enjo: '浮世は煙。掴めたと思った？', rei: 'この涙は、私が人間だった最後の証。', kanna: 'She was never built to win. She was built to bloom.' };
+const WINQ = { suzune: 'まだまだ、こんなもんじゃないッス！', aoi: '解析完了。――この勝負、わたしの勝ち。', arca: '観測、完了です。……え、もう終わりですか？', sakura: 'わたしの設計に、狂いはないの。', mio: 'ほら、世界がちょっとキレイになった！', aria: 'へへっ、空はあたしの整備場っす！', enjo: '浮世は煙。掴めたと思った？', rei: 'この涙は、私が人間だった最後の証。', kanna: 'She was never built to win. She was built to bloom.', ichika: 'あなたの一秒、もらったから。' };
 const WM = { w: null, timers: [], typing: null, ready: false };
 function winMovieStart(w) {
   const box = $('#winMovie'), v = box.querySelector(`video[data-char="${w.id}"]`);
@@ -3767,7 +3889,7 @@ async function boot() {
   buildBg();
   await Promise.all([buildAssets(), buildAnims(), loadBGM().then(() => Promise.all([loadVoices(), loadSfx()]))]);
   document.querySelectorAll('[data-src]').forEach(i => i.src = window.ASSETS[i.dataset.src]);
-  document.querySelectorAll('.card img').forEach(i => { const id = i.closest('.card').dataset.char; i.src = window.ASSETS[{ suzune: 'suci', aoi: 'aoci', arca: 'arcard', sakura: 'sacard', mio: 'micard', aria: 'ar2card', enjo: 'encard', rei: 'recard', kanna: 'kacard' }[id]]; });
+  document.querySelectorAll('.card img').forEach(i => { const id = i.closest('.card').dataset.char; i.src = window.ASSETS[{ suzune: 'suci', aoi: 'aoci', arca: 'arcard', sakura: 'sacard', mio: 'micard', aria: 'ar2card', enjo: 'encard', rei: 'recard', kanna: 'kacard', ichika: 'iccard' }[id]]; });
   {   // more cards than fit: fade the right edge so it reads as a swipeable row
     const cs = $('.cards'), upd = () => cs.classList.toggle('more', cs.scrollWidth - cs.clientWidth - cs.scrollLeft > 24);
     cs.addEventListener('scroll', upd, { passive: true }); addEventListener('resize', upd); new ResizeObserver(upd).observe(cs); upd();
