@@ -976,7 +976,7 @@ function hitTarget(att, tgt, o) {
   }
   if (tgt.id === 'arca') playS('arca_armor', .55, rnd(.9, 1.1));         // the ARSENAL's armour rings when struck
   else if (att.id === 'arca' && pw >= .9) playS('arca_armor', .3, 1.3);   // steel-on-body crunch for its blade hits
-  if (tgt.combo >= 2) fxText(att.x, att.y - 340, `${tgt.combo} HITS`, att.col.rgb, 30, 40);
+  if (tgt.combo >= 2) comboHit(att, tgt);
   if (tgt.hp <= 0) { voice(tgt, 'ko'); onKO(att, tgt); }
   else if (launch) voice(tgt, 'hitBig', { cd: 30 });
   else voice(tgt, 'hit', { p: .7, cd: 25 });
@@ -2350,7 +2350,7 @@ async function startMatch() {
 function startRound() {
   makeTeams(); G.tagCd = [0, 0]; G.pendingTag = null; G.benched = [];
   G.resultShown = false; G.victory = null; G.fx = []; G.proj = []; G.paintFloor = []; G.luna = null; G.ink = null; G.inkWash = null; G.timer = 99; G.timerF = 0; G.phase = 'intro'; G.phaseT = 0; G.cutin = null; G.rwCut = null; G.freeze = 0; G.tintA = 0; G.slow = 1;
-  G.cam.x = STAGE_W / 2; G.cam.z = 1; G.cam.tilt = 0; G.cam.push = 0; G.koCam = null;
+  G.cam.x = STAGE_W / 2; G.cam.z = 1; G.comboHud = [null, null]; G.cam.tilt = 0; G.cam.push = 0; G.koCam = null;
   for (const f of G.fighters) {
     if (f.id === 'arca') { f.boarding = G.round === 1; f._boardFx = f._boardFx2 = f._bootSnd = false; f.state = 'idle'; continue; }
     f.x -= f.face * 400; f.vx = f.face * 28; f.state = 'dashin';
@@ -2853,6 +2853,78 @@ function drawBanner() {
   const g = ctx.createLinearGradient(0, -60, 0, 60); g.addColorStop(0, '#fff'); g.addColorStop(.55, b.rgb ? `rgb(${b.rgb})` : '#ffe2a8'); g.addColorStop(1, '#ff8a5a');
   ctx.fillStyle = g; ctx.fillText(b.txt, 0, 0); ctx.restore();
 }
+/* ---------- big COMBO counter (PV style): attacker's side of the screen, white → red at 10 → blazing red/gold at 30 ---------- */
+const COMBO_MS = [10, 30, 50, 100];
+function comboHit(att, tgt) {
+  G.comboHud = G.comboHud || [null, null];
+  const n = tgt.combo, c = G.comboHud[att.side] = Object.assign(G.comboHud[att.side] || {}, { n, f: G.frame, tgt, att, endF: 0 });
+  if (COMBO_MS.includes(n)) {
+    c.burst = { n, f: G.frame };
+    playLoud('impact_big', n >= 30 ? .9 : .6, n >= 30 ? .8 : 1.05); shake(n >= 30 ? 14 : 8);
+    pfxKick({ ca: n >= 30 ? 2.2 : 1.2, bloom: n >= 30 ? .5 : .25 }); if (n >= 30) flash(.35, '255,70,60');
+  }
+}
+function drawComboHud() {
+  const hud = G.comboHud; if (!hud || G.phase === 'intro') return;
+  for (let side = 0; side < 2; side++) {
+    const c = hud[side]; if (!c) continue;
+    const live = c.tgt && (c.tgt.state === 'hit' || c.tgt.state === 'air') && c.tgt.combo === c.n;
+    if (!live && !c.endF) c.endF = G.frame;
+    const gone = c.endF ? G.frame - c.endF : 0;
+    if (gone > 70) { hud[side] = null; continue; }
+    const alpha = gone > 50 ? 1 - (gone - 50) / 20 : 1;
+    const age = G.frame - c.f, punch = 1 + .5 * Math.exp(-age / 4);
+    const n = c.n, tier = n >= 30 ? 2 : n >= 10 ? 1 : 0;
+    const dir = side ? -1 : 1, x0 = side ? W - 64 : 64, y0 = 318;
+    const shake = tier === 2 ? 3 : tier === 1 ? 1.2 : 0, jx = shake ? (Math.random() - .5) * shake * 2 : 0, jy = shake ? (Math.random() - .5) * shake * 2 : 0;
+    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x0 + jx, y0 + jy); ctx.transform(1, 0, -.12, 1, 0, 0);
+    ctx.textAlign = side ? 'right' : 'left'; ctx.textBaseline = 'alphabetic';
+    // radiating burst behind the number at 10+ / 30+
+    if (tier) {
+      const R = (tier === 2 ? 150 : 110) * (1 + .08 * Math.sin(G.frame * .5)), cx = dir * 95, cy = -40;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(cx, cy); ctx.rotate(G.frame * .02 * dir);
+      for (let i = 0; i < 16; i++) { const a = i * TAU / 16, r1 = R * (i % 2 ? .55 : 1);
+        ctx.fillStyle = tier === 2 ? (i % 2 ? 'rgba(255,190,60,.35)' : 'rgba(255,40,40,.4)') : 'rgba(255,50,60,.28)';
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a - .09) * r1, Math.sin(a - .09) * r1); ctx.lineTo(Math.cos(a + .09) * r1, Math.sin(a + .09) * r1); ctx.fill(); }
+      ctx.restore();
+    }
+    // "COMBO" label
+    ctx.font = `700 22px 'Chakra Petch', sans-serif`; ctx.fillStyle = tier ? '#ffd0c8' : '#fff';
+    const lbl = 'C O M B O'; ctx.fillText(lbl, 0, -112);
+    // the number: extruded shadow, then fill, scale-punched on every hit
+    ctx.save(); ctx.scale(punch, punch);
+    const size = tier === 2 ? 138 : tier === 1 ? 126 : 112;
+    ctx.font = `700 ${size}px 'Chakra Petch', sans-serif`;
+    const ext = tier === 2 ? '120,10,10' : tier === 1 ? '110,0,20' : (c.att ? c.att.col.rgb : '40,200,190');
+    for (let k = 7; k >= 1; k--) { ctx.fillStyle = `rgba(${ext},${tier ? .9 : .75})`; ctx.fillText(n, dir * k * 1.2, k * 1.4); }
+    if (tier) { ctx.shadowColor = tier === 2 ? 'rgba(255,120,30,.95)' : 'rgba(255,40,50,.85)'; ctx.shadowBlur = tier === 2 ? 34 : 22; }
+    if (tier === 2) { const g = ctx.createLinearGradient(0, -size, 0, 0); g.addColorStop(0, '#fff6c8'); g.addColorStop(.35, '#ffcc40'); g.addColorStop(.6, '#ff3a2a'); g.addColorStop(1, '#b0001a'); ctx.fillStyle = g; }
+    else if (tier === 1) { const g = ctx.createLinearGradient(0, -size, 0, 0); g.addColorStop(0, '#ffd2d2'); g.addColorStop(.5, '#ff3048'); g.addColorStop(1, '#c00024'); ctx.fillStyle = g; }
+    else ctx.fillStyle = '#fff';
+    ctx.fillText(n, 0, 0);
+    ctx.shadowBlur = 0;
+    if (tier) { ctx.lineWidth = tier === 2 ? 3 : 2; ctx.strokeStyle = tier === 2 ? '#fff3c0' : 'rgba(255,255,255,.85)'; ctx.strokeText(n, 0, 0); }
+    ctx.restore();
+    // HITS tag
+    const tw = 92, tx = side ? -tw : 0;
+    ctx.fillStyle = tier === 2 ? '#ffcc40' : tier === 1 ? '#ff3048' : '#fff'; ctx.fillRect(tx, 14, tw, 30);
+    ctx.font = `700 22px 'Chakra Petch', sans-serif`; ctx.textAlign = 'center'; ctx.fillStyle = tier ? '#1a0306' : '#0c0814'; ctx.fillText('HITS', tx + tw / 2, 37);
+    ctx.restore();
+    // milestone call-out: "10 COMBO!" / "30 COMBO!!"
+    const b = c.burst;
+    if (b && G.frame - b.f < 50) {
+      const u = (G.frame - b.f) / 50, k = Math.min(1, (G.frame - b.f) / 6), big = b.n >= 30;
+      ctx.save(); ctx.globalAlpha = Math.min(1, (1 - u) * 2.5); ctx.translate(side ? W - 80 : 80, 420); ctx.transform(1, 0, -.18, 1, 0, 0);
+      const s = (big ? 1.25 : 1) * (1.8 - .8 * k); ctx.scale(s, s);
+      ctx.textAlign = side ? 'right' : 'left'; ctx.font = `700 ${big ? 54 : 44}px 'Chakra Petch', sans-serif`;
+      const txt = `${b.n} COMBO${'!'.repeat(Math.min(4, COMBO_MS.indexOf(b.n) + 1))}`;
+      ctx.lineWidth = 8; ctx.strokeStyle = 'rgba(20,0,4,.9)'; ctx.strokeText(txt, 0, 0);
+      ctx.shadowColor = big ? 'rgba(255,140,40,.9)' : 'rgba(255,40,60,.8)'; ctx.shadowBlur = 20;
+      ctx.fillStyle = big ? '#ffd040' : '#ff4058'; ctx.fillText(txt, 0, 0);
+      ctx.restore();
+    }
+  }
+}
 function drawHUD2() {
   const [a, b] = G.fighters, barW = 470, top = 34;
   // each team shows BOTH members' health in fixed order; the one on the field is highlighted
@@ -2964,7 +3036,7 @@ function interpBegin() {
   return () => { for (const [f, x, y] of saved) { f.x = x; f.y = y; } };
 }
 function renderHUD() {
-  if (G.victory) drawVictory(); else { drawHUD2(); drawCutin(); drawBanner(); drawRwCut(); }
+  if (G.victory) drawVictory(); else { drawHUD2(); drawComboHud(); drawCutin(); drawBanner(); drawRwCut(); }
   if (G.flash > 0 && !(PFX.on && PFX.impact > 0)) { ctx.fillStyle = `rgba(${G.flashCol},${Math.min(1, G.flash)})`; ctx.fillRect(0, 0, W, H); }   // the impact frame replaces the white-out
   ctx.font = `600 12px 'Chakra Petch', sans-serif`; ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fillText('© SZOU', W - 14, H - 8);
 }
