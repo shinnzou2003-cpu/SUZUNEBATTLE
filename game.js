@@ -393,7 +393,7 @@ function audioInit() {
 }
 let noiseBuf = null;
 function noise(dur, f0, f1, q, vol, type = 'bandpass') {
-  const ac = SND.ac; if (!ac || !SND.on) return;
+  const ac = SND.ac; if (!ac || !SND.on) return; sfxBus();
   if (!noiseBuf) { noiseBuf = ac.createBuffer(1, ac.sampleRate * 1.5, ac.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
   const t = ac.currentTime, s = ac.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
   const f = ac.createBiquadFilter(); f.type = type; f.Q.value = q; f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(Math.max(30, f1), t + dur);
@@ -401,7 +401,7 @@ function noise(dur, f0, f1, q, vol, type = 'bandpass') {
   s.connect(f); f.connect(g); g.connect(SND.master); s.start(t); s.stop(t + dur + .05);
 }
 function tone(dur, f0, f1, vol, type = 'sine', delay = 0) {
-  const ac = SND.ac; if (!ac || !SND.on) return;
+  const ac = SND.ac; if (!ac || !SND.on) return; sfxBus();
   const t = ac.currentTime + delay, o = ac.createOscillator(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
   const g = ac.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
   o.connect(g); g.connect(SND.master); o.start(t); o.stop(t + dur + .05);
@@ -550,9 +550,20 @@ function playLoud(name, vol = 1, rate = 1, delay = 0) {
   const s = ac.createBufferSource(), g = ac.createGain(); s.buffer = b; s.playbackRate.value = rate; g.gain.value = vol;
   s.connect(g); g.connect(bus); s.start(ac.currentTime + delay); return true;
 }
+// effects bus: hits/impacts boosted to sit level with the (boosted) voices and cutscene scores, limited so stacks never clip
+function sfxBus() {
+  const ac = SND.ac; if (!ac) return null;
+  if (!SFXB.gain) {
+    SFXB.gain = ac.createGain(); SFXB.gain.gain.value = 2.0;
+    const c = ac.createDynamicsCompressor(); c.threshold.value = -10; c.knee.value = 6; c.ratio.value = 10; c.attack.value = .002; c.release.value = .14;
+    const mk = ac.createGain(); mk.gain.value = 1.2; SFXB.gain.connect(c); c.connect(mk); mk.connect(ac.destination);
+    if (SND.master) { try { SND.master.disconnect(); } catch (e) { } SND.master.gain.value = .85; SND.master.connect(SFXB.gain); }
+  }
+  return SFXB.gain;
+}
 function playS(name, vol = 1, rate = 1, delay = 0) {
   const ac = SND.ac, b = SFXB.buf[name]; if (!ac || !b) return false; if (!SND.on) return true;
-  if (!SFXB.gain) { SFXB.gain = ac.createGain(); SFXB.gain.gain.value = .9; SFXB.gain.connect(ac.destination); }
+  sfxBus();
   const s = ac.createBufferSource(), g = ac.createGain(); s.buffer = b;
   s.playbackRate.value = rate * (.95 + Math.random() * .1); g.gain.value = vol;
   s.connect(g); g.connect(SFXB.gain); s.start(ac.currentTime + delay); return true;
@@ -613,13 +624,33 @@ const sfx = {
   kick() { playS('whoosh_kick', .95) || _synth.heavySwing(); },
   heavyKick() { playS('whoosh_kick_heavy', 1) || _synth.heavySwing(); },
   heavySwing() { playS('whoosh_punch', .95, .78) || _synth.heavySwing(); },
-  hit(p = 1) { (p < .95 ? playS('hit_light', .9) : p < 1.7 ? playS('hit_mid', 1) : playS('hit_heavy', 1)) || _synth.hit(p); },
-  guard() { playS('guard', .7) || _synth.guard(); },
+  hit(p = 1) {   // sample + sub thump on every clean hit; heavy hits add a crack and a low impact
+    (p < .95 ? playS('hit_light', 1) : p < 1.7 ? playS('hit_mid', 1.1) : playS('hit_heavy', 1.15)) || _synth.hit(p);
+    tone(.14 + .08 * p, 150 + 40 * p, 42, .35 + .25 * Math.min(2, p));
+    if (p >= 1.3) { noise(.1, 4200, 900, .7, .35); playS('impact_big', .45 + .2 * Math.min(2, p), 1.3); }
+    if (p >= 2) { playS('impact_big', .8, .72, .02); tone(.6, 90, 26, .7); }
+  },
+  explode(big = 1) {   // explosions: low boom, sub drop, debris crackle
+    if (G.frame - (SFXB.lastBoom || -99) < 5) return; SFXB.lastBoom = G.frame;
+    playS('impact_big', .9 * big, .68 + Math.random() * .1); noise(.9 + .4 * big, 1600, 50, .5, .75 * big, 'lowpass'); tone(.9, 95, 24, .8 * big);
+    playS('hit_heavy', .55 * big, .6, .06); noise(.35, 6000, 2500, 1.2, .22 * big, 'highpass');
+  },
+  awaken() {   // 覚醒: impossible to miss — rising roar, double impact, a ringing power chord, sub drop
+    const ac = SND.ac, bus = loudBus(); if (!ac || !SND.on || !bus) return;
+    playLoud('ult_start', 1.4, .9); playLoud('impact_big', 1.5, .6, .12); playLoud('impact_big', 1, 1.15, .18); playLoud('beam', .6, 1.3, .1);
+    const t = ac.currentTime;
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 5; lp.frequency.setValueAtTime(250, t); lp.frequency.exponentialRampToValueAtTime(5200, t + .5); lp.frequency.exponentialRampToValueAtTime(900, t + 1.8);
+    const g = ac.createGain(); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.5, t + .14); g.gain.exponentialRampToValueAtTime(.001, t + 2); lp.connect(g); g.connect(bus);
+    for (const [f, d] of [[110, 0], [164.8, 3], [220, -4], [329.6, 5]]) { const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = d; o.connect(lp); o.start(t); o.stop(t + 2.1); }
+    const sub = ac.createOscillator(), sg = ac.createGain(); sub.frequency.setValueAtTime(70, t + .12); sub.frequency.exponentialRampToValueAtTime(28, t + 1.2);
+    sg.gain.setValueAtTime(.0001, t); sg.gain.setValueAtTime(1, t + .12); sg.gain.exponentialRampToValueAtTime(.001, t + 1.4); sub.connect(sg); sg.connect(bus); sub.start(t); sub.stop(t + 1.5);
+  },
+  guard() { (playS('guard', 1) || _synth.guard()); tone(.22, 1700, 1250, .14, 'triangle'); },
   laser() { playS('laser_shot', .6) || _synth.laser(); },
   homing() { playS('laser_homing', .7) || _synth.laser(); },
   charge() { playS('charge', .7) || _synth.charge(); },
   beam() { playS('beam', .95) || _synth.beam(); },
-  boom() { playS('impact_big', .95) || _synth.boom(); },
+  boom() { sfx.explode(1); },
   dash() { playS('dash', .8) || _synth.dash(); },
   cutin() { playS('special_start', .55) || _synth.cutin(); },
   special() { playS('special_start', 1) || _synth.cutin(); },
@@ -687,6 +718,7 @@ function fxBolt(x0, y0, x1, y1, rgb, life = 9) {
 }
 // big-impact package: anamorphic flare, light pillar, radial spikes, hex/diamond shards, arcs of lightning
 function fxBig(x, y, rgb, hot, pw = 2, dir = 1) {
+  sfx.explode(Math.min(1.4, .6 + pw * .25));
   const q = Math.min(1.6, pw / 2);
   addFx({ k: 'flare', x, y, rgb, hot, life: 22 + 8 * q, t: 0, len: 520 + 520 * q });
   addFx({ k: 'pillar', x, y: Math.min(GROUND, y + 140), rgb, hot, life: 26 + 10 * q, t: 0, w: 70 + 50 * q });
@@ -947,7 +979,7 @@ function startMove(f, key) {
   if (key === 'a' && f.state === 'atk' && f.move && f.move.key === 'a') f.chain++; else f.chain = 0;
   f.state = 'atk'; f.t = -1; f.move = { key, ...m, total: m.st + m.act + m.rec, id: Math.random() }; f.hitIds.clear();
   if (key === 'ult') { startUlt(f); voice(f, 'ult', { delay: .15 }); }
-  if (key === 'ex') { fxPowerUp(f, false); sfx.special(); voice(f, 'ex'); f.inv = f.id === 'suzune' ? 30 : 0; sfx.charge(); }
+  if (key === 'ex') { telop('ex', f); fxPowerUp(f, false); sfx.special(); voice(f, 'ex'); f.inv = f.id === 'suzune' ? 30 : 0; sfx.charge(); }
   if (key === 'a') voice(f, 'a' + Math.min(2, f.chain), { p: f.chain === 2 ? 1 : .75 });
   if (key === 'b') voice(f, 'b');
   if (f.id === 'suzune') { if (key === 'b') sfx.heavyKick(); else if (key === 'a') f.chain === 2 ? sfx.kick() : sfx.swing(); }
@@ -1005,7 +1037,7 @@ function hitTarget(att, tgt, o) {
   }
   if (tgt.id === 'arca') playS('arca_armor', .55, rnd(.9, 1.1));         // the ARSENAL's armour rings when struck
   else if (att.id === 'arca' && pw >= .9) playS('arca_armor', .3, 1.3);   // steel-on-body crunch for its blade hits
-  if (tgt.combo >= 2) fxText(att.x, att.y - 340, `${tgt.combo} HITS`, att.col.rgb, 30, 40);
+  if (tgt.combo >= 2) comboHit(att, tgt);
   if (tgt.hp <= 0) { voice(tgt, 'ko'); onKO(att, tgt); }
   else if (launch) voice(tgt, 'hitBig', { cd: 30 });
   else voice(tgt, 'hit', { p: .7, cd: 25 });
@@ -2546,7 +2578,7 @@ async function startMatch() {
 function startRound() {
   makeTeams(); G.tagCd = [0, 0]; G.pendingTag = null; G.benched = [];
   G.resultShown = false; G.victory = null; G.fx = []; G.proj = []; G.paintFloor = []; G.bloomFloor = []; G.orange = null; G.luna = null; G.ink = null; G.inkWash = null; G.timer = 99; G.timerF = 0; G.phase = 'intro'; G.phaseT = 0; G.cutin = null; G.rwCut = null; G.freeze = 0; G.tintA = 0; G.slow = 1;
-  G.cam.x = STAGE_W / 2; G.cam.z = 1; G.cam.tilt = 0; G.cam.push = 0; G.koCam = null;
+  G.cam.x = STAGE_W / 2; G.cam.z = 1; G.comboHud = [null, null]; TEL.list = []; G.cam.tilt = 0; G.cam.push = 0; G.koCam = null;
   for (const f of G.fighters) {
     if (f.id === 'arca') { f.boarding = G.round === 1; f._boardFx = f._boardFx2 = f._bootSnd = false; f.state = 'idle'; continue; }
     f.x -= f.face * 400; f.vx = f.face * 28; f.state = 'dashin';
@@ -3049,6 +3081,200 @@ function drawBanner() {
   const g = ctx.createLinearGradient(0, -60, 0, 60); g.addColorStop(0, '#fff'); g.addColorStop(.55, b.rgb ? `rgb(${b.rgb})` : '#ffe2a8'); g.addColorStop(1, '#ff8a5a');
   ctx.fillStyle = g; ctx.fillText(b.txt, 0, 0); ctx.restore();
 }
+/* ---------- in-game telop motion (PV style): ULT name band, EX band, 覚醒 / LIMIT BREAK when the ULT unlocks ---------- */
+const TEL = { list: [] };
+const TEL_EN = {
+  suzune: ['SAKURA FLASH RAIL', 'SAKURA COMET'], aoi: ['HOMING BIT', 'ORBITAL RAY'], arca: ['RUNE MISSILE', 'ARSENAL NOVA'], sakura: ['IDEA DRAGON', 'DRAFT NOVA'],
+  mio: ['BLUE STROKE', 'CANVAS HOUND'], aria: ['GRAVITY SLING', 'LUNA SATELLITE RAY'], enjo: ['GASHIRA', 'UKIYO-GIRI : RINDO'], rei: ['AGITO HOWL', 'SUMI-RYU : HIGAN'] };
+const TEL_DUR = { ult: 1750, ex: 1150, awake: 1500 };
+function telop(kind, f) {
+  if (!f || !f.ch) return;
+  TEL.list = TEL.list.filter(t => !(t.f === f && t.kind === kind));
+  if (kind === 'ult') TEL.list = TEL.list.filter(t => t.kind !== 'ex');
+  TEL.list.push({ kind, f, t0: performance.now(), seed: Math.random() * 1000 });
+  if (kind === 'awake') { sfx.awaken(); pfxKick({ ca: 1.6, bloom: .5 }); shake(12); quake(10, .5, [60, 30, 90]); flash(.35, '255,60,70'); }
+}
+const easeOut = x => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+function spaced(txt, x, y, sp, align) {   // letter-spaced text (canvas letterSpacing is not everywhere yet)
+  const ws = [...txt].map(ch => ctx.measureText(ch).width), tw = ws.reduce((a, b) => a + b, 0) + sp * (ws.length - 1);
+  let cx = align === 'center' ? x - tw / 2 : align === 'right' ? x - tw : x; const al = ctx.textAlign; ctx.textAlign = 'left';
+  [...txt].forEach((ch, i) => { ctx.fillText(ch, cx, y); cx += ws[i] + sp; }); ctx.textAlign = al; return tw;
+}
+function drawTelops() {
+  const now = performance.now();
+  TEL.list = TEL.list.filter(t => now - t.t0 < TEL_DUR[t.kind]);
+  for (const t of TEL.list) {
+    const ms = now - t.t0, dur = TEL_DUR[t.kind];
+    const glitch = ms > dur - 260 ? (ms - (dur - 260)) / 260 : ms < 70 ? 1 - ms / 70 : 0;
+    if (!glitch) { drawTelop(t, ms, 0, 0); continue; }
+    // RGB-split + horizontal slice glitch on the way in and out
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .45 * (1 - glitch * .5);
+    drawTelop(t, ms, -10 * glitch, 0, '255,40,60'); drawTelop(t, ms, 10 * glitch, 0, '40,230,255'); ctx.restore();
+    const n = 7;
+    for (let i = 0; i < n; i++) {
+      const y0 = (H / n) * i, off = (Math.sin(t.seed + i * 7.3 + ms * .05) * 60) * glitch;
+      ctx.save(); ctx.beginPath(); ctx.rect(0, y0, W, H / n + 1); ctx.clip(); ctx.globalAlpha = 1 - glitch * .6;
+      drawTelop(t, ms, off, 0); ctx.restore();
+    }
+  }
+}
+function drawTelop(t, ms, ox, oy, tint) {
+  const f = t.f, side = f.side, dir = side ? -1 : 1, c1 = f.col.c1, rgb = f.col.rgb, en = (TEL_EN[f.id] || [])[t.kind === 'ex' ? 0 : 1] || '';
+  ctx.save(); ctx.translate(ox, oy);
+  const solid = tint ? `rgb(${tint})` : null;
+  if (t.kind === 'ult') {
+    const k = easeOut(ms / 160), y = 236, hh = 74;
+    ctx.save(); ctx.translate(-dir * W * (1 - k), 0);
+    // the band
+    ctx.fillStyle = solid || 'rgba(6,4,14,.9)';
+    ctx.beginPath(); ctx.moveTo(-60, y - hh + 26); ctx.lineTo(W + 60, y - hh - 26); ctx.lineTo(W + 60, y + hh - 26); ctx.lineTo(-60, y + hh + 26); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = solid || c1; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(-60, y - hh + 26); ctx.lineTo(W + 60, y - hh - 26); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-60, y + hh + 26); ctx.lineTo(W + 60, y + hh - 26); ctx.stroke();
+    ctx.strokeStyle = solid || 'rgba(255,214,120,.7)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(-60, y - hh + 36); ctx.lineTo(W + 60, y - hh - 16); ctx.stroke();
+    // speed streaks racing through the band
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 9; i++) { const sx = ((ms * (1.6 + (i % 3) * .5) + i * 211) % (W + 400)) - 200, sy = y - 50 + i * 12;
+      ctx.fillStyle = solid || `rgba(${rgb},${.16 + .08 * (i % 3)})`; ctx.fillRect(side ? W - sx : sx, sy - (sx - W / 2) * .04, 120 + (i % 4) * 60, 2); }
+    ctx.restore();
+    // 覚醒 tab on the attacker's side
+    const tx = side ? W - 150 : 40;
+    ctx.fillStyle = solid || c1; ctx.beginPath(); ctx.moveTo(tx + 14, y - 82); ctx.lineTo(tx + 112, y - 92); ctx.lineTo(tx + 98, y + 92); ctx.lineTo(tx, y + 102); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = solid || '#0b0612'; ctx.font = `800 52px 'Shippori Mincho B1', serif`; ctx.textAlign = 'center';
+    ctx.fillText('覚', tx + 56, y - 8); ctx.fillText('醒', tx + 52, y + 54);
+    // kicker
+    const ax = side ? W - 190 : 190, al = side ? 'right' : 'left';
+    ctx.font = `700 17px 'Chakra Petch', sans-serif`; ctx.fillStyle = solid || c1; ctx.textAlign = al;
+    spaced(`ULTIMATE ARTS  //  ${f.ch.name}`, ax, y - 42, 5, al);
+    // the ULT name, letter by letter
+    ctx.font = `800 70px 'Shippori Mincho B1', serif`; const chars = [...f.ch.ultName];
+    const ws = chars.map(ch => ctx.measureText(ch).width), tw = ws.reduce((a, b) => a + b, 0);
+    let cx = side ? ax - tw : ax;
+    chars.forEach((ch, i) => {
+      const u = (ms - 140 - i * 45) / 140; if (u <= 0) { cx += ws[i]; return; }
+      const e = easeOut(u), sc = 1 + 1.2 * (1 - e);
+      ctx.save(); ctx.translate(cx + ws[i] / 2, y + 32); ctx.scale(sc, sc); ctx.globalAlpha *= Math.min(1, u * 2);
+      ctx.textAlign = 'center'; ctx.lineWidth = 8; ctx.strokeStyle = solid || 'rgba(0,0,0,.85)'; ctx.strokeText(ch, 0, 0);
+      if (!solid) { ctx.shadowColor = `rgba(${rgb},.95)`; ctx.shadowBlur = 22; }
+      ctx.fillStyle = solid || '#fff'; ctx.fillText(ch, 0, 0); ctx.restore(); cx += ws[i];
+    });
+    // English name wipes in under it
+    const wu = easeOut((ms - 380) / 300);
+    if (wu > 0) {
+      ctx.save(); ctx.font = `700 24px 'Chakra Petch', sans-serif`; ctx.fillStyle = solid || '#ffd678';
+      const ew = spaced(en, -9999, -9999, 8, 'left'); const ex0 = side ? ax - ew : ax;
+      ctx.beginPath(); ctx.rect(side ? ax - ew * wu : ex0, y + 44, ew * wu + 4, 36); ctx.clip();
+      spaced(en, ax, y + 70, 8, al); ctx.restore();
+    }
+    ctx.restore();
+  } else if (t.kind === 'ex') {
+    const dur = TEL_DUR.ex, kin = easeOut(ms / 130), kout = ms > dur - 200 ? easeOut((ms - (dur - 200)) / 200) : 0;
+    const y = 168, bw = 600, x0 = side ? W - bw : 0;
+    ctx.save(); ctx.translate(-dir * (bw + 80) * (1 - kin) - dir * (bw + 80) * kout, 0);
+    ctx.fillStyle = solid || 'rgba(6,4,14,.86)';
+    ctx.beginPath();
+    if (side) { ctx.moveTo(x0 + 40, y - 36); ctx.lineTo(W, y - 36); ctx.lineTo(W, y + 36); ctx.lineTo(x0, y + 36); }
+    else { ctx.moveTo(0, y - 36); ctx.lineTo(bw, y - 36); ctx.lineTo(bw - 40, y + 36); ctx.lineTo(0, y + 36); }
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = solid || c1; ctx.fillRect(side ? W - 8 : 0, y - 36, 8, 72); ctx.fillRect(x0 + (side ? 40 : 0), y + 33, bw - 40, 3);
+    const tx = side ? W - 34 : 34, al = side ? 'right' : 'left';
+    ctx.textAlign = al; ctx.font = `700 15px 'Chakra Petch', sans-serif`; ctx.fillStyle = solid || c1;
+    spaced(`EX ARTS  //  ${en}`, tx, y - 12, 4, al);
+    ctx.font = `800 40px 'Shippori Mincho B1', serif`; ctx.lineWidth = 6; ctx.strokeStyle = solid || 'rgba(0,0,0,.8)';
+    ctx.strokeText(f.ch.exName, tx, y + 26); ctx.fillStyle = solid || '#fff'; ctx.fillText(f.ch.exName, tx, y + 26);
+    ctx.restore();
+  } else if (t.kind === 'awake') {
+    const dur = TEL_DUR.awake, k = easeOut(ms / 180), out = ms > dur - 300 ? (ms - (dur - 300)) / 300 : 0;
+    const bx = side ? W - 150 : 40, top = 128, hgt = 380 * k;
+    ctx.globalAlpha *= 1 - out;
+    ctx.fillStyle = solid || 'rgba(6,4,12,.88)'; ctx.fillRect(bx, top, 110, hgt);
+    ctx.fillStyle = solid || '#ff3048'; ctx.fillRect(bx + (side ? 0 : 106), top, 4, hgt);
+    if (k > .6) {
+      ctx.textAlign = 'center'; ctx.font = `800 84px 'Shippori Mincho B1', serif`; ctx.fillStyle = solid || '#fff';
+      if (!solid) { ctx.shadowColor = 'rgba(255,40,60,.8)'; ctx.shadowBlur = 18; }
+      ctx.fillText('覚', bx + 55, top + 110); ctx.fillText('醒', bx + 55, top + 210); ctx.shadowBlur = 0;
+      ctx.save(); ctx.translate(bx + (side ? -22 : 136), top + 22); ctx.rotate(Math.PI / 2); ctx.font = `700 20px 'Chakra Petch', sans-serif`; ctx.fillStyle = solid || '#ff3048'; ctx.textAlign = 'left';
+      spaced('LIMIT BREAK', 0, 0, 8, 'left'); ctx.restore();
+      ctx.font = `700 16px 'Chakra Petch', sans-serif`; ctx.fillStyle = solid || '#ffd678'; ctx.textAlign = 'center';
+      spaced('ULT READY', bx + 55, top + 262, 3, 'center');
+      ctx.font = `800 26px 'Shippori Mincho B1', serif`; ctx.fillStyle = solid || '#fff'; ctx.fillText('本気', bx + 55, top + 330);
+    }
+  }
+  ctx.restore();
+}
+/* ---------- big COMBO counter (PV style): attacker's side of the screen, white → red at 10 → blazing red/gold at 30 ---------- */
+const COMBO_MS = [10, 30, 50, 100];
+function comboHit(att, tgt) {
+  G.comboHud = G.comboHud || [null, null];
+  const n = tgt.combo, c = G.comboHud[att.side] = Object.assign(G.comboHud[att.side] || {}, { n, f: G.frame, tgt, att, endF: 0 });
+  if (COMBO_MS.includes(n)) {
+    c.burst = { n, f: G.frame };
+    playLoud('impact_big', n >= 30 ? .9 : .6, n >= 30 ? .8 : 1.05); shake(n >= 30 ? 14 : 8);
+    pfxKick({ ca: n >= 30 ? 2.2 : 1.2, bloom: n >= 30 ? .5 : .25 }); if (n >= 30) flash(.35, '255,70,60');
+  }
+}
+function drawComboHud() {
+  const hud = G.comboHud; if (!hud || G.phase === 'intro') return;
+  for (let side = 0; side < 2; side++) {
+    const c = hud[side]; if (!c) continue;
+    const live = c.tgt && (c.tgt.state === 'hit' || c.tgt.state === 'air') && c.tgt.combo === c.n;
+    if (!live && !c.endF) c.endF = G.frame;
+    const gone = c.endF ? G.frame - c.endF : 0;
+    if (gone > 70) { hud[side] = null; continue; }
+    const alpha = gone > 50 ? 1 - (gone - 50) / 20 : 1;
+    const age = G.frame - c.f, punch = 1 + .5 * Math.exp(-age / 4);
+    const n = c.n, tier = n >= 30 ? 2 : n >= 10 ? 1 : 0;
+    const dir = side ? -1 : 1, x0 = side ? W - 64 : 64, y0 = 318;
+    const shake = tier === 2 ? 3 : tier === 1 ? 1.2 : 0, jx = shake ? (Math.random() - .5) * shake * 2 : 0, jy = shake ? (Math.random() - .5) * shake * 2 : 0;
+    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x0 + jx, y0 + jy); ctx.transform(1, 0, -.12, 1, 0, 0);
+    ctx.textAlign = side ? 'right' : 'left'; ctx.textBaseline = 'alphabetic';
+    // radiating burst behind the number at 10+ / 30+
+    if (tier) {
+      const R = (tier === 2 ? 150 : 110) * (1 + .08 * Math.sin(G.frame * .5)), cx = dir * 95, cy = -40;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(cx, cy); ctx.rotate(G.frame * .02 * dir);
+      for (let i = 0; i < 16; i++) { const a = i * TAU / 16, r1 = R * (i % 2 ? .55 : 1);
+        ctx.fillStyle = tier === 2 ? (i % 2 ? 'rgba(255,190,60,.35)' : 'rgba(255,40,40,.4)') : 'rgba(255,50,60,.28)';
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a - .09) * r1, Math.sin(a - .09) * r1); ctx.lineTo(Math.cos(a + .09) * r1, Math.sin(a + .09) * r1); ctx.fill(); }
+      ctx.restore();
+    }
+    // "COMBO" label
+    ctx.font = `700 22px 'Chakra Petch', sans-serif`; ctx.fillStyle = tier ? '#ffd0c8' : '#fff';
+    const lbl = 'C O M B O'; ctx.fillText(lbl, 0, -112);
+    // the number: extruded shadow, then fill, scale-punched on every hit
+    ctx.save(); ctx.scale(punch, punch);
+    const size = tier === 2 ? 138 : tier === 1 ? 126 : 112;
+    ctx.font = `700 ${size}px 'Chakra Petch', sans-serif`;
+    const ext = tier === 2 ? '120,10,10' : tier === 1 ? '110,0,20' : (c.att ? c.att.col.rgb : '40,200,190');
+    for (let k = 7; k >= 1; k--) { ctx.fillStyle = `rgba(${ext},${tier ? .9 : .75})`; ctx.fillText(n, dir * k * 1.2, k * 1.4); }
+    if (tier) { ctx.shadowColor = tier === 2 ? 'rgba(255,120,30,.95)' : 'rgba(255,40,50,.85)'; ctx.shadowBlur = tier === 2 ? 34 : 22; }
+    if (tier === 2) { const g = ctx.createLinearGradient(0, -size, 0, 0); g.addColorStop(0, '#fff6c8'); g.addColorStop(.35, '#ffcc40'); g.addColorStop(.6, '#ff3a2a'); g.addColorStop(1, '#b0001a'); ctx.fillStyle = g; }
+    else if (tier === 1) { const g = ctx.createLinearGradient(0, -size, 0, 0); g.addColorStop(0, '#ffd2d2'); g.addColorStop(.5, '#ff3048'); g.addColorStop(1, '#c00024'); ctx.fillStyle = g; }
+    else ctx.fillStyle = '#fff';
+    ctx.fillText(n, 0, 0);
+    ctx.shadowBlur = 0;
+    if (tier) { ctx.lineWidth = tier === 2 ? 3 : 2; ctx.strokeStyle = tier === 2 ? '#fff3c0' : 'rgba(255,255,255,.85)'; ctx.strokeText(n, 0, 0); }
+    ctx.restore();
+    // HITS tag
+    const tw = 92, tx = side ? -tw : 0;
+    ctx.fillStyle = tier === 2 ? '#ffcc40' : tier === 1 ? '#ff3048' : '#fff'; ctx.fillRect(tx, 14, tw, 30);
+    ctx.font = `700 22px 'Chakra Petch', sans-serif`; ctx.textAlign = 'center'; ctx.fillStyle = tier ? '#1a0306' : '#0c0814'; ctx.fillText('HITS', tx + tw / 2, 37);
+    ctx.restore();
+    // milestone call-out: "10 COMBO!" / "30 COMBO!!"
+    const b = c.burst;
+    if (b && G.frame - b.f < 50) {
+      const u = (G.frame - b.f) / 50, k = Math.min(1, (G.frame - b.f) / 6), big = b.n >= 30;
+      ctx.save(); ctx.globalAlpha = Math.min(1, (1 - u) * 2.5); ctx.translate(side ? W - 80 : 80, 420); ctx.transform(1, 0, -.18, 1, 0, 0);
+      const s = (big ? 1.25 : 1) * (1.8 - .8 * k); ctx.scale(s, s);
+      ctx.textAlign = side ? 'right' : 'left'; ctx.font = `700 ${big ? 54 : 44}px 'Chakra Petch', sans-serif`;
+      const txt = `${b.n} COMBO${'!'.repeat(Math.min(4, COMBO_MS.indexOf(b.n) + 1))}`;
+      ctx.lineWidth = 8; ctx.strokeStyle = 'rgba(20,0,4,.9)'; ctx.strokeText(txt, 0, 0);
+      ctx.shadowColor = big ? 'rgba(255,140,40,.9)' : 'rgba(255,40,60,.8)'; ctx.shadowBlur = 20;
+      ctx.fillStyle = big ? '#ffd040' : '#ff4058'; ctx.fillText(txt, 0, 0);
+      ctx.restore();
+    }
+  }
+}
 function drawHUD2() {
   const [a, b] = G.fighters, barW = 470, top = 34;
   // each team shows BOTH members' health in fixed order; the one on the field is highlighted
@@ -3160,7 +3386,7 @@ function interpBegin() {
   return () => { for (const [f, x, y] of saved) { f.x = x; f.y = y; } };
 }
 function renderHUD() {
-  if (G.victory) drawVictory(); else { drawHUD2(); drawCutin(); drawBanner(); drawRwCut(); }
+  if (G.victory) drawVictory(); else { drawHUD2(); drawComboHud(); drawTelops(); drawCutin(); drawBanner(); drawRwCut(); }
   if (G.flash > 0 && !(PFX.on && PFX.impact > 0)) { ctx.fillStyle = `rgba(${G.flashCol},${Math.min(1, G.flash)})`; ctx.fillRect(0, 0, W, H); }   // the impact frame replaces the white-out
   ctx.font = `600 12px 'Chakra Petch', sans-serif`; ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fillText('© SZOU', W - 14, H - 8);
 }
@@ -3206,8 +3432,9 @@ function simStep(dt) {
   for (const f of G.fighters) { f.px = f.x; f.py = f.y; }
   for (const b of G.benched || []) { b.f.px = b.f.x; b.f.py = b.f.y; }
   G.frame++;
+  for (const f of G.fighters) { const r = G.phase === 'fight' && canUlt(f); if (r && !f._ultR) telop('awake', f); f._ultR = r; }
   if (G.cutin) { G.cutin.t += 1; }
-  if (G.freeze > 0) { G.freeze -= 1; if (G.freeze <= 0) G.cutin = null; updateFx(dt * .3); return; }
+  if (G.freeze > 0) { G.freeze -= 1; if (G.freeze <= 0) { if (G.cutin && G.cutin.f) telop('ult', G.cutin.f); G.cutin = null; } updateFx(dt * .3); return; }
   if (G.hitstop > 0) { G.hitstop -= 1; G.cam.shake *= .9; return; }
   const sdt = dt * G.slow;
   if (G.slowT > 0) { G.slowT -= 1; if (G.slowT <= 0) G.slow = 1; }
@@ -3345,7 +3572,7 @@ function exMovieEnd() {
     EXM.hold = false; const f = EXM.f;
     G.exPause = false; acc = 0; flash(1, f ? auraHot(f) : '255,255,255'); shake(22); quake(26, 1, 140); zoomKick(.12); G.speedlines = 50;
     ultBlast(1); bgmVolume(bv !== null ? bv : .5, .9);
-    if (f) { fxText(f.x, f.y - 470, f.ch.ultName, auraRgb(f), 54, 70); G.ultMono = 150; pfxWave(f.x, f.y - 160, 2, 44); pfxKick({ radial: 1.4, x: f.x, y: f.y - 160, bloom: .9, ca: 2.5 }); }
+    if (f) { telop('ult', f); G.ultMono = 150; pfxWave(f.x, f.y - 160, 2, 44); pfxKick({ radial: 1.4, x: f.x, y: f.y - 160, bloom: .9, ca: 2.5 }); }
     EXM.f = null;
   }, 320);
 }
