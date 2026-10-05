@@ -171,7 +171,10 @@ const CHARS = {
   enjo: { id: 'enjo', name: 'ENJO', role: '煙管・召喚の胴元', c1: '#5fd3bc', c2: '#c9a24a', rgb: '95,211,188', rgb2: '201,162,74', speed: 4.6, jump: -23.5, anchor: .55, hurtW: 50, hurtH: 285, exName: '骸獅子・ガシラ', ultName: '浮世斬・リンドウ' },
   // REI 月白 零 "THE LAST TEAR" (UKIYO): half-cyborg swordswoman with KOKUSHOKU-HIGAN, a 3m mechanical odachi that is really
   // the coffin of an ink dragon. Every full deployment costs her one tear of blood
-  rei: { id: 'rei', name: 'REI', role: '大太刀・墨龍', c1: '#e8463c', c2: '#e9e4d8', rgb: '232,70,60', rgb2: '233,228,216', speed: 5.0, jump: -24.0, anchor: .55, hurtW: 50, hurtH: 280, exName: '顎門・砲哮', ultName: '墨龍・彼岸' }
+  rei: { id: 'rei', name: 'REI', role: '大太刀・墨龍', c1: '#e8463c', c2: '#e9e4d8', rgb: '232,70,60', rgb2: '233,228,216', speed: 5.0, jump: -24.0, anchor: .55, hurtW: 50, hurtH: 280, exName: '顎門・砲哮', ultName: '墨龍・彼岸' },
+  // KANNA 花守りの神機 GARDEN GOD-MACHINE: a giant pearl-and-gold biomechanical goddess (≈2.5× a person) who slept for
+  // centuries guarding the last colour — a garden of orange flowers inside her chest. Silent, serene, and very fast for her size
+  kanna: { id: 'kanna', name: 'KANNA', role: '花弁冠・巨大神機', c1: '#ff8c28', c2: '#e8b85a', rgb: '255,140,40', rgb2: '232,184,90', speed: 6.6, jump: -25.0, anchor: .5, hurtW: 118, hurtH: 590, exName: '開花・花冠', ultName: '開花 ― ORANGE' }
 };
 const ALT = {
   suzune: { c1: '#7fd8ff', c2: '#4f7bff', rgb: '130,215,255', rgb2: '90,120,255', test: (h, s, l) => (h > 33 && h < 64 && s > .3) || ((h < 12 || h > 340) && s > .55), shift: 175 },
@@ -181,16 +184,17 @@ const ALT = {
   mio: { c1: '#ffb15a', c2: '#7ad7a0', rgb: '255,170,80', rgb2: '110,215,160', test: (h, s, l) => h > 185 && h < 250 && s > .22, shift: 190 },
   aria: { c1: '#7fd0ff', c2: '#ff7a9a', rgb: '130,200,255', rgb2: '255,120,150', test: (h, s, l) => h > 15 && h < 50 && s > .25, shift: 180 },
   enjo: { c1: '#c99aff', c2: '#e0e0e8', rgb: '200,150,255', rgb2: '224,224,232', test: (h, s, l) => h > 145 && h < 200 && s > .18, shift: 120 },
-  rei: { c1: '#5ab8ff', c2: '#e9e4d8', rgb: '90,184,255', rgb2: '233,228,216', test: (h, s, l) => (h < 20 || h > 340) && s > .3, shift: 205 }
+  rei: { c1: '#5ab8ff', c2: '#e9e4d8', rgb: '90,184,255', rgb2: '233,228,216', test: (h, s, l) => (h < 20 || h > 340) && s > .3, shift: 205 },
+  kanna: { c1: '#7fd8ff', c2: '#b8c8e8', rgb: '130,215,255', rgb2: '184,200,232', test: (h, s, l) => h > 12 && h < 52 && s > .3, shift: 175 }
 };
 const GFX = {};
 async function buildAssets() {
   const A = window.ASSETS;
-  const [su, ao, drone, suci, aoci, ar, arci, arp, sa, saci, mi, mici, ari, arici, en, enci, ensk, re, reci] = await Promise.all([A.su, A.ao, A.drone, A.suci, A.aoci, A.ar, A.arci, A.arp, A.sa, A.saci, A.mi, A.mici, A.ar2, A.ar2ci, A.en, A.enci, A.enskull, A.re, A.reci].map(p => track(loadImg(p))));
-  const base = { suzune: { img: su, ci: suci }, aoi: { img: ao, ci: aoci }, arca: { img: ar, ci: arci }, sakura: { img: sa, ci: saci }, mio: { img: mi, ci: mici }, aria: { img: ari, ci: arici }, enjo: { img: en, ci: enci }, rei: { img: re, ci: reci } };
+  const [su, ao, drone, suci, aoci, ar, arci, arp, sa, saci, mi, mici, ari, arici, en, enci, ensk, re, reci, ka, kaci] = await Promise.all([A.su, A.ao, A.drone, A.suci, A.aoci, A.ar, A.arci, A.arp, A.sa, A.saci, A.mi, A.mici, A.ar2, A.ar2ci, A.en, A.enci, A.enskull, A.re, A.reci, A.ka, A.kaci].map(p => track(loadImg(p))));
+  const base = { suzune: { img: su, ci: suci }, aoi: { img: ao, ci: aoci }, arca: { img: ar, ci: arci }, sakura: { img: sa, ci: saci }, mio: { img: mi, ci: mici }, aria: { img: ari, ci: arici }, enjo: { img: en, ci: enci }, rei: { img: re, ci: reci }, kanna: { img: ka, ci: kaci } };
   GFX.arcaPilot = arp; GFX.skull = ensk; GFX.skullAlt = null;
   GFX.skullAltLazy = () => GFX.skullAlt || (GFX.skullAlt = recolor(ensk, ALT.enjo.test, ALT.enjo.shift));
-  for (const id of ['suzune', 'aoi', 'arca', 'sakura', 'mio', 'aria', 'enjo', 'rei']) {
+  for (const id of ['suzune', 'aoi', 'arca', 'sakura', 'mio', 'aria', 'enjo', 'rei', 'kanna']) {
     const ch = CHARS[id], al = ALT[id];
     const make = (img, ci, c1, rgb) => ({ img, ci, white: silhouette(img, '#fff'), tint: silhouette(img, c1), glow: glowOf(img, `rgb(${rgb})`) });
     GFX[id] = [make(base[id].img, base[id].ci, ch.c1, ch.rgb), null];
@@ -206,7 +210,7 @@ const frameCount = (id, n) => ANIMS[id] && ANIMS[id].a[n] ? ANIMS[id].a[n].lengt
 // visual size balance between characters (SUZUNE's source video was framed larger)
 const RESIZE = { suzune: .9, aoi: .9, sakura: .9, enjo: 1.15, rei: 1.15 };   // ENJO / REI enlarged 2026-10-05; their summoned beasts keep their size   // 2026-10-04: these three trimmed to sit with the rest of the roster (sprite + hit/hurt boxes + attach points)
 const RS = f => RESIZE[f.id] || 1;
-const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.2, mio: 1.22, aria: .95, enjo: 1.0, rei: 1.0 };   // AOI stands taller; SUZUNE fights from a low crouch
+const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.2, mio: 1.22, aria: .95, enjo: 1.0, rei: 1.0, kanna: 2.1 };   // AOI stands taller; SUZUNE fights from a low crouch; KANNA is a giant (≈2.5× SUZUNE)
 const LOAD = { done: 0, total: 0 };
 function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = document.getElementById('loadPct'); if (el) el.textContent = Math.round(LOAD.done / Math.max(1, LOAD.total) * 100) + '%'; return v; }); }
 // Atlases are NOT decoded at boot any more: only the fighters in the current match are kept in memory,
@@ -274,7 +278,7 @@ function pickFrame(f) {
   const a = AN.a;
   // returns { fr, fr2, mix } so two neighbouring frames can be cross-faded for smoother motion
   // cross-fade only the slow 12fps loops; 24fps clips are shown frame-accurate (sharper, no ghosting)
-  const LOOPS = { idle: 1, win: 1, ultCharge: 1, winPose: 1 };
+  const LOOPS = { idle: 1, win: 1, ultCharge: 1, winPose: 1, ultFire: 1 };
   const smooth = n => !!LOOPS[n];
   const at = (n, i) => { const arr = a[n] || a.idle, L = arr.length, x = clamp(i, 0, L - 1), i0 = Math.floor(x); return { fr: arr[i0], fr2: arr[Math.min(L - 1, i0 + 1)], mix: smooth(n) ? x - i0 : 0 }; };
   const prog = (n, p) => at(n, clamp(p, 0, 1) * ((a[n] || a.idle).length - 1));
@@ -337,6 +341,12 @@ function pickFrame(f) {
         if (m.key === 'b') return prog('b', p);
         if (m.key === 'ex') return prog('ex', p);   // blade opens into the cannon, fires, recoils, folds back
         if (m.key === 'ult') { const u = t - m.st; if (u < ENJO_ULT.rise) return loop('ultCharge', AN.fps.ultCharge || 10); return prog('ultFire', Math.min(1, (u - ENJO_ULT.rise) / 30)); }
+      }
+      if (f.id === 'kanna') {
+        if (m.key === 'a') { const n = ['a1', 'a2', 'a3'][Math.min(2, f.chain)]; return prog(a[n] ? n : 'a', p); }
+        if (m.key === 'b') return prog('b', p);
+        if (m.key === 'ex') return prog('ex', Math.min(1, t / (m.st + 26)));   // the crown blooms open and stays open while the flowers erupt
+        if (m.key === 'ult') { const u = t - m.st, U = KANNA_ULT; if (u < U.fire) return prog('ultCharge', u / U.fire); if (u < U.fin) return loop('ultFire', AN.fps.ultFire || 10); return prog(a.ultEnd ? 'ultEnd' : 'ultFire', Math.min(1, (u - U.fin) / (U.end - U.fin))); }
       }
       if (f.id === 'mio') {
         if (m.key === 'a') { const n = ['a1', 'a2', 'a3'][Math.min(2, f.chain)]; return prog(a[n] ? n : 'a', p); }
@@ -450,7 +460,10 @@ const VOICE_MAP = {
   enjo: { a0: ['en_01', 'en_03'], a1: ['en_02'], a2: ['en_04'], b: ['en_05'], jump: ['en_06'], guard: ['en_07'], hit: ['en_08'], hitBig: ['en_09'],
     getup: ['en_10'], ko: ['en_11'], ex: ['en_12'], ult: ['en_13'], select: ['en_14'], round: ['en_15'], winMovie: ['en_16'], win: ['en_17'], lose: ['en_18'] },
   rei: { a0: ['re_01', 're_03'], a1: ['re_02'], a2: ['re_04'], b: ['re_05'], jump: ['re_06'], guard: ['re_07'], hit: ['re_08'], hitBig: ['re_09'],
-    getup: ['re_10'], ko: ['re_11'], ex: ['re_12'], ult: ['re_13'], select: ['re_14'], round: ['re_15'], winMovie: ['re_16'], win: ['re_17'], lose: ['re_18'] }
+    getup: ['re_10'], ko: ['re_11'], ex: ['re_12'], ult: ['re_13'], select: ['re_14'], round: ['re_15'], winMovie: ['re_16'], win: ['re_17'], lose: ['re_18'] },
+  // KANNA is silent: breaths and hums only, plus 「ひらいて」 (EX) and her one line 「こわして」 (ULT)
+  kanna: { a0: ['ka_01', 'ka_03'], a1: ['ka_02'], a2: ['ka_04'], b: ['ka_05'], jump: ['ka_06'], guard: ['ka_07'], hit: ['ka_08'], hitBig: ['ka_09'],
+    getup: ['ka_10'], ko: ['ka_11'], ex: ['ka_12'], ult: ['ka_13'], select: ['ka_14'], round: ['ka_15'], winMovie: ['ka_16'], win: ['ka_17'], lose: ['ka_18'] }
 };
 const VOICE = { buf: {}, gain: null, last: {} };
 // BGM ducking bus: music dips while a character is speaking so lines cut through
@@ -665,7 +678,7 @@ function fxDust(x, y, n = 8, pw = 1) { for (let i = 0; i < n; i++) addFx({ k: 'd
 function fxText(x, y, txt, rgb, size = 40, life = 50) { addFx({ k: 'text', x, y, txt, rgb, size, life, t: 0 }); }
 function fxHex(x, y, rgb, face) { addFx({ k: 'hex', x, y, rgb, face, life: 18, t: 0 }); }
 /* SF-mecha energy colours: SUZUNE gold / AOI blue (mirror-match colour swaps keep their own palette) */
-const AURA = { suzune: { rgb: '255,196,64', hot: '255,244,200' }, aoi: { rgb: '64,168,255', hot: '205,240,255' }, arca: { rgb: '46,230,200', hot: '215,255,245' }, sakura: { rgb: '255,150,200', hot: '255,236,246' }, mio: { rgb: '110,180,255', hot: '232,246,255' }, aria: { rgb: '245,165,70', hot: '255,240,205' }, enjo: { rgb: '95,211,188', hot: '225,255,246' }, rei: { rgb: '232,70,60', hot: '255,214,200' } };
+const AURA = { suzune: { rgb: '255,196,64', hot: '255,244,200' }, aoi: { rgb: '64,168,255', hot: '205,240,255' }, arca: { rgb: '46,230,200', hot: '215,255,245' }, sakura: { rgb: '255,150,200', hot: '255,236,246' }, mio: { rgb: '110,180,255', hot: '232,246,255' }, aria: { rgb: '245,165,70', hot: '255,240,205' }, enjo: { rgb: '95,211,188', hot: '225,255,246' }, rei: { rgb: '232,70,60', hot: '255,214,200' }, kanna: { rgb: '255,140,40', hot: '255,228,176' } };
 const auraRgb = f => f.alt ? f.col.rgb : AURA[f.id].rgb;
 const auraHot = f => f.alt ? '255,255,255' : AURA[f.id].hot;
 function fxBolt(x0, y0, x1, y1, rgb, life = 9) {
@@ -794,6 +807,16 @@ function drawFx(layer) {
         ctx.beginPath(); ctx.moveTo(0, -s2); ctx.lineTo(s2 * .45, 0); ctx.lineTo(0, s2); ctx.lineTo(-s2 * .45, 0); ctx.closePath();
         ctx.fillStyle = `rgba(${f.rgb},${a * .85})`; ctx.fill(); ctx.strokeStyle = `rgba(${f.hot},${a})`; ctx.lineWidth = 1.2; ctx.stroke(); ctx.restore();
       }
+      else if (f.k === 'blossom') {   // KANNA's finisher: a giant flower of light opening and turning
+        const e = 1 - Math.pow(1 - Math.min(1, p * 2.2), 3), R = f.r * (.3 + .7 * e);
+        ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(p * .6);
+        for (let j = 0; j < 8; j++) {
+          ctx.rotate(TAU / 8);
+          ctx.fillStyle = `rgba(${f.rgb},${a * .42})`; ctx.beginPath(); ctx.ellipse(R * .55, 0, R * .5, R * .2, 0, 0, TAU); ctx.fill();
+          ctx.fillStyle = `rgba(255,240,210,${a * .4})`; ctx.beginPath(); ctx.ellipse(R * .5, 0, R * .3, R * .07, 0, 0, TAU); ctx.fill();
+        }
+        ctx.restore();
+      }
       else if (f.k === 'hex') {
         ctx.save(); ctx.translate(f.x, f.y); ctx.scale(f.face, 1);
         const s = 1 + p * .25; ctx.strokeStyle = `rgba(${f.rgb},${a})`; ctx.lineWidth = 3;
@@ -809,8 +832,8 @@ function drawFx(layer) {
         ctx.restore(); ctx.globalAlpha = 1;
       } else if (f.k === 'petal') {
         ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.rot); ctx.globalAlpha = Math.min(1, a * 1.5);
-        ctx.fillStyle = f.red ? '#c8202a' : '#ffd3e0'; ctx.beginPath(); ctx.ellipse(0, 0, f.s, f.s * (f.red ? .32 : .55), 0, 0, TAU); ctx.fill();   // spider-lily petals are long and thin
-        ctx.fillStyle = f.red ? '#ff5a4a' : '#ff9ab8'; ctx.beginPath(); ctx.ellipse(f.s * .3, 0, f.s * .35, f.s * .2, 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = f.orange ? '#ff8a1e' : f.red ? '#c8202a' : '#ffd3e0'; ctx.beginPath(); ctx.ellipse(0, 0, f.s, f.s * (f.red ? .32 : .55), 0, 0, TAU); ctx.fill();   // spider-lily petals are long and thin
+        ctx.fillStyle = f.orange ? '#ffd27a' : f.red ? '#ff5a4a' : '#ff9ab8'; ctx.beginPath(); ctx.ellipse(f.s * .3, 0, f.s * .35, f.s * .2, 0, 0, TAU); ctx.fill();
         ctx.restore(); ctx.globalAlpha = 1;
       } else if (f.k === 'smoke') {
         const al = Math.min(1, f.t / 5) * a * a, g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r);
@@ -883,6 +906,12 @@ const MOVES = {
     b: { st: 14, act: 6, rec: 22, cost: 0 },
     ex: { st: 20, act: 10, rec: 26, cost: 50 },
     ult: { st: 0, act: 230, rec: 30, cost: 100 }
+  },
+  kanna: {
+    a: { st: 6, act: 5, rec: 13, cost: 0 },
+    b: { st: 12, act: 6, rec: 20, cost: 0 },
+    ex: { st: 10, act: 40, rec: 18, cost: 50 },
+    ult: { st: 0, act: 150, rec: 30, cost: 100 }
   },
   enjo: {
     a: { st: 5, act: 4, rec: 12, cost: 0 },
@@ -957,7 +986,7 @@ function hitTarget(att, tgt, o) {
   const pw = o.power || 1;
   fxCore(hx, hy, att.col.rgb, 70 + 50 * pw, 12 + 4 * pw); fxSpark(hx, hy, att.col.rgb, 10 + 10 * pw, .8 + .5 * pw, fromDir);
   fxRing(hx, hy, att.col.rgb, 10, 60 + 60 * pw, 14 + 6 * pw, 5 + 3 * pw);
-  if (att.id === 'suzune') fxPetals(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'mio') fxPaint(hx, hy, 6 + 6 * pw, .8 + .3 * pw, fromDir); else if (att.id === 'aria') fxGears(hx, hy, 4 + 4 * pw, pw, fromDir); else if (att.id === 'enjo') fxSmoke(hx, hy, 3 + 3 * pw, pw, fromDir, att.col.rgb); else if (att.id === 'rei') { fxSmoke(hx, hy, 2 + 2 * pw, pw, fromDir, JADE.ink); fxPetals(hx, hy, 1 + 2 * pw, pw, !att.alt); } else fxHex(hx, hy, att.col.rgb, fromDir);
+  if (att.id === 'suzune') fxPetals(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'mio') fxPaint(hx, hy, 6 + 6 * pw, .8 + .3 * pw, fromDir); else if (att.id === 'aria') fxGears(hx, hy, 4 + 4 * pw, pw, fromDir); else if (att.id === 'enjo') fxSmoke(hx, hy, 3 + 3 * pw, pw, fromDir, att.col.rgb); else if (att.id === 'rei') { fxSmoke(hx, hy, 2 + 2 * pw, pw, fromDir, JADE.ink); fxPetals(hx, hy, 1 + 2 * pw, pw, !att.alt); } else if (att.id === 'kanna') fxBloom(hx, hy, 3 + 4 * pw, pw); else fxHex(hx, hy, att.col.rgb, fromDir);
   G.hitstop = Math.max(G.hitstop, o.hitstop || (4 + 4 * pw)); shake(4 + 7 * pw);
   if (pw >= 1.4 || o.launch) { quake(3 + 5 * pw, .28 + .12 * pw, pw >= 2 ? 60 : 25); fxBig(hx, hy, auraRgb(att), auraHot(att), Math.max(1.4, pw), fromDir); }
   if (pw >= 2) flash(.35 * pw / 2, '255,230,200');
@@ -1022,6 +1051,7 @@ function updateMove(f, o, dt) {
   else if (f.id === 'aria') updateAriaMove(f, o, m, t, k, act, at, dt, first);
   else if (f.id === 'enjo') updateEnjoMove(f, o, m, t, k, act, at, dt, first);
   else if (f.id === 'rei') updateReiMove(f, o, m, t, k, act, at, dt, first);
+  else if (f.id === 'kanna') updateKannaMove(f, o, m, t, k, act, at, dt, first);
   else {
     const dx = f.droneX, dy = f.droneY;
     if (k === 'a') {
@@ -1668,6 +1698,158 @@ function drawInkWash() {   // screen space: the dragon's swallow floods the scre
   ctx.save(); ctx.fillStyle = `rgba(6,5,5,${.88 * a})`; ctx.fillRect(0, 0, W, H);
   ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(${SHU.rgb},${.25 * a})`; ctx.fillRect(0, H * .5 - 2, W, 4); ctx.restore();
 }
+// KANNA 花守りの神機 GARDEN GOD-MACHINE: a giant pearl-and-gold god-machine (≈2.5× a person) who fights with flowers.
+// Her petal-blade wings "bloom" on every attack and leave petal-shaped arcs of light (always arcs, never straight sword
+// trails). 花弁射出 (b) launches wing blades that home in; 開花・花冠 (EX) cuts all round her, then flowers erupt along the
+// floor toward the foe; the ULT opens the garden in her chest and the white world turns orange. Flowers she leaves on the
+// floor stay for the rest of the round — the more orange on screen, the further the fight has gone.
+const KAN = { rgb: '255,140,40', hot: '255,228,176', pearl: '250,244,232', leaf: '96,150,70' };
+function fxBloom(x, y, n = 10, pw = 1) { for (let i = 0; i < n; i++) addFx({ k: 'petal', x, y, vx: rnd(-6, 6) * pw, vy: rnd(-9, -1) * pw, rot: rnd(0, TAU), vr: rnd(-.3, .3), life: rnd(50, 90), t: 0, s: rnd(6, 11), orange: true }); }
+function fxPetalArc(f, x, y, r, a0, a1, w = 44) {   // petal-shaped light: an orange ribbon with a pearl core, shedding petals
+  fxArc(x, y, r, a0, a1, f.alt ? f.col.rgb : KAN.rgb, f.face, 18, w); fxArc(x, y, r * .94, a0, a1, KAN.pearl, f.face, 12, w * .28);
+  for (let i = 0; i < 6; i++) { const a = lerp(a0, a1, i / 5); fxBloom(x + f.face * Math.cos(a) * r, y + Math.sin(a) * r, 1, .7); }
+}
+function bloomFloor(x, n = 6, spread = 120) {   // flowers that keep blooming on the floor until the round ends
+  const arr = G.bloomFloor || (G.bloomFloor = []);
+  for (let i = 0; i < n; i++) arr.push({ x: clamp(x + rnd(-spread, spread), 20, STAGE_W - 20), s: rnd(6, 13), t: 0, d: rnd(0, 14), red: Math.random() < .3, rot: rnd(0, TAU) });
+  if (arr.length > 480) arr.splice(0, arr.length - 480);
+}
+function drawBloomFloor() {
+  const arr = G.bloomFloor; if (!arr || !arr.length) return;
+  ctx.save();
+  for (const p of arr) {
+    p.t += G.slow || 1; const g = clamp((p.t - p.d) / 14, 0, 1); if (g <= 0) continue;
+    const s = p.s * (g < 1 ? g * 1.15 : 1), cy = GROUND + 2 - s * 1.1;
+    ctx.fillStyle = `rgba(${KAN.leaf},.9)`; ctx.fillRect(p.x - 1, cy, 2, s * 1.1);
+    ctx.fillStyle = p.red ? '#e8452a' : '#ff8a1e';
+    for (let j = 0; j < 5; j++) { const a = p.rot + j * TAU / 5; ctx.beginPath(); ctx.ellipse(p.x + Math.cos(a) * s * .42, cy + Math.sin(a) * s * .28, s * .44, s * .22, a, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = '#ffe2a0'; ctx.beginPath(); ctx.arc(p.x, cy, s * .17, 0, TAU); ctx.fill();
+  }
+  ctx.restore();
+}
+function drawOrange() {   // screen space: the white world takes on her colour while the garden pours out, then mostly fades
+  const o = G.orange; if (!o) return;
+  const live = G.fighters && G.fighters.some(f => f.id === 'kanna' && f.state === 'atk' && f.move && f.move.key === 'ult');
+  if (!live) o.a = Math.max(o.keep || 0, o.a - .004 * (G.slow || 1));
+  if (o.a <= 0) return;
+  ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = `rgba(255,128,36,${o.a})`; ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,140,40,${o.a * .22})`; ctx.fillRect(0, 0, W, H); ctx.restore();
+}
+const KANNA_ULT = { fire: 46, fin: 104, end: 140 };
+function kannaCore(f) { return { x: f.x + f.face * 50, y: f.y - 400 }; }
+// KANNA ULT layers. Behind her: a huge flower of light that blooms open while her chest opens. In front: the garden
+// glowing in her open chest, then the stream of petal light pouring out toward the foe
+function drawKannaUlt(f, front) {
+  if (f.id !== 'kanna' || f.state !== 'atk' || !f.move || f.move.key !== 'ult') return;
+  const U = KANNA_ULT, at = f.t - f.move.st; if (at < 0) return;
+  const c = kannaCore(f), rgb = f.alt ? f.col.rgb : KAN.rgb, sd = f.face, out = at > U.fin ? clamp(1 - (at - U.fin) / 30, 0, 1) : 1;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  if (!front) {
+    const e = 1 - Math.pow(1 - clamp(at / U.fire, 0, 1), 3), R = 160 + 460 * e, rot = at * .01;
+    for (let ring = 0; ring < 2; ring++) {
+      const n = ring ? 12 : 16, r = R * (ring ? .62 : 1);
+      for (let i = 0; i < n; i++) {
+        ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(rot * (ring ? -1.4 : 1) + i * TAU / n + ring * .13);
+        const g = ctx.createLinearGradient(0, 0, r, 0);
+        g.addColorStop(0, `rgba(255,240,210,${.2 * out})`); g.addColorStop(.5, `rgba(${rgb},${.18 * out})`); g.addColorStop(1, `rgba(${rgb},0)`);
+        ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(r * .5, -r * .17, r, 0); ctx.quadraticCurveTo(r * .5, r * .17, 0, 0); ctx.fill(); ctx.restore();
+      }
+    }
+  } else {
+    const gr = (at < U.fire ? 30 + 90 * at / U.fire : 130) * (.85 + .15 * Math.sin(at * .4)) * out;
+    if (gr > 1) {
+      const g = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, gr);
+      g.addColorStop(0, 'rgba(255,255,240,1)'); g.addColorStop(.25, `rgba(${KAN.hot},.9)`); g.addColorStop(1, `rgba(${rgb},0)`);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(c.x, c.y, gr, 0, TAU); ctx.fill();
+    }
+    if (at >= U.fire && at < U.fin + 12) {
+      const k = clamp((at - U.fire) / 8, 0, 1) * (at > U.fin ? clamp(1 - (at - U.fin) / 12, 0, 1) : 1), L = 1600, w0 = 60, w1 = 300, wob = Math.sin(at * .6) * 14;
+      const g = ctx.createLinearGradient(c.x, 0, c.x + sd * L, 0);
+      g.addColorStop(0, `rgba(255,250,235,${.85 * k})`); g.addColorStop(.18, `rgba(${KAN.hot},${.55 * k})`); g.addColorStop(1, `rgba(${rgb},0)`);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(c.x, c.y - w0);
+      ctx.quadraticCurveTo(c.x + sd * L * .5, c.y - w1 * .7 + wob, c.x + sd * L, c.y - w1); ctx.lineTo(c.x + sd * L, Math.min(GROUND, c.y + w1));
+      ctx.quadraticCurveTo(c.x + sd * L * .5, Math.min(GROUND, c.y + w1 * .7 - wob), c.x, c.y + w0); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = `rgba(255,255,245,${.7 * k})`; ctx.fillRect(Math.min(c.x, c.x + sd * L), c.y - 10, L, 20);
+    }
+  }
+  ctx.restore();
+}
+function updateKannaMove(f, o, m, t, k, act, at, dt, first) {
+  const rgb = f.alt ? f.col.rgb : KAN.rgb;
+  if (k === 'a') {
+    const c = Math.min(2, f.chain);
+    if (t < m.st) f.vx *= .75;
+    if (first(0)) {
+      f.vx = f.face * [9, 10, 12][c];   // huge, but she glides into every cut
+      if (c === 0) fxPetalArc(f, f.x + f.face * 120, f.y - 340, 330, -1.5, 1.1, 54);
+      else if (c === 1) fxPetalArc(f, f.x + f.face * 130, f.y - 380, 330, 1.5, -1.8, 54);
+      else {   // the whole crown blooms: a ring of petal light all the way round her
+        fxPetalArc(f, f.x, f.y - 330, 420, -Math.PI, Math.PI, 64); fxRing(f.x, f.y - 6, rgb, 40, 460, 24, 10, .22);
+        fxBloom(f.x, f.y - 360, 18, 1.6); fxDust(f.x, f.y, 12, 1.5); G.speedlines = 16;
+      }
+      c === 2 ? sfx.heavySwing() : sfx.swing();
+    }
+    if (act) {
+      const hb = c === 2 ? box(f, -420, 450, -680, 0) : c === 1 ? box(f, 0, 460, -700, -80) : box(f, 0, 470, -600, -100);
+      if (tryHit(f, o, hb, { dmg: [4.5, 5, 3.6][c], kb: [4, 4, 7][c], stun: [16, 18, 22][c], power: [.85, 1, 1.25][c], launch: c === 1 ? -7 : c === 2 ? -9 : 0, hy: 200 }, c === 2 ? 2 : 1, 3)) bloomFloor(o.x, 4, 60);
+    }
+  } else if (k === 'b') {   // 花弁射出: the wing blades fan out and fly as homing petals
+    if (t < m.st) { f.vx *= .7; f.charge = t / m.st; }
+    if (first(0) || first(4)) {
+      const n = first(0) ? 3 : 2;
+      for (let i = 0; i < n; i++) {
+        const sx = f.x - f.face * rnd(20, 90), sy = f.y - rnd(400, 540), a = (f.face > 0 ? 0 : Math.PI) - f.face * rnd(.2, .9);
+        G.proj.push({ owner: f, x: sx, y: sy, vx: Math.cos(a) * 14, vy: Math.sin(a) * 14, dmg: 2.6, type: 'petal', pw: .8, kb: 4, life: 80, t: 0, trail: [], rgb });
+      }
+      fxBloom(f.x - f.face * 40, f.y - 470, 8, 1.2); fxRing(f.x - f.face * 40, f.y - 450, rgb, 20, 200, 14, 6); playS('whoosh_kick', .6, 1.3); f.charge = 0;
+    }
+  } else if (k === 'ex') {   // 開花・花冠: the crown blooms (a cut all round her), then flowers erupt along the floor toward the foe
+    if (t < m.st) { f.vx *= .6; if ((t | 0) % 3 === 0) fxBloom(f.x, f.y - 380, 2, .8); }
+    if (first(0)) {
+      fxPetalArc(f, f.x, f.y - 360, 440, -Math.PI, Math.PI, 70); fxRing(f.x, f.y - 360, rgb, 60, 520, 26, 12); fxBloom(f.x, f.y - 380, 30, 2);
+      flash(.3, KAN.hot); shake(12); quake(10, .4, 50); playS('impact_big', .5, 1.2); m.pil = { i: 0, x: f.x, face: f.face };
+    }
+    if (at >= 0 && at < 6) tryHit(f, o, box(f, -440, 440, -720, 0), { dmg: 4, kb: 5, stun: 26, power: 1.1, hy: 220 });
+    const P = m.pil;
+    if (P && P.i < 5 && at >= 8 + P.i * 6) {
+      const X = P.x + P.face * (300 + P.i * 190), fin = P.i === 4; P.i++;
+      addFx({ k: 'pillar', x: X, y: GROUND, rgb, hot: KAN.hot, life: 30, t: 0, w: fin ? 120 : 80 });
+      fxBloom(X, GROUND - 40, fin ? 22 : 12, fin ? 2 : 1.4); fxRing(X, GROUND - 4, rgb, 10, fin ? 260 : 170, 18, 8, .22); bloomFloor(X, 8, 70);
+      fxDust(X, GROUND, 6, 1); shake(fin ? 10 : 5); playS('hit_heavy', .4, 1.4);
+      if (G.phase === 'fight' && Math.abs(o.x - X) < 130 && o.y > GROUND - 420) {
+        const save = f.x; f.x = X - P.face * 40; hitTarget(f, o, { dmg: fin ? 6 : 3, kb: fin ? 10 : 2, stun: 24, power: fin ? 1.7 : .9, launch: fin ? -14 : -4, hy: 140 }); f.x = save;
+      }
+    }
+  } else if (k === 'ult') updateKannaUlt(f, o, at, dt, first);
+}
+// 開花 ― ORANGE (after the movie): the chest iris opens and draws the light in, then the garden pours out as a storm of
+// petals and petal blades across the screen; the finisher is a pillar of flowers under the foe. Guardable (chip only)
+function updateKannaUlt(f, o, at, dt, first) {
+  const m = f.move, U = KANNA_ULT, c = kannaCore(f), rgb = f.alt ? f.col.rgb : KAN.rgb, sd = f.face;
+  if (first(0)) { f.vx = 0; sfx.charge(); G.orange = { a: 0, keep: 0 }; }
+  if (at < U.fire) {
+    f.charge = at / U.fire;
+    if ((at | 0) % 2 === 0) { const a = rnd(0, TAU), r = rnd(220, 420); addFx({ k: 'streak', x: c.x + Math.cos(a) * r, y: c.y + Math.sin(a) * r, vx: -Math.cos(a) * 16, vy: -Math.sin(a) * 16, life: 14, t: 0, rgb, w: 3 }); }
+    if ((at | 0) % 10 === 0) fxRing(c.x, c.y, rgb, 220, 30, 16, 6);
+  }
+  if (first(U.fire)) { f.charge = 0; flash(.7, KAN.hot); shake(20); quake(18, .7, 90); zoomKick(.08); playS('beam', .9, .8); playLoud('impact_big', .6, .8); G.speedlines = 40; fxCore(c.x, c.y, KAN.hot, 260, 18); }
+  if (at >= U.fire && at < U.fin) {
+    for (let i = 0; i < 3; i++) addFx({ k: 'petal', x: c.x + sd * rnd(0, 200), y: c.y + rnd(-80, 80), vx: sd * rnd(18, 34), vy: rnd(-3, 4), rot: rnd(0, TAU), vr: rnd(-.3, .3), life: rnd(40, 70), t: 0, s: rnd(8, 14), orange: true });
+    if ((at | 0) % 3 === 0) addFx({ k: 'streak', x: c.x, y: c.y + rnd(-90, 90), vx: sd * 44, vy: rnd(1, 4), life: 18, t: 0, rgb, w: rnd(4, 8) });
+    if ((at | 0) % 2 === 0) bloomFloor(f.x + sd * (120 + 1400 * (at - U.fire) / (U.fin - U.fire)), 4, 60);   // the garden spreads across the floor with the stream
+    if ((at | 0) % 12 === 0) fxRing(c.x + sd * 60, c.y, rgb, 40, 260, 16, 8);
+    G.orange.a = Math.min(.5, G.orange.a + .012 * dt);
+    const L = 1500, bx = { x0: Math.min(c.x, c.x + sd * L), x1: Math.max(c.x, c.x + sd * L), y0: c.y - 220, y1: GROUND };
+    tryHit(f, o, bx, { dmg: 2, kb: 1.5, stun: 24, power: .9, ult: true, noScale: true, hy: 200 }, 9, 6);
+  }
+  if (first(U.fin)) {
+    const X = o.x; G.orange.keep = .14;
+    addFx({ k: 'pillar', x: X, y: GROUND, rgb, hot: KAN.hot, life: 50, t: 0, w: 220 }); fxBloom(X, o.y - 200, 60, 2.6); bloomFloor(X, 40, 300);
+    addFx({ k: 'blossom', x: X, y: o.y - 220, rgb, life: 70, t: 0, r: 420 }); fxRing(X, GROUND - 4, rgb, 40, 700, 30, 14, .22);
+    if (G.phase === 'fight') { f.hitIds.clear(); const save = f.x; f.x = X - sd * 60; hitTarget(f, o, { dmg: 14, kb: 14, launch: -16, power: 2.6, ult: true, hy: 200 }); f.x = save; }
+  }
+  if (first(U.end)) { f.inv = 0; G.tintA = 0; f.charge = 0; f.t = Math.max(f.t, m.st + m.act - 1); }
+}
 // ULT timeline (frames after the movie): she sweeps a huge circle of paint, the hound bursts out of it behind her and charges through the foe
 const MIO_ULT = { summon: 40, run: 30, bite: 34 };
 function updateMioUlt(f, o, at, dt, first) {
@@ -1823,7 +2005,7 @@ function updateProj(dt) {
   for (let i = G.proj.length - 1; i >= 0; i--) {
     const p = G.proj[i], o = G.fighters[1 - p.owner.side];
     p.t += dt;
-    if (p.type === 'homing' && p.t > 10) {
+    if ((p.type === 'homing' || p.type === 'petal') && p.t > 10) {
       const tx = o.x, ty = o.y - 160, a = Math.atan2(ty - p.y, tx - p.x), cur = Math.atan2(p.vy, p.vx);
       let d = a - cur; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU;
       const na = cur + clamp(d, -.09 * dt, .09 * dt), sp = Math.min(21, Math.hypot(p.vx, p.vy) + .5 * dt);
@@ -1831,8 +2013,9 @@ function updateProj(dt) {
     }
     if (p.grav) p.vy += p.grav * dt;
     p.x += p.vx * dt; p.y += p.vy * dt;
-    p.trail.push({ x: p.x, y: p.y }); if (p.trail.length > (p.type === 'homing' ? 16 : p.type === 'rail' ? 10 : p.type === 'stroke' ? 14 : 7)) p.trail.shift();
+    p.trail.push({ x: p.x, y: p.y }); if (p.trail.length > (p.type === 'homing' || p.type === 'petal' ? 14 : p.type === 'rail' ? 10 : p.type === 'stroke' ? 14 : 7)) p.trail.shift();
     if (p.type === 'paint' && (p.t | 0) % 3 === 0) addFx({ k: 'paint', x: p.x, y: p.y, vx: -p.vx * .1, vy: rnd(-1, 1), r: rnd(3, 6), rgb: PAINT.deep, life: 30, t: 0 });
+    if (p.type === 'petal' && (p.t | 0) % 3 === 0) fxBloom(p.x, p.y, 1, .4);
     if (p.type === 'smoke' && (p.t | 0) % 2 === 0) fxSmoke(p.x, p.y, 1, .6, -Math.sign(p.vx), p.rgb);
     if (p.type === 'inkwave') { fxSmoke(p.x, GROUND - rnd(10, 120), 2, 1, -Math.sign(p.vx), JADE.ink); if ((p.t | 0) % 3 === 0) fxDust(p.x, GROUND, 1, .8); }
     if (p.type === 'hook') {   // ARIA's grapple: flies out, bites, reels the foe in, then retracts
@@ -1876,6 +2059,14 @@ function drawProj() {
     const tr = p.trail; if (tr.length < 2) continue;
     if (p.type === 'paint' || p.type === 'stroke') { drawPaintProj(p); continue; }
     if (p.type === 'hook') { drawHook(p); continue; }
+    if (p.type === 'petal') {   // KANNA's wing blade: a pearl petal in an orange glow, trailing light
+      ctx.lineCap = 'round'; ctx.beginPath(); tr.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y));
+      ctx.strokeStyle = `rgba(${p.rgb},.5)`; ctx.lineWidth = 14; ctx.stroke(); ctx.strokeStyle = 'rgba(255,240,215,.6)'; ctx.lineWidth = 3; ctx.stroke();
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(Math.atan2(p.vy, p.vx));
+      ctx.fillStyle = `rgba(${p.rgb},.9)`; ctx.beginPath(); ctx.ellipse(0, 0, 38, 11, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(255,248,236,.95)'; ctx.beginPath(); ctx.ellipse(6, 0, 26, 5, 0, 0, TAU); ctx.fill(); ctx.restore();
+      continue;
+    }
     if (p.type === 'shell') {   // REI's cannon shell: a black slug in a red corona with a long trail
       ctx.lineCap = 'round'; ctx.beginPath(); tr.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y));
       ctx.strokeStyle = `rgba(${p.rgb},.75)`; ctx.lineWidth = 34; ctx.stroke(); ctx.strokeStyle = 'rgba(255,230,220,.9)'; ctx.lineWidth = 8; ctx.stroke();
@@ -1975,7 +2166,7 @@ function onKO(att, tgt) {
 }
 
 /* SUZUNE's short step-dash: brief invulnerability (slips through AOI's shots), short cooldown */
-const CAN_DASH = { suzune: 1, arca: 1, mio: 1, aria: 1, enjo: 1, rei: 1 };
+const CAN_DASH = { suzune: 1, arca: 1, mio: 1, aria: 1, enjo: 1, rei: 1, kanna: 1 };
 const TAG_CD = 150;
 function doTag(side, forced) {
   const out = G.fighters[side], inn = partnerOf(out);
@@ -2261,7 +2452,7 @@ function poseOf(f) {
     P.top *= .22; P.bot *= .22; P.wave *= .3;
   }
   if (f.id === 'aria' && f.state === 'atk' && f.move && f.move.zip && f.move.zip.phase === 'zip' && f.move.key === 'ex') { P.rot = f.move.zip.rot || 0; P.sx = 1; P.sy = 1; }   // flies nose-first along the diagonal
-  if (f.id === 'arca' && ANIMS.arca) { P.rot = f.state === 'hit' ? P.rot * .3 : 0; P.sx = 1 + (P.sx - 1) * .35; P.sy = 1 + (P.sy - 1) * .35; P.top *= .3; P.bot *= .3; }
+  if ((f.id === 'arca' && ANIMS.arca) || f.id === 'kanna') { P.rot = f.state === 'hit' ? P.rot * .3 : 0; P.sx = 1 + (P.sx - 1) * .35; P.sy = 1 + (P.sy - 1) * .35; P.top *= .3; P.bot *= .3; }
   return P;
 }
 
@@ -2269,7 +2460,7 @@ function pushApart(a, b) {
   if (a.hidden || b.hidden) return;
   const passing = x => x.state === 'atk' && x.move && (((x.move.key === 'ex' || x.move.key === 'ult') && x.id === 'suzune') || (x.id === 'aria' && x.move.zip));
   if (passing(a) || passing(b)) return;
-  const dx = b.x - a.x, d = Math.abs(dx), min = 100;
+  const dx = b.x - a.x, d = Math.abs(dx), min = a.id === 'kanna' || b.id === 'kanna' ? 170 : 100;
   if (d < min && Math.abs(a.y - b.y) < 200) { const push = (min - d) / 2, s = Math.sign(dx) || 1; a.x -= s * push; b.x += s * push; }
 }
 
@@ -2307,6 +2498,11 @@ function aiInput(f, o) {
     if (ad > 190) { if (Math.random() < .18) { set({ [toward]: true, u: true }, 6); } else set({ [toward]: true }, 10 + (Math.random() * 12 | 0)); }
     else if (Math.random() < D.agg) ai.press = Math.random() < .35 ? 'b' : 'a';
     else set({ [away]: true }, 8);
+  } else if (f.id === 'kanna') {   // huge reach: blooms the crown up close, petal blades from mid range, flowers whenever it can
+    if (f.gauge >= 50 && ad < 1000 && Math.random() < .3) { ai.press = 'ex'; return out; }
+    if (ad > 700) { if (Math.random() < D.agg * .6) ai.press = 'b'; else if (Math.random() < .3) { set({ [toward]: true }, 6); ai.press = 'dh'; } else set({ [toward]: true }, 12); }
+    else if (ad < 470) { if (Math.random() < D.agg) ai.press = Math.random() < .2 ? 'b' : 'a'; else set({ [away]: true }, 8); }
+    else if (Math.random() < .5) ai.press = 'b'; else set({ [toward]: true }, 10);
   } else if (f.id === 'enjo') {   // keeps her distance: skull shots at range, the kiseru up close, GASHIRA whenever it can
     if (f.gauge >= 50 && ad < 760 && Math.random() < .3) { ai.press = 'ex'; return out; }
     if (ad > 380) { if (Math.random() < D.agg * .7) ai.press = 'b'; else set({ [toward]: true }, 12); }
@@ -2349,7 +2545,7 @@ async function startMatch() {
 }
 function startRound() {
   makeTeams(); G.tagCd = [0, 0]; G.pendingTag = null; G.benched = [];
-  G.resultShown = false; G.victory = null; G.fx = []; G.proj = []; G.paintFloor = []; G.luna = null; G.ink = null; G.inkWash = null; G.timer = 99; G.timerF = 0; G.phase = 'intro'; G.phaseT = 0; G.cutin = null; G.rwCut = null; G.freeze = 0; G.tintA = 0; G.slow = 1;
+  G.resultShown = false; G.victory = null; G.fx = []; G.proj = []; G.paintFloor = []; G.bloomFloor = []; G.orange = null; G.luna = null; G.ink = null; G.inkWash = null; G.timer = 99; G.timerF = 0; G.phase = 'intro'; G.phaseT = 0; G.cutin = null; G.rwCut = null; G.freeze = 0; G.tintA = 0; G.slow = 1;
   G.cam.x = STAGE_W / 2; G.cam.z = 1; G.cam.tilt = 0; G.cam.push = 0; G.koCam = null;
   for (const f of G.fighters) {
     if (f.id === 'arca') { f.boarding = G.round === 1; f._boardFx = f._boardFx2 = f._bootSnd = false; f.state = 'idle'; continue; }
@@ -2934,17 +3130,17 @@ function renderWorld() {
   drawCometFx();
   ctx.globalCompositeOperation = 'lighter'; for (const f of G.fighters) drawRail(f); ctx.globalCompositeOperation = 'source-over';
   const order = [...G.fighters].sort((p, q) => (p.state === 'atk') - (q.state === 'atk'));
-  drawPaintFloor(); drawInk();
-  for (const f of G.fighters) { drawDragon(f, false); drawDog(f, false); drawShishi(f, false); }
+  drawPaintFloor(); drawInk(); drawBloomFloor();
+  for (const f of G.fighters) { drawDragon(f, false); drawDog(f, false); drawShishi(f, false); drawKannaUlt(f, false); }
   for (const b of G.benched || []) drawFighter(b.f, false);
   for (const f of order) drawFighter(f, false);
-  for (const f of G.fighters) { drawDrone(f); drawSkull(f); drawDragon(f, true); drawDog(f, true); drawShishi(f, true); drawRindo(f); }
+  for (const f of G.fighters) { drawDrone(f); drawSkull(f); drawDragon(f, true); drawDog(f, true); drawShishi(f, true); drawRindo(f); drawKannaUlt(f, true); }
   drawFx('norm');
   ctx.globalCompositeOperation = 'lighter'; drawProj(); drawFx('add'); ctx.globalCompositeOperation = 'source-over';
   drawLunaBeam();
   ctx.restore();
   if (G.tintA > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(${G.tintC},${G.tintA * .25})`; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'source-over'; }
-  drawInkWash();
+  drawInkWash(); drawOrange();
   if (G.speedlines > 0) drawSpeedLines(G.speedlines);
   if (!PFX.on) {   // vignette (the GL layer does its own)
     const vg = ctx.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, H * .95); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(8,4,18,.55)');
@@ -3021,7 +3217,7 @@ function simStep(dt) {
   stepFighter(a, b, ia, sdt); stepFighter(b, a, ib, sdt); pushApart(a, b);
   updateProj(sdt); updateFx(sdt); updateFlow(sdt); updateTeams(sdt);
 }
-const CAM = { zMax: 1.3, zMin: .76, zWin: 1.22, near: 360, far: 1250, in: .035, out: .09 };
+const CAM = { zGiant: .84, zMax: 1.3, zMin: .76, zWin: 1.22, near: 360, far: 1250, in: .035, out: .09 };
 function smooth01(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
 function updateCamera() {
   const c = G.cam, [a, b] = G.fighters;
@@ -3034,6 +3230,7 @@ function updateCamera() {
     const big = G.fighters.some(f => f.state === 'atk' && f.move && (f.move.key === 'ult' || f.move.key === 'ex')) || G.luna || G.phase === 'intro' || vis.some(f => f.state === 'tagin' || f.state === 'dashin');
     let zt = CAM.zMax - (CAM.zMax - CAM.zMin) * smooth01((d - CAM.near) / (CAM.far - CAM.near));
     if (big) zt = Math.min(zt, 1);                                   // big moves and entrances need the wide shot
+    if (vis.some(f => f.id === 'kanna')) zt = Math.min(zt, CAM.zGiant);   // KANNA stands ~700px tall: stay wide enough to keep her halo in frame
     if (wf) zt = CAM.zWin;                                           // victory pose: push in on the winner
     const kc = G.koCam; if (kc) { kc.t++; if (G.phase === 'ko' && kc.t < 90) { zt = 1.45; mid = kc.f.x; } else G.koCam = null; }   // final KO: crash in on the loser
     if (!c.z) c.z = 1;
@@ -3153,7 +3350,7 @@ function exMovieEnd() {
   }, 320);
 }
 /* ---------- match victory movie + telop ---------- */
-const WINQ = { suzune: 'まだまだ、こんなもんじゃないッス！', aoi: '解析完了。――この勝負、わたしの勝ち。', arca: '観測、完了です。……え、もう終わりですか？', sakura: 'わたしの設計に、狂いはないの。', mio: 'ほら、世界がちょっとキレイになった！', aria: 'へへっ、空はあたしの整備場っす！', enjo: '浮世は煙。掴めたと思った？', rei: 'この涙は、私が人間だった最後の証。' };
+const WINQ = { suzune: 'まだまだ、こんなもんじゃないッス！', aoi: '解析完了。――この勝負、わたしの勝ち。', arca: '観測、完了です。……え、もう終わりですか？', sakura: 'わたしの設計に、狂いはないの。', mio: 'ほら、世界がちょっとキレイになった！', aria: 'へへっ、空はあたしの整備場っす！', enjo: '浮世は煙。掴めたと思った？', rei: 'この涙は、私が人間だった最後の証。', kanna: 'She was never built to win. She was built to bloom.' };
 const WM = { w: null, timers: [], typing: null, ready: false };
 function winMovieStart(w) {
   const box = $('#winMovie'), v = box.querySelector(`video[data-char="${w.id}"]`);
@@ -3343,7 +3540,7 @@ async function boot() {
   buildBg();
   await Promise.all([buildAssets(), buildAnims(), loadBGM().then(() => Promise.all([loadVoices(), loadSfx()]))]);
   document.querySelectorAll('[data-src]').forEach(i => i.src = window.ASSETS[i.dataset.src]);
-  document.querySelectorAll('.card img').forEach(i => { const id = i.closest('.card').dataset.char; i.src = window.ASSETS[{ suzune: 'suci', aoi: 'aoci', arca: 'arcard', sakura: 'sacard', mio: 'micard', aria: 'ar2card', enjo: 'encard', rei: 'recard' }[id]]; });
+  document.querySelectorAll('.card img').forEach(i => { const id = i.closest('.card').dataset.char; i.src = window.ASSETS[{ suzune: 'suci', aoi: 'aoci', arca: 'arcard', sakura: 'sacard', mio: 'micard', aria: 'ar2card', enjo: 'encard', rei: 'recard', kanna: 'kacard' }[id]]; });
   {   // more cards than fit: fade the right edge so it reads as a swipeable row
     const cs = $('.cards'), upd = () => cs.classList.toggle('more', cs.scrollWidth - cs.clientWidth - cs.scrollLeft > 24);
     cs.addEventListener('scroll', upd, { passive: true }); addEventListener('resize', upd); new ResizeObserver(upd).observe(cs); upd();
