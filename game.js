@@ -3085,7 +3085,7 @@ function drawBanner() {
 const TEL = { list: [] };
 const TEL_EN = {
   suzune: ['SAKURA FLASH RAIL', 'SAKURA COMET'], aoi: ['HOMING BIT', 'ORBITAL RAY'], arca: ['RUNE MISSILE', 'ARSENAL NOVA'], sakura: ['IDEA DRAGON', 'DRAFT NOVA'],
-  mio: ['BLUE STROKE', 'CANVAS HOUND'], aria: ['GRAVITY SLING', 'LUNA SATELLITE RAY'], enjo: ['GASHIRA', 'UKIYO-GIRI : RINDO'], rei: ['AGITO HOWL', 'SUMI-RYU : HIGAN'] };
+  mio: ['BLUE STROKE', 'CANVAS HOUND'], aria: ['GRAVITY SLING', 'LUNA SATELLITE RAY'], enjo: ['GASHIRA', 'UKIYO-GIRI : RINDO'], rei: ['AGITO HOWL', 'SUMI-RYU : HIGAN'], kanna: ['FLOWER CROWN', 'FULL BLOOM : ORANGE'] };
 const TEL_DUR = { ult: 1750, ex: 1150, awake: 1500 };
 function telop(kind, f) {
   if (!f || !f.ch) return;
