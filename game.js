@@ -911,7 +911,7 @@ const MOVES = {
     a: { st: 6, act: 5, rec: 13, cost: 0 },
     b: { st: 12, act: 6, rec: 20, cost: 0 },
     ex: { st: 10, act: 40, rec: 18, cost: 50 },
-    ult: { st: 0, act: 150, rec: 30, cost: 100 }
+    ult: { st: 0, act: 160, rec: 30, cost: 100 }
   },
   enjo: {
     a: { st: 5, act: 4, rec: 12, cost: 0 },
@@ -1735,7 +1735,7 @@ function drawOrange() {   // screen space: the white world takes on her colour w
   ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = `rgba(255,128,36,${o.a})`; ctx.fillRect(0, 0, W, H);
   ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,140,40,${o.a * .22})`; ctx.fillRect(0, 0, W, H); ctx.restore();
 }
-const KANNA_ULT = { fire: 46, fin: 104, end: 140 };
+const KANNA_ULT = { fire: 64, fin: 118, end: 150 };   // open (ultCharge plays through) → stream (ultFire loops) → close (ultEnd)
 function kannaCore(f) { return { x: f.x + f.face * 50, y: f.y - 400 }; }
 // KANNA ULT layers. Behind her: a huge flower of light that blooms open while her chest opens. In front: the garden
 // glowing in her open chest, then the stream of petal light pouring out toward the foe

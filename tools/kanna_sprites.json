@@ -7,22 +7,124 @@
  "anchorX": 352,
  "ground": 454,
  "anims": {
-  "idle": { "t0": 0.2, "t1": 2.2, "fps": 8, "pingpong": true, "edgeFade": 30 },
-  "walk": { "t0": 2.6, "t1": 4.6, "fps": 10, "edgeFade": 30 },
-  "dash": { "t0": 6.3, "t1": 7.9, "fps": 12, "dx": -90, "edgeFade": 30 },
-  "guard": { "times": [16.6], "edgeFade": 30 },
-  "jump": { "times": [22.75, 23.0, 23.2], "edgeFade": 30 },
-  "a1": { "t0": 8.25, "t1": 9.2, "fps": 14, "edgeFade": 30 },
-  "a2": { "t0": 9.2, "t1": 10.4, "fps": 14, "edgeFade": 30 },
-  "a3": { "t0": 11.1, "t1": 12.6, "fps": 14, "edgeFade": 30 },
-  "b": { "t0": 14.6, "t1": 16.4, "fps": 12, "edgeFade": 30 },
-  "ex": { "t0": 12.4, "t1": 14.4, "fps": 12, "edgeFade": 30 },
-  "hit": { "t0": 16.9, "t1": 17.4, "fps": 24, "edgeFade": 30 },
-  "air": { "t0": 17.0, "t1": 17.9, "fps": 18, "edgeFade": 30 },
-  "down": { "times": [18.25, 18.75], "edgeFade": 30 },
-  "getup": { "t0": 19.25, "t1": 21.4, "fps": 12, "edgeFade": 30 },
-  "ultCharge": { "t0": 23.3, "t1": 24.0, "fps": 8, "pingpong": true, "scale": 0.92, "edgeFade": 30 },
-  "ultFire": { "t0": 11.3, "t1": 12.4, "fps": 12, "edgeFade": 30 },
-  "winPose": { "t0": 21.0, "t1": 24.0, "fps": 12, "play": 12, "scale": 0.94, "edgeFade": 30 }
+  "idle": {
+   "t0": 0.2,
+   "t1": 2.2,
+   "fps": 8,
+   "pingpong": true,
+   "edgeFade": 30
+  },
+  "walk": {
+   "t0": 2.6,
+   "t1": 4.6,
+   "fps": 10,
+   "edgeFade": 30
+  },
+  "dash": {
+   "t0": 6.3,
+   "t1": 7.9,
+   "fps": 12,
+   "dx": -90,
+   "edgeFade": 30
+  },
+  "guard": {
+   "times": [
+    16.6
+   ],
+   "edgeFade": 30
+  },
+  "jump": {
+   "times": [
+    22.75,
+    23.0,
+    23.2
+   ],
+   "edgeFade": 30
+  },
+  "a1": {
+   "t0": 8.25,
+   "t1": 9.2,
+   "fps": 14,
+   "edgeFade": 30
+  },
+  "a2": {
+   "t0": 9.2,
+   "t1": 10.4,
+   "fps": 14,
+   "edgeFade": 30
+  },
+  "a3": {
+   "t0": 11.1,
+   "t1": 12.6,
+   "fps": 14,
+   "edgeFade": 30
+  },
+  "b": {
+   "t0": 14.6,
+   "t1": 16.4,
+   "fps": 12,
+   "edgeFade": 30
+  },
+  "ex": {
+   "t0": 12.4,
+   "t1": 14.4,
+   "fps": 12,
+   "edgeFade": 30
+  },
+  "hit": {
+   "t0": 16.9,
+   "t1": 17.4,
+   "fps": 24,
+   "edgeFade": 30
+  },
+  "air": {
+   "t0": 17.0,
+   "t1": 17.9,
+   "fps": 18,
+   "edgeFade": 30
+  },
+  "down": {
+   "times": [
+    18.25,
+    18.75
+   ],
+   "edgeFade": 30
+  },
+  "getup": {
+   "t0": 19.25,
+   "t1": 21.4,
+   "fps": 12,
+   "edgeFade": 30
+  },
+  "ultCharge": {
+   "video": "C:/Users/szou/kanna_work/ult.mp4",
+   "t0": 1.0,
+   "t1": 6.0,
+   "fps": 10,
+   "edgeFade": 30
+  },
+  "ultFire": {
+   "video": "C:/Users/szou/kanna_work/ult.mp4",
+   "t0": 6.0,
+   "t1": 9.0,
+   "fps": 8,
+   "pingpong": true,
+   "edgeFade": 30
+  },
+  "winPose": {
+   "t0": 21.0,
+   "t1": 24.0,
+   "fps": 12,
+   "play": 12,
+   "scale": 0.94,
+   "edgeFade": 30
+  },
+  "ultEnd": {
+   "video": "C:/Users/szou/kanna_work/ult.mp4",
+   "t0": 9.25,
+   "t1": 11.75,
+   "fps": 10,
+   "edgeFade": 30
+  }
  }
 }
