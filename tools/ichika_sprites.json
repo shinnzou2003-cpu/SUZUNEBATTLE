@@ -1,0 +1,127 @@
+{
+ "id": "ichika",
+ "video": "C:/Users/szou/ichika_work/moves.mp4",
+ "out": "anim",
+ "quality": 80,
+ "storeH": 416,
+ "anchorX": 381,
+ "ground": 462,
+ "anims": {
+  "idle": {
+   "t0": 0.2,
+   "t1": 2.2,
+   "fps": 8,
+   "pingpong": true,
+   "edgeFade": 30
+  },
+  "walk": {
+   "t0": 5.0,
+   "t1": 6.0,
+   "fps": 12,
+   "edgeFade": 30
+  },
+  "dash": {
+   "t0": 9.6,
+   "t1": 10.4,
+   "fps": 12,
+   "edgeFade": 30
+  },
+  "guard": {
+   "times": [
+    19.25
+   ],
+   "edgeFade": 30
+  },
+  "jump": {
+   "times": [
+    24.5,
+    24.75,
+    25.0
+   ],
+   "edgeFade": 30
+  },
+  "a1": {
+   "t0": 9.85,
+   "t1": 10.5,
+   "fps": 14,
+   "edgeFade": 30
+  },
+  "a2": {
+   "t0": 12.4,
+   "t1": 13.3,
+   "fps": 14,
+   "edgeFade": 30
+  },
+  "a3": {
+   "t0": 15.6,
+   "t1": 16.45,
+   "fps": 14,
+   "edgeFade": 30
+  },
+  "b": {
+   "t0": 25.0,
+   "t1": 26.3,
+   "fps": 12,
+   "edgeFade": 30
+  },
+  "ex": {
+   "t0": 14.0,
+   "t1": 15.5,
+   "fps": 12,
+   "edgeFade": 30
+  },
+  "hit": {
+   "t0": 18.0,
+   "t1": 18.5,
+   "fps": 24,
+   "edgeFade": 30
+  },
+  "air": {
+   "t0": 20.0,
+   "t1": 20.9,
+   "fps": 18,
+   "edgeFade": 30
+  },
+  "down": {
+   "times": [
+    21.5,
+    22.0
+   ],
+   "edgeFade": 30
+  },
+  "getup": {
+   "t0": 22.75,
+   "t1": 24.0,
+   "fps": 12,
+   "edgeFade": 30
+  },
+  "winPose": {
+   "t0": 27.0,
+   "t1": 29.75,
+   "fps": 12,
+   "play": 12,
+   "edgeFade": 30
+  },
+  "ultCharge": {
+   "video": "C:/Users/szou/ichika_work/ult.mp4",
+   "t0": 0.0,
+   "t1": 1.75,
+   "fps": 10,
+   "edgeFade": 30
+  },
+  "ultFire": {
+   "video": "C:/Users/szou/ichika_work/ult.mp4",
+   "t0": 1.75,
+   "t1": 9.0,
+   "fps": 8,
+   "edgeFade": 30
+  },
+  "ultEnd": {
+   "video": "C:/Users/szou/ichika_work/ult.mp4",
+   "t0": 9.0,
+   "t1": 10.75,
+   "fps": 10,
+   "edgeFade": 30
+  }
+ }
+}
