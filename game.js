@@ -177,7 +177,11 @@ const CHARS = {
   kanna: { id: 'kanna', name: 'KANNA', role: '花弁冠・巨大神機', c1: '#ff8c28', c2: '#e8b85a', rgb: '255,140,40', rgb2: '232,184,90', speed: 6.6, jump: -25.0, anchor: .5, hurtW: 118, hurtH: 590, exName: '開花・花冠', ultName: '開花 ― ORANGE' },
   // ICHIKA: SUZUNE's second little sister. Stamps her lace-up boots and the world runs slow for ONE SECOND — only she keeps
   // moving at normal speed (SUZUNE is fast herself; ICHIKA makes the world slow). Black × gold like her sister
-  ichika: { id: 'ichika', name: 'ICHIKA', role: '時間操作・1秒スロー', c1: '#f2c14e', c2: '#fff0c8', rgb: '242,193,78', rgb2: '255,240,200', speed: 5.8, jump: -25.5, anchor: .55, hurtW: 50, hurtH: 275, exName: 'ONE SECOND', ultName: 'ZERO SECOND' }
+  ichika: { id: 'ichika', name: 'ICHIKA', role: '時間操作・1秒スロー', c1: '#f2c14e', c2: '#fff0c8', rgb: '242,193,78', rgb2: '255,240,200', speed: 5.8, jump: -25.5, anchor: .55, hurtW: 50, hurtH: 275, exName: 'ONE SECOND', ultName: 'ZERO SECOND' },
+  // ISANA: salvage pirate captain (22, 172cm). Rusted steel, verdigris copper, chains and winches lit in cyan. ANCHOR CUTLASS
+  // (right), HULL SHIELD (left), winch drum + turbine pods on the shoulders, fold-out back fins (DIVE MODE), hydraulic right leg
+  // with a water-jet heel. Heavy and deliberate: big reach, an anchor-on-a-chain that reels foes in, cannon ports in the shield
+  isana: { id: 'isana', name: 'ISANA', role: 'サルベージ海賊・錨', c1: '#00e5ff', c2: '#39ffb0', rgb: '0,229,255', rgb2: '57,255,176', speed: 4.8, jump: -23.5, anchor: .55, hurtW: 58, hurtH: 285, exName: '舷側斉射', ultName: '深淵錨・ダイブモード' }
 };
 const ALT = {
   suzune: { c1: '#7fd8ff', c2: '#4f7bff', rgb: '130,215,255', rgb2: '90,120,255', test: (h, s, l) => (h > 33 && h < 64 && s > .3) || ((h < 12 || h > 340) && s > .55), shift: 175 },
@@ -189,16 +193,17 @@ const ALT = {
   enjo: { c1: '#c99aff', c2: '#e0e0e8', rgb: '200,150,255', rgb2: '224,224,232', test: (h, s, l) => h > 145 && h < 200 && s > .18, shift: 120 },
   rei: { c1: '#5ab8ff', c2: '#e9e4d8', rgb: '90,184,255', rgb2: '233,228,216', test: (h, s, l) => (h < 20 || h > 340) && s > .3, shift: 205 },
   kanna: { c1: '#7fd8ff', c2: '#b8c8e8', rgb: '130,215,255', rgb2: '184,200,232', test: (h, s, l) => h > 12 && h < 52 && s > .3, shift: 175 },
-  ichika: { c1: '#ff7aa8', c2: '#ffd0e0', rgb: '255,122,168', rgb2: '255,208,224', test: (h, s, l) => h > 30 && h < 62 && s > .3, shift: 300 }
+  ichika: { c1: '#ff7aa8', c2: '#ffd0e0', rgb: '255,122,168', rgb2: '255,208,224', test: (h, s, l) => h > 30 && h < 62 && s > .3, shift: 300 },
+  isana: { c1: '#ff7a3c', c2: '#ffc070', rgb: '255,122,60', rgb2: '255,192,112', test: (h, s, l) => h > 150 && h < 200 && s > .25, shift: 190 }
 };
 const GFX = {};
 async function buildAssets() {
   const A = window.ASSETS;
-  const [su, ao, drone, suci, aoci, ar, arci, arp, sa, saci, mi, mici, ari, arici, en, enci, ensk, re, reci, ka, kaci, ic, icci] = await Promise.all([A.su, A.ao, A.drone, A.suci, A.aoci, A.ar, A.arci, A.arp, A.sa, A.saci, A.mi, A.mici, A.ar2, A.ar2ci, A.en, A.enci, A.enskull, A.re, A.reci, A.ka, A.kaci, A.ic, A.icci].map(p => track(loadImg(p))));
-  const base = { suzune: { img: su, ci: suci }, aoi: { img: ao, ci: aoci }, arca: { img: ar, ci: arci }, sakura: { img: sa, ci: saci }, mio: { img: mi, ci: mici }, aria: { img: ari, ci: arici }, enjo: { img: en, ci: enci }, rei: { img: re, ci: reci }, kanna: { img: ka, ci: kaci }, ichika: { img: ic, ci: icci } };
+  const [su, ao, drone, suci, aoci, ar, arci, arp, sa, saci, mi, mici, ari, arici, en, enci, ensk, re, reci, ka, kaci, ic, icci, is, isci] = await Promise.all([A.su, A.ao, A.drone, A.suci, A.aoci, A.ar, A.arci, A.arp, A.sa, A.saci, A.mi, A.mici, A.ar2, A.ar2ci, A.en, A.enci, A.enskull, A.re, A.reci, A.ka, A.kaci, A.ic, A.icci, A.is, A.isci].map(p => track(loadImg(p))));
+  const base = { suzune: { img: su, ci: suci }, aoi: { img: ao, ci: aoci }, arca: { img: ar, ci: arci }, sakura: { img: sa, ci: saci }, mio: { img: mi, ci: mici }, aria: { img: ari, ci: arici }, enjo: { img: en, ci: enci }, rei: { img: re, ci: reci }, kanna: { img: ka, ci: kaci }, ichika: { img: ic, ci: icci }, isana: { img: is, ci: isci } };
   GFX.arcaPilot = arp; GFX.skull = ensk; GFX.skullAlt = null;
   GFX.skullAltLazy = () => GFX.skullAlt || (GFX.skullAlt = recolor(ensk, ALT.enjo.test, ALT.enjo.shift));
-  for (const id of ['suzune', 'aoi', 'arca', 'sakura', 'mio', 'aria', 'enjo', 'rei', 'kanna', 'ichika']) {
+  for (const id of ['suzune', 'aoi', 'arca', 'sakura', 'mio', 'aria', 'enjo', 'rei', 'kanna', 'ichika', 'isana']) {
     const ch = CHARS[id], al = ALT[id];
     const make = (img, ci, c1, rgb) => ({ img, ci, white: silhouette(img, '#fff'), tint: silhouette(img, c1), glow: glowOf(img, `rgb(${rgb})`) });
     GFX[id] = [make(base[id].img, base[id].ci, ch.c1, ch.rgb), null];
@@ -214,7 +219,7 @@ const frameCount = (id, n) => ANIMS[id] && ANIMS[id].a[n] ? ANIMS[id].a[n].lengt
 // visual size balance between characters (SUZUNE's source video was framed larger)
 const RESIZE = { suzune: .9, aoi: .9, sakura: .9, enjo: 1.15, rei: 1.15 };   // ENJO / REI enlarged 2026-10-05; their summoned beasts keep their size   // 2026-10-04: these three trimmed to sit with the rest of the roster (sprite + hit/hurt boxes + attach points)
 const RS = f => RESIZE[f.id] || 1;
-const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.2, mio: 1.22, aria: .95, enjo: 1.0, rei: 1.0, kanna: 2.1, ichika: 1.0 };   // AOI stands taller; SUZUNE fights from a low crouch; KANNA is a giant (≈2.5× SUZUNE)
+const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.2, mio: 1.22, aria: .95, enjo: 1.0, rei: 1.0, kanna: 2.1, ichika: 1.0, isana: 1.0 };   // AOI stands taller; SUZUNE fights from a low crouch; KANNA is a giant (≈2.5× SUZUNE)
 const LOAD = { done: 0, total: 0 };
 function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = document.getElementById('loadPct'); if (el) el.textContent = Math.round(LOAD.done / Math.max(1, LOAD.total) * 100) + '%'; return v; }); }
 // Atlases are NOT decoded at boot any more: only the fighters in the current match are kept in memory,
@@ -359,6 +364,17 @@ function pickFrame(f) {
           return prog(a.ultEnd ? 'ultEnd' : 'ex', Math.min(1, (u - U.resume) / 30));
         }
       }
+      if (f.id === 'isana') {
+        if (m.key === 'a') { const n = ['a1', 'a2', 'a3'][Math.min(2, f.chain)]; return prog(a[n] ? n : 'a', p); }
+        if (m.key === 'b') return prog('b', Math.min(1, t / (m.st + 6)));   // throws, then holds the line while the winch works
+        if (m.key === 'ex') return prog('ex', Math.min(1, t / (m.st + 8)));  // plants the shield, the ports keep firing
+        if (m.key === 'ult') {   // fins open → launch / dive → anchor lands
+          const u = t - m.st, U = ISANA_ULT;
+          if (u < U.rise) return loop(a.ultCharge ? 'ultCharge' : 'idle', AN.fps.ultCharge || 10);
+          if (u < U.slam) return prog(a.ultFire ? 'ultFire' : 'a3', (u - U.rise) / (U.slam - U.rise));
+          return prog(a.ultEnd ? 'ultEnd' : 'a3', Math.min(1, (u - U.slam) / (U.end - U.slam)));
+        }
+      }
       if (f.id === 'kanna') {
         if (m.key === 'a') { const n = ['a1', 'a2', 'a3'][Math.min(2, f.chain)]; return prog(a[n] ? n : 'a', p); }
         if (m.key === 'b') return prog('b', p);
@@ -482,7 +498,9 @@ const VOICE_MAP = {
   kanna: { a0: ['ka_01', 'ka_03'], a1: ['ka_02'], a2: ['ka_04'], b: ['ka_05'], jump: ['ka_06'], guard: ['ka_07'], hit: ['ka_08'], hitBig: ['ka_09'],
     getup: ['ka_10'], ko: ['ka_11'], ex: ['ka_12'], ult: ['ka_13'], select: ['ka_14'], round: ['ka_15'], winMovie: ['ka_16'], win: ['ka_17'], lose: ['ka_18'] },
   ichika: { a0: ['ic_01', 'ic_03'], a1: ['ic_02'], a2: ['ic_04'], b: ['ic_05'], jump: ['ic_06'], guard: ['ic_07'], hit: ['ic_08'], hitBig: ['ic_09'],
-    getup: ['ic_10'], ko: ['ic_11'], ex: ['ic_12'], ult: ['ic_13'], select: ['ic_14'], round: ['ic_15'], winMovie: ['ic_16'], win: ['ic_17'], lose: ['ic_18'] }
+    getup: ['ic_10'], ko: ['ic_11'], ex: ['ic_12'], ult: ['ic_13'], select: ['ic_14'], round: ['ic_15'], winMovie: ['ic_16'], win: ['ic_17'], lose: ['ic_18'] },
+  isana: { a0: ['is_01', 'is_03'], a1: ['is_02'], a2: ['is_04'], b: ['is_05'], jump: ['is_06'], guard: ['is_07'], hit: ['is_08'], hitBig: ['is_09'],
+    getup: ['is_10'], ko: ['is_11'], ex: ['is_12'], ult: ['is_13'], select: ['is_14'], round: ['is_15'], winMovie: ['is_16'], win: ['is_17'], lose: ['is_18'] }
 };
 const VOICE = { buf: {}, gain: null, last: {} };
 // BGM ducking bus: music dips while a character is speaking so lines cut through
@@ -728,7 +746,7 @@ function fxDust(x, y, n = 8, pw = 1) { for (let i = 0; i < n; i++) addFx({ k: 'd
 function fxText(x, y, txt, rgb, size = 40, life = 50) { addFx({ k: 'text', x, y, txt, rgb, size, life, t: 0 }); }
 function fxHex(x, y, rgb, face) { addFx({ k: 'hex', x, y, rgb, face, life: 18, t: 0 }); }
 /* SF-mecha energy colours: SUZUNE gold / AOI blue (mirror-match colour swaps keep their own palette) */
-const AURA = { suzune: { rgb: '255,196,64', hot: '255,244,200' }, aoi: { rgb: '64,168,255', hot: '205,240,255' }, arca: { rgb: '46,230,200', hot: '215,255,245' }, sakura: { rgb: '255,150,200', hot: '255,236,246' }, mio: { rgb: '110,180,255', hot: '232,246,255' }, aria: { rgb: '245,165,70', hot: '255,240,205' }, enjo: { rgb: '95,211,188', hot: '225,255,246' }, rei: { rgb: '232,70,60', hot: '255,214,200' }, kanna: { rgb: '255,140,40', hot: '255,228,176' }, ichika: { rgb: '242,193,78', hot: '255,240,200' } };
+const AURA = { suzune: { rgb: '255,196,64', hot: '255,244,200' }, aoi: { rgb: '64,168,255', hot: '205,240,255' }, arca: { rgb: '46,230,200', hot: '215,255,245' }, sakura: { rgb: '255,150,200', hot: '255,236,246' }, mio: { rgb: '110,180,255', hot: '232,246,255' }, aria: { rgb: '245,165,70', hot: '255,240,205' }, enjo: { rgb: '95,211,188', hot: '225,255,246' }, rei: { rgb: '232,70,60', hot: '255,214,200' }, kanna: { rgb: '255,140,40', hot: '255,228,176' }, ichika: { rgb: '242,193,78', hot: '255,240,200' }, isana: { rgb: '0,229,255', hot: '210,255,250' } };
 const auraRgb = f => f.alt ? f.col.rgb : AURA[f.id].rgb;
 const auraHot = f => f.alt ? '255,255,255' : AURA[f.id].hot;
 function fxBolt(x0, y0, x1, y1, rgb, life = 9) {
@@ -964,6 +982,12 @@ const MOVES = {
     ex: { st: 6, act: 6, rec: 10, cost: 50 },
     ult: { st: 0, act: 190, rec: 30, cost: 100 }
   },
+  isana: {
+    a: { st: 6, act: 5, rec: 14, cost: 0 },
+    b: { st: 10, act: 34, rec: 14, cost: 0 },
+    ex: { st: 14, act: 34, rec: 18, cost: 50 },
+    ult: { st: 0, act: 150, rec: 30, cost: 100 }
+  },
   kanna: {
     a: { st: 6, act: 5, rec: 13, cost: 0 },
     b: { st: 12, act: 6, rec: 20, cost: 0 },
@@ -1043,7 +1067,7 @@ function hitTarget(att, tgt, o) {
   const pw = o.power || 1;
   fxCore(hx, hy, att.col.rgb, 70 + 50 * pw, 12 + 4 * pw); fxSpark(hx, hy, att.col.rgb, 10 + 10 * pw, .8 + .5 * pw, fromDir);
   fxRing(hx, hy, att.col.rgb, 10, 60 + 60 * pw, 14 + 6 * pw, 5 + 3 * pw);
-  if (att.id === 'suzune') fxPetals(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'mio') fxPaint(hx, hy, 6 + 6 * pw, .8 + .3 * pw, fromDir); else if (att.id === 'aria') fxGears(hx, hy, 4 + 4 * pw, pw, fromDir); else if (att.id === 'enjo') fxSmoke(hx, hy, 3 + 3 * pw, pw, fromDir, att.col.rgb); else if (att.id === 'rei') { fxSmoke(hx, hy, 2 + 2 * pw, pw, fromDir, JADE.ink); fxPetals(hx, hy, 1 + 2 * pw, pw, !att.alt); } else if (att.id === 'kanna') fxBloom(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'ichika') { fxSpark(hx, hy, ICHI.hot, 6 + 6 * pw, .8 + .4 * pw, fromDir); fxRing(hx, hy, ICHI.rgb, 6, 50 + 40 * pw, 10, 3); } else fxHex(hx, hy, att.col.rgb, fromDir);
+  if (att.id === 'suzune') fxPetals(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'mio') fxPaint(hx, hy, 6 + 6 * pw, .8 + .3 * pw, fromDir); else if (att.id === 'aria') fxGears(hx, hy, 4 + 4 * pw, pw, fromDir); else if (att.id === 'enjo') fxSmoke(hx, hy, 3 + 3 * pw, pw, fromDir, att.col.rgb); else if (att.id === 'rei') { fxSmoke(hx, hy, 2 + 2 * pw, pw, fromDir, JADE.ink); fxPetals(hx, hy, 1 + 2 * pw, pw, !att.alt); } else if (att.id === 'kanna') fxBloom(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'ichika') { fxSpark(hx, hy, ICHI.hot, 6 + 6 * pw, .8 + .4 * pw, fromDir); fxRing(hx, hy, ICHI.rgb, 6, 50 + 40 * pw, 10, 3); } else if (att.id === 'isana') fxSalvage(hx, hy, 3 + 4 * pw, pw, fromDir); else fxHex(hx, hy, att.col.rgb, fromDir);
   G.hitstop = Math.max(G.hitstop, o.hitstop || (4 + 4 * pw)); shake(4 + 7 * pw);
   if (pw >= 1.4 || o.launch) { quake(3 + 5 * pw, .28 + .12 * pw, pw >= 2 ? 60 : 25); fxBig(hx, hy, auraRgb(att), auraHot(att), Math.max(1.4, pw), fromDir); }
   if (pw >= 2) flash(.35 * pw / 2, '255,230,200');
@@ -1110,6 +1134,7 @@ function updateMove(f, o, dt) {
   else if (f.id === 'rei') updateReiMove(f, o, m, t, k, act, at, dt, first);
   else if (f.id === 'kanna') updateKannaMove(f, o, m, t, k, act, at, dt, first);
   else if (f.id === 'ichika') updateIchikaMove(f, o, m, t, k, act, at, dt, first);
+  else if (f.id === 'isana') updateIsanaMove(f, o, m, t, k, act, at, dt, first);
   else {
     const dx = f.droneX, dy = f.droneY;
     if (k === 'a') {
@@ -1842,6 +1867,208 @@ function updateIchikaUlt(f, o, at, dt, first) {
   }
   if (first(U.end)) { f.inv = 0; G.tintA = 0; f.t = Math.max(f.t, m.st + m.act - 1); }
 }
+// ISANA: salvage pirate captain. Rusted steel and verdigris copper lit in cyan; everything she swings is heavy and on a chain.
+// a1/a2/a3: ANCHOR CUTLASS cut → HULL SHIELD bash → anchor brought down on the deck (launches). b アンカーショット: the anchor
+// flies out on its chain; a hit is reeled in by the shoulder winch. EX 舷側斉射 BROADSIDE: the shield is planted and its cannon
+// ports fire a volley. ULT 深淵錨・ダイブモード: chains from the winch drum bind the foe, the back fins open into DIVE MODE,
+// she rides the water-jets up and drives the anchor down through them.
+const SALV = { cyan: '0,229,255', teal: '57,255,176', verd: '63,163,138', rust: '170,86,40', bone: '232,228,216', iron: '27,27,27', hot: '210,255,250' };
+const isCol = f => f.alt ? f.col.rgb : SALV.cyan;
+function isanaHand(f) { const r = RS(f); return { x: f.x + f.face * 95 * r, y: f.y - 165 * r }; }
+function isanaWinch(f) { const r = RS(f); return { x: f.x - f.face * 28 * r, y: f.y - 252 * r }; }
+function isanaPort(f, i) { const r = RS(f); return { x: f.x + f.face * 92 * r, y: f.y - (95 + (i % 4) * 46) * r }; }
+function fxSalvage(x, y, n = 6, pw = 1, dir = 0) {   // rust flakes + cyan sparks
+  for (let i = 0; i < n; i++) addFx({ k: 'paint', x: x + rnd(-12, 12), y: y + rnd(-12, 12), vx: dir * rnd(1, 6) * pw + rnd(-3, 3), vy: rnd(-7, -1) * pw, r: rnd(2, 4.5), rgb: i % 3 ? SALV.rust : SALV.verd, life: rnd(22, 40), t: 0 });
+  fxSpark(x, y, SALV.cyan, 4 + 3 * pw, .7 + .3 * pw, dir);
+}
+function fxJet(f, n = 4) {   // water-jet from the right heel: cyan spray pushed out behind her
+  const x = f.x - f.face * 18, y = f.y - 8;
+  for (let i = 0; i < n; i++) addFx({ k: 'streak', x: x + rnd(-8, 8), y: y - rnd(0, 20), vx: -f.face * rnd(10, 22), vy: rnd(-3, 2), life: rnd(8, 14), t: 0, rgb: i % 2 ? SALV.teal : SALV.cyan, w: rnd(1.5, 3.5) });
+}
+// a chain of alternating links along a sagging curve (dark iron with a rust / verdigris glint over a faint cyan glow)
+function drawChain(x0, y0, x1, y1, sag = 40, glow = .5, rgb = SALV.cyan) {
+  const mx = (x0 + x1) / 2, my = (y0 + y1) / 2 + sag, L = Math.hypot(x1 - x0, y1 - y0) + Math.abs(sag), n = Math.max(2, Math.floor(L / 15));
+  const pt = k => { const u = 1 - k; return [u * u * x0 + 2 * u * k * mx + k * k * x1, u * u * y0 + 2 * u * k * my + k * k * y1]; };
+  ctx.save(); ctx.lineCap = 'round';
+  if (glow > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(${rgb},${.35 * glow})`; ctx.lineWidth = 12; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(mx, my, x1, y1); ctx.stroke(); }
+  ctx.globalCompositeOperation = 'source-over';
+  for (let i = 0; i < n; i++) {
+    const [ax, ay] = pt(i / n), [bx, by] = pt((i + 1) / n), a = Math.atan2(by - ay, bx - ax);
+    ctx.save(); ctx.translate((ax + bx) / 2, (ay + by) / 2); ctx.rotate(a);
+    if (i % 2) { ctx.strokeStyle = '#1b1b1b'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-9, 0); ctx.lineTo(9, 0); ctx.stroke(); ctx.strokeStyle = 'rgba(150,110,80,.8)'; ctx.lineWidth = 1.4; ctx.stroke(); }
+    else { ctx.strokeStyle = '#1b1b1b'; ctx.lineWidth = 3.6; ctx.beginPath(); ctx.ellipse(0, 0, 10, 5.5, 0, 0, TAU); ctx.stroke(); ctx.strokeStyle = i % 4 ? 'rgba(170,110,70,.85)' : 'rgba(110,190,170,.85)'; ctx.lineWidth = 1.3; ctx.stroke(); }
+    ctx.restore();
+  }
+  ctx.restore();
+}
+function drawAnchorHead(x, y, ang, s = 1, rgb = SALV.cyan, glowA = .8) {   // shank pointing along ang, crown and flukes at the front
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(s, s);
+  if (glowA > 0) { ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(10, 0, 0, 10, 0, 70); g.addColorStop(0, `rgba(${rgb},${.5 * glowA})`); g.addColorStop(1, `rgba(${rgb},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(10, 0, 70, 0, TAU); ctx.fill(); }
+  ctx.globalCompositeOperation = 'source-over'; ctx.lineJoin = 'round';
+  const body = new Path2D();
+  body.rect(-46, -6, 74, 12);                                         // shank
+  body.moveTo(34, 0); body.quadraticCurveTo(30, 34, 2, 44); body.lineTo(-8, 30); body.lineTo(4, 34); body.quadraticCurveTo(20, 26, 22, 0); body.closePath();   // arm + fluke
+  body.moveTo(34, 0); body.quadraticCurveTo(30, -34, 2, -44); body.lineTo(-8, -30); body.lineTo(4, -34); body.quadraticCurveTo(20, -26, 22, 0); body.closePath();
+  body.moveTo(-30, -20); body.lineTo(-24, -20); body.lineTo(-24, 20); body.lineTo(-30, 20); body.closePath();   // stock
+  const mg = ctx.createLinearGradient(0, -44, 0, 44); mg.addColorStop(0, '#5c6b64'); mg.addColorStop(.5, '#2b2a28'); mg.addColorStop(1, '#4a3424');
+  ctx.fillStyle = mg; ctx.fill(body); ctx.strokeStyle = '#0e0d0c'; ctx.lineWidth = 2.5; ctx.stroke(body);
+  ctx.fillStyle = 'rgba(214,170,40,.9)'; for (let i = 0; i < 3; i++) ctx.fillRect(-14 + i * 12, -6, 5, 12);   // hazard stripes
+  ctx.strokeStyle = '#1b1b1b'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(-52, 0, 8, 0, TAU); ctx.stroke();   // ring
+  ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(${rgb},${.9 * glowA})`; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(30, 6); ctx.quadraticCurveTo(26, 30, 4, 40); ctx.moveTo(30, -6); ctx.quadraticCurveTo(26, -30, 4, -40); ctx.stroke();
+  ctx.restore();
+}
+function updateIsanaMove(f, o, m, t, k, act, at, dt, first) {
+  const r = RS(f), rgb = isCol(f);
+  if (k === 'a') {   // cutlass cut → shield bash → the anchor comes down on the deck
+    const c = Math.min(2, f.chain);
+    if (t < m.st) f.vx *= .7;
+    if (first(0)) {
+      f.vx = f.face * [5, 7, 4][c];
+      if (c === 0) { fxArc(f.x + f.face * 60 * r, f.y - 160 * r, 230 * r, -1.5, 1.0, rgb, f.face, 16, 42); fxArc(f.x + f.face * 60 * r, f.y - 160 * r, 215 * r, -1.3, .8, SALV.bone, f.face, 12, 8); sfx.heavySwing(); }
+      else if (c === 1) { const x = f.x + f.face * 120 * r; fxRing(x, f.y - 170 * r, rgb, 20, 150, 14, 8, 1.4); fxCore(x, f.y - 170 * r, SALV.hot, 90, 10); sfx.swing(); playS('arca_armor', .35, 1.1); }
+      else { fxArc(f.x + f.face * 90 * r, f.y - 210 * r, 250 * r, -2.4, .9, rgb, f.face, 18, 56); sfx.heavySwing(); }
+    }
+    if (c === 2 && first(3)) {   // the anchor bites the floor
+      const X = f.x + f.face * 230 * r; fxDust(X, f.y, 14, 1.5); fxRing(X, GROUND - 6, rgb, 20, 280, 22, 10, .22); fxSalvage(X, GROUND - 20, 10, 1.4, 0);
+      shake(12); quake(8, .4, 50); playS('hit_heavy', .5, .8);
+    }
+    if (act) {
+      const hb = c === 0 ? box(f, 0, 290, -300, -60) : c === 1 ? box(f, 10, 200, -290, -40) : box(f, 40, 310, -330, 0);
+      tryHit(f, o, hb, { dmg: [5, 4.5, 8][c], kb: [4, 9, 6][c], stun: [16, 18, 22][c], power: [.9, 1.0, 1.6][c], launch: c === 2 ? -11 : 0 });
+    }
+  } else if (k === 'b') {   // アンカーショット: the anchor flies out on its chain; the winch reels in whatever it bites
+    if (t < m.st) { f.vx *= .6; f.charge = t / m.st; }
+    if (first(0)) {
+      const h = isanaHand(f); f.charge = 0; f.vx = -f.face * 3;
+      G.proj.push({ owner: f, x: h.x + f.face * 30, y: h.y, vx: f.face * 30, vy: 0, sd: f.face, dmg: 6, kb: 4, type: 'anchor', life: 17, t: 0, trail: [], rgb });
+      sfx.heavySwing(); playS('arca_armor', .4, .8); fxSpark(h.x, h.y, rgb, 8, .8, f.face);
+    }
+    if (act) { f.vx *= Math.pow(.8, dt); if (at > 2 && !G.proj.some(p => p.owner === f && p.type === 'anchor')) f.t = Math.max(f.t, m.st + m.act); }   // line is back in: recover
+  } else if (k === 'ex') {   // 舷側斉射 BROADSIDE: plants the hull shield and the side ports fire one after another
+    if (t < m.st) { f.vx *= .5; if ((t | 0) % 3 === 0) { const q = isanaPort(f, (t | 0) % 4); fxSpark(q.x, q.y, rgb, 2, .4); } }
+    if (first(0)) { fxDust(f.x + f.face * 60, f.y, 10, 1.2); shake(8); playS('arca_stomp', .7, 1.1); }
+    for (let i = 0; i < 6; i++) if (first(2 + i * 5)) {
+      const q = isanaPort(f, i), last = i === 5;
+      G.proj.push({ owner: f, x: q.x, y: q.y, vx: f.face * rnd(19, 23), vy: rnd(-3.5, -1), grav: .14, dmg: last ? 5 : 3.2, pw: last ? 1.6 : 1, kb: last ? 11 : 4, launch: last ? -10 : 0, type: 'cball', life: 90, t: 0, trail: [], rgb });
+      f.vx = -f.face * 2.5;   // recoil
+      fxCore(q.x, q.y, SALV.hot, 120, 10); fxRing(q.x, q.y, rgb, 6, 110, 12, 6, 1); fxSmoke(q.x, q.y, 6, 1.4, f.face, '70,70,66');
+      sfx.boom(); shake(7); if (last) { quake(10, .4, 50); flash(.25, rgb); }
+    }
+  } else if (k === 'ult') updateIsanaUlt(f, o, at, dt, first);
+}
+function cballBurst(p) {   // a cannonball bursts in cyan
+  fxCore(p.x, p.y, SALV.hot, 130, 12); fxRing(p.x, p.y, p.rgb, 10, 150, 16, 8, .8); fxSalvage(p.x, p.y, 8, 1.2, 0); fxSmoke(p.x, p.y, 5, 1.2, 0, '60,60,58');
+  shake(6); sfx.boom();
+}
+function updateAnchor(p, o, i, dt) {   // アンカーショット: flies out, bites, the winch reels the foe in, then the line retracts
+  const f = p.owner, h = isanaHand(f), sd = p.sd || f.face;
+  if (p.grab || p.back) p.vx = p.vy = 0;   // the winch moves it now, not its own flight
+  const drop = () => { if (p.grab && p.grab.state === 'hit') p.grab.vx = 0; G.proj.splice(i, 1); };
+  if (f.state !== 'atk' || !f.move || f.move.key !== 'b') return drop();   // she was hit: the line goes slack
+  if (p.grab) {
+    const g = p.grab;
+    if (g.state !== 'hit') return drop();
+    p.x += (h.x + sd * 150 - p.x) * Math.min(1, .2 * dt); p.y += (h.y - p.y) * Math.min(1, .2 * dt);
+    g.x = p.x + sd * 30; g.vx = 0; g.stun = Math.max(g.stun, 14);
+    if ((p.t | 0) % 3 === 0) playS('arca_step', .25, 1.6);
+    if (Math.abs(p.x - (h.x + sd * 150)) < 16) { f.t = Math.max(f.t, f.move.st + f.move.act - 6); drop(); }   // reeled in: recover quickly for the follow-up
+    return;
+  }
+  if (p.back) { p.x += (h.x - p.x) * Math.min(1, .35 * dt); p.y += (h.y - p.y) * Math.min(1, .35 * dt); if (Math.abs(p.x - h.x) < 30) G.proj.splice(i, 1); return; }
+  if (overlap({ x0: p.x - 34, x1: p.x + 34, y0: p.y - 40, y1: p.y + 40 }, hurt(o)) && o.inv <= 0 && o.state !== 'down' && o.state !== 'ko') {
+    const saveX = f.x; f.x = p.x - sd * 40; hitTarget(f, o, { dmg: p.dmg, kb: 0, stun: 40, power: 1.2, hy: o.y - p.y }); f.x = saveX;
+    fxSalvage(p.x, p.y, 10, 1.2, sd); playS('arca_armor', .5, .9); shake(8);
+    if (o.state === 'hit') p.grab = o; else p.back = true;   // guarded: the anchor bounces off
+    return;
+  }
+  { const cb = clashBox(o); if (cb && overlap({ x0: p.x - 30, x1: p.x + 30, y0: p.y - 30, y1: p.y + 30 }, cb)) { clashFx(p.x, p.y, o, f); p.back = true; return; } }
+  if (p.t > p.life) p.back = true;
+}
+function drawAnchorProj(p) {
+  const h = isanaHand(p.owner), sd = p.sd || p.owner.face;
+  drawChain(h.x, h.y, p.x - sd * 40, p.y, p.grab ? 6 : 18, .6, p.rgb);
+  drawAnchorHead(p.x, p.y, sd > 0 ? 0 : Math.PI, 1.05, p.rgb, .9);
+}
+function drawCball(p) {   // an iron ball with a cyan wake
+  const tr = p.trail; ctx.save(); ctx.lineCap = 'round';
+  ctx.globalCompositeOperation = 'lighter'; ctx.beginPath(); tr.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y));
+  ctx.strokeStyle = `rgba(${p.rgb},.55)`; ctx.lineWidth = 18; ctx.stroke(); ctx.strokeStyle = `rgba(${SALV.hot},.8)`; ctx.lineWidth = 4; ctx.stroke();
+  const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 40); g.addColorStop(0, `rgba(${p.rgb},.8)`); g.addColorStop(1, `rgba(${p.rgb},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, 40, 0, TAU); ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+  const b = ctx.createRadialGradient(p.x - 5, p.y - 5, 2, p.x, p.y, 15); b.addColorStop(0, '#6d6a66'); b.addColorStop(1, '#141312');
+  ctx.fillStyle = b; ctx.beginPath(); ctx.arc(p.x, p.y, 15, 0, TAU); ctx.fill(); ctx.restore();
+}
+// ULT 深淵錨・ダイブモード (after the movie): chains from the winch drum bind the foe → back fins open into DIVE MODE, the
+// water-jets lift her over the foe → she dives and drives the anchor through them. Guardable (chip only)
+const ISANA_ULT = { chain: 8, bind: 22, rise: 52, dive: 82, slam: 96, end: 140 };
+function updateIsanaUlt(f, o, at, dt, first) {
+  const m = f.move, U = ISANA_ULT, rgb = isCol(f);
+  if (first(0)) { f.vx = 0; m.bound = false; m.chainT = 0; }
+  if (at < U.rise && (at | 0) % 4 === 0) fxRing(f.x - f.face * 40, f.y - 200, rgb, 140, 20, 10, 4, 1);   // fins charging
+  if (first(U.chain)) { playS('arca_armor', .6, .7); sfx.dash(); }
+  if (at >= U.chain && at < U.slam) m.chainT = Math.min(1, (at - U.chain) / (U.bind - U.chain));
+  if (first(U.bind) && G.phase === 'fight') {   // the chains wrap round the foe
+    hitTarget(f, o, { dmg: 4, kb: 0, stun: 90, power: 1.2, ult: true, noScale: true, hy: 150 });
+    m.bound = o.state === 'hit'; if (m.bound) { o.vx = 0; fxSalvage(o.x, o.y - 150, 14, 1.4, 0); }
+    shake(10); playS('hit_heavy', .6, .7);
+  }
+  if (m.bound && at > U.bind && at < U.slam && o.state === 'hit') { o.stun = Math.max(o.stun, 20); o.vx = 0; if ((at | 0) % 10 === 0) fxSpark(o.x, o.y - 150, rgb, 5, .6); }
+  if (first(U.rise)) { flash(.4, rgb); G.speedlines = 30; sfx.dash(); playS('ult_start', .4, 1.4); fxRing(f.x, GROUND - 6, rgb, 20, 300, 20, 10, .22); fxDust(f.x, GROUND, 14, 1.6); }
+  if (at >= U.rise && at < U.slam) {   // DIVE MODE: she rides the jets up over the foe, then dives
+    f.vy = -GRAV * dt; f.vx = 0;
+    const tx = clamp(o.x - f.face * 20, 80, STAGE_W - 80);
+    if (at < U.dive) { const q = (at - U.rise) / (U.dive - U.rise); f.x += (tx - f.x) * Math.min(1, .12 * dt); f.y = GROUND - 330 * smooth01(q); }
+    else { const q = (at - U.dive) / (U.slam - U.dive); f.x += (tx - f.x) * Math.min(1, .3 * dt); f.y = GROUND - 330 * (1 - q * q); }
+    f.trail.push(1); fxJet(f, 3);
+    for (let i = 0; i < 2; i++) addFx({ k: 'ember', x: f.x + rnd(-60, 60), y: f.y - rnd(40, 260), vx: rnd(-2, 2), vy: at < U.dive ? rnd(2, 5) : rnd(-6, -2), life: rnd(20, 40), t: 0, rgb: i ? SALV.teal : rgb });
+    G.tintA = Math.max(G.tintA, .25); G.tintC = rgb;
+  }
+  if (first(U.dive)) { G.speedlines = 44; flash(.3, SALV.hot); playS('whoosh_kick_heavy', 1, .7); }
+  if (first(U.slam)) {   // the anchor drives home
+    f.y = GROUND; f.vy = 0; f.inv = 30;
+    const X = f.x + f.face * 60;
+    if (G.phase === 'fight' && Math.abs(o.x - f.x) < 320) { f.hitIds.clear(); hitTarget(f, o, { dmg: 22, kb: 14, launch: -16, power: 2.8, ult: true, noScale: true, hy: 130 }); }
+    for (let i = 0; i < 3; i++) fxRing(X, GROUND - 6, i % 2 ? SALV.teal : rgb, 30, 320 + i * 170, 26 + i * 6, 14 - i * 3, .22);
+    fxBig(X, GROUND - 120, rgb, SALV.hot, 2.6, f.face); fxSalvage(X, GROUND - 40, 30, 2, 0); fxDust(f.x, GROUND, 24, 2.2);
+    addFx({ k: 'pillar', x: X, y: GROUND, rgb, hot: SALV.hot, life: 50, t: 0, w: 300 });
+    flash(.8, SALV.hot); quake(24, .9, 130); zoomKick(.12); sfx.boom(); G.speedlines = 50;
+  }
+  if (first(U.end)) { f.inv = 0; G.tintA = 0; f.t = Math.max(f.t, m.st + m.act - 1); }
+}
+function drawIsanaUlt(f, front) {   // behind her: the fins' cyan blades and jets; in front: the binding chains and the anchor
+  if (f.id !== 'isana' || f.state !== 'atk' || !f.move || f.move.key !== 'ult') return;
+  const m = f.move, U = ISANA_ULT, at = f.t - m.st, rgb = isCol(f), r = RS(f);
+  if (!front) {
+    if (at > U.slam + 10) return;
+    const open = clamp(at / 20, 0, 1), cx = f.x - f.face * 30 * r, cy = f.y - 220 * r;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+    for (let s = -1; s <= 1; s += 2) for (let i = 0; i < 4; i++) {   // four blades a side, each with a jet flame
+      const a = -Math.PI / 2 + s * (.5 + i * .32) * open, L = (150 + i * 18) * open, ex = cx + Math.cos(a) * L, ey = cy + Math.sin(a) * L + 60;
+      const g = ctx.createLinearGradient(cx, cy, ex, ey); g.addColorStop(0, `rgba(${rgb},0)`); g.addColorStop(1, `rgba(${rgb},.75)`);
+      ctx.strokeStyle = g; ctx.lineWidth = 10; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ex, ey); ctx.stroke();
+      const fl = 30 + 16 * Math.sin(G.frame * .6 + i), fg = ctx.createRadialGradient(ex, ey, 0, ex, ey + fl, fl + 10);
+      fg.addColorStop(0, `rgba(${SALV.hot},.9)`); fg.addColorStop(.4, `rgba(${rgb},.6)`); fg.addColorStop(1, `rgba(${rgb},0)`);
+      ctx.fillStyle = fg; ctx.beginPath(); ctx.ellipse(ex, ey + fl * .6, 9, fl, 0, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+    return;
+  }
+  const o = G.fighters[1 - f.side];
+  if (o && at >= U.chain && at < U.slam + 4) {   // chains out of the winch drum to the foe (three strands wrap round them)
+    const w = isanaWinch(f), k = m.chainT || 0;
+    for (let i = 0; i < 3; i++) {
+      const tx = o.x + (i - 1) * 26, ty = o.y - 110 - i * 50, x1 = w.x + (tx - w.x) * k, y1 = w.y + (ty - w.y) * k;
+      drawChain(w.x, w.y, x1, y1, m.bound ? 10 : 50 - i * 10, .7, rgb);
+      if (k >= 1 && m.bound) { ctx.save(); ctx.strokeStyle = 'rgba(27,27,27,.9)'; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(o.x, ty, 62, 14, (i - 1) * .15, 0, TAU); ctx.stroke(); ctx.restore(); }
+    }
+  }
+  if (at >= U.rise && at < U.slam) {   // the anchor hangs under her and leads the dive
+    const q = at < U.dive ? 0 : (at - U.dive) / (U.slam - U.dive), h = isanaHand(f);
+    drawChain(h.x, h.y, f.x + f.face * 50, f.y + 40 + 60 * q, 20, .6, rgb);
+    drawAnchorHead(f.x + f.face * 50, f.y + 90 + 60 * q, Math.PI / 2, 1.6 + .5 * q, rgb, .6 + .4 * q);
+  }
+}
 // KANNA 花守りの神機 GARDEN GOD-MACHINE: a giant pearl-and-gold god-machine (≈2.5× a person) who fights with flowers.
 // Her petal-blade wings "bloom" on every attack and leave petal-shaped arcs of light (always arcs, never straight sword
 // trails). 花弁射出 (b) launches wing blades that home in; 開花・花冠 (EX) cuts all round her, then flowers erupt along the
@@ -2162,6 +2389,7 @@ function updateProj(dt0) {
     if (p.type === 'petal' && (p.t | 0) % 3 === 0) fxBloom(p.x, p.y, 1, .4);
     if (p.type === 'smoke' && (p.t | 0) % 2 === 0) fxSmoke(p.x, p.y, 1, .6, -Math.sign(p.vx), p.rgb);
     if (p.type === 'inkwave') { fxSmoke(p.x, GROUND - rnd(10, 120), 2, 1, -Math.sign(p.vx), JADE.ink); if ((p.t | 0) % 3 === 0) fxDust(p.x, GROUND, 1, .8); }
+    if (p.type === 'anchor') { updateAnchor(p, o, i, dt); continue; }
     if (p.type === 'hook') {   // ARIA's grapple: flies out, bites, reels the foe in, then retracts
       const f = p.owner, h = ariaHand(f);
       if (p.back) { p.x = lerp(p.x, h.x, .35); p.y = lerp(p.y, h.y, .35); if (Math.abs(p.x - h.x) < 30) { G.proj.splice(i, 1); } continue; }
@@ -2189,18 +2417,21 @@ function updateProj(dt0) {
       continue;
     }
     let dead = p.t > p.life || p.x < -100 || p.x > STAGE_W + 100 || p.y > GROUND + 20;
-    if (!dead && p.type !== 'shell') { const cb = clashBox(o); if (cb && overlap({ x0: p.x - 24, x1: p.x + 24, y0: p.y - 24, y1: p.y + 24 }, cb)) { clashFx(p.x, p.y, o, p.owner); if (p.type === 'paint') fxPaint(p.x, p.y, 18, 1.3); G.proj.splice(i, 1); continue; } }
+    if (!dead && p.type !== 'shell' && p.type !== 'cball') { const cb = clashBox(o); if (cb && overlap({ x0: p.x - 24, x1: p.x + 24, y0: p.y - 24, y1: p.y + 24 }, cb)) { clashFx(p.x, p.y, o, p.owner); if (p.type === 'paint') fxPaint(p.x, p.y, 18, 1.3); G.proj.splice(i, 1); continue; } }
     if (!dead && overlap({ x0: p.x - 16, x1: p.x + 16, y0: p.y - 16, y1: p.y + 16 }, hurt(o)) && o.inv <= 0 && o.state !== 'down' && o.state !== 'ko') {
       const f = p.owner, saveX = f.x; f.x = p.x - Math.sign(p.vx) * 40;
       hitTarget(f, o, { dmg: p.dmg, kb: p.kb || 5, stun: 16, power: p.pw || (p.type === 'homing' ? 1.1 : .8), launch: p.launch || 0, hy: o.y - p.y }); f.x = saveX; dead = true;
     }
     if (dead && p.type === 'shell') { shellBurst(p); G.proj.splice(i, 1); continue; }
+    if (dead && p.type === 'cball') { cballBurst(p); G.proj.splice(i, 1); continue; }
     if (dead) { if (p.type === 'paint') { fxPaint(p.x, p.y, 18, 1.3); if (p.y > GROUND - 40) fxPuddle(p.x, PAINT.blue, 110); } else fxCore(p.x, p.y, p.rgb, 50, 8); G.proj.splice(i, 1); }
   }
 }
 function drawProj() {
   for (const p of G.proj) {
+    if (p.type === 'anchor') { drawAnchorProj(p); continue; }
     const tr = p.trail; if (tr.length < 2) continue;
+    if (p.type === 'cball') { drawCball(p); continue; }
     if (p.type === 'paint' || p.type === 'stroke') { drawPaintProj(p); continue; }
     if (p.type === 'hook') { drawHook(p); continue; }
     if (p.type === 'petal') {   // KANNA's wing blade: a pearl petal in an orange glow, trailing light
@@ -2310,7 +2541,7 @@ function onKO(att, tgt) {
 }
 
 /* SUZUNE's short step-dash: brief invulnerability (slips through AOI's shots), short cooldown */
-const CAN_DASH = { suzune: 1, arca: 1, mio: 1, aria: 1, enjo: 1, rei: 1, kanna: 1, ichika: 1 };
+const CAN_DASH = { suzune: 1, arca: 1, mio: 1, aria: 1, enjo: 1, rei: 1, kanna: 1, ichika: 1, isana: 1 };
 const TAG_CD = 150;
 function doTag(side, forced) {
   const out = G.fighters[side], inn = partnerOf(out);
@@ -2646,6 +2877,11 @@ function aiInput(f, o) {
     if (f.gauge >= 50 && ad < 420 && !G.chrono && Math.random() < .35) { ai.press = 'ex'; return out; }
     if (ad > 200) { if (ad < 480 && Math.random() < .3) ai.press = 'b'; else set({ [toward]: true }, 10 + (Math.random() * 10 | 0)); }
     else if (Math.random() < D.agg) ai.press = Math.random() < .25 ? 'b' : 'a';
+    else set({ [away]: true }, 8);
+  } else if (f.id === 'isana') {   // heavy: holds mid range, hooks people in with the anchor, broadsides from afar
+    if (f.gauge >= 50 && ad > 300 && ad < 900 && Math.random() < .25) { ai.press = 'ex'; return out; }
+    if (ad > 260) { if (ad < 560 && Math.random() < D.agg * .5) ai.press = 'b'; else set({ [toward]: true }, 10 + (Math.random() * 10 | 0)); }
+    else if (Math.random() < D.agg) ai.press = Math.random() < .2 ? 'b' : 'a';
     else set({ [away]: true }, 8);
   } else if (f.id === 'kanna') {   // huge reach: blooms the crown up close, petal blades from mid range, flowers whenever it can
     if (f.gauge >= 50 && ad < 1000 && Math.random() < .3) { ai.press = 'ex'; return out; }
@@ -3207,7 +3443,7 @@ function drawBanner() {
 const TEL = { list: [] };
 const TEL_EN = {
   suzune: ['SAKURA FLASH RAIL', 'SAKURA COMET'], aoi: ['HOMING BIT', 'ORBITAL RAY'], arca: ['RUNE MISSILE', 'ARSENAL NOVA'], sakura: ['IDEA DRAGON', 'DRAFT NOVA'],
-  mio: ['BLUE STROKE', 'CANVAS HOUND'], aria: ['GRAVITY SLING', 'LUNA SATELLITE RAY'], enjo: ['GASHIRA', 'UKIYO-GIRI : RINDO'], rei: ['AGITO HOWL', 'SUMI-RYU : HIGAN'], kanna: ['FLOWER CROWN', 'FULL BLOOM : ORANGE'], ichika: ['1-SECOND TIME SLOW', 'TIME STOP'] };
+  mio: ['BLUE STROKE', 'CANVAS HOUND'], aria: ['GRAVITY SLING', 'LUNA SATELLITE RAY'], enjo: ['GASHIRA', 'UKIYO-GIRI : RINDO'], rei: ['AGITO HOWL', 'SUMI-RYU : HIGAN'], kanna: ['FLOWER CROWN', 'FULL BLOOM : ORANGE'], ichika: ['1-SECOND TIME SLOW', 'TIME STOP'], isana: ['BROADSIDE', 'ABYSSAL ANCHOR : DIVE MODE'] };
 const TEL_DUR = { ult: 1750, ex: 1150, awake: 1500 };
 function telop(kind, f) {
   if (!f || !f.ch) return;
@@ -3479,10 +3715,10 @@ function renderWorld() {
   ctx.globalCompositeOperation = 'lighter'; for (const f of G.fighters) drawRail(f); ctx.globalCompositeOperation = 'source-over';
   const order = [...G.fighters].sort((p, q) => (p.state === 'atk') - (q.state === 'atk'));
   drawPaintFloor(); drawInk(); drawBloomFloor();
-  for (const f of G.fighters) { drawDragon(f, false); drawDog(f, false); drawShishi(f, false); drawKannaUlt(f, false); }
+  for (const f of G.fighters) { drawDragon(f, false); drawDog(f, false); drawShishi(f, false); drawKannaUlt(f, false); drawIsanaUlt(f, false); }
   for (const b of G.benched || []) drawFighter(b.f, false);
   for (const f of order) drawFighter(f, false);
-  for (const f of G.fighters) { drawDrone(f); drawSkull(f); drawDragon(f, true); drawDog(f, true); drawShishi(f, true); drawRindo(f); drawKannaUlt(f, true); }
+  for (const f of G.fighters) { drawDrone(f); drawSkull(f); drawDragon(f, true); drawDog(f, true); drawShishi(f, true); drawRindo(f); drawKannaUlt(f, true); drawIsanaUlt(f, true); }
   drawFx('norm');
   ctx.globalCompositeOperation = 'lighter'; drawProj(); drawFx('add'); ctx.globalCompositeOperation = 'source-over';
   drawLunaBeam();
@@ -3699,7 +3935,7 @@ function exMovieEnd() {
   }, 320);
 }
 /* ---------- match victory movie + telop ---------- */
-const WINQ = { suzune: 'まだまだ、こんなもんじゃないッス！', aoi: '解析完了。――この勝負、わたしの勝ち。', arca: '観測、完了です。……え、もう終わりですか？', sakura: 'わたしの設計に、狂いはないの。', mio: 'ほら、世界がちょっとキレイになった！', aria: 'へへっ、空はあたしの整備場っす！', enjo: '浮世は煙。掴めたと思った？', rei: 'この涙は、私が人間だった最後の証。', kanna: 'She was never built to win. She was built to bloom.', ichika: 'あなたの一秒、もらったから。' };
+const WINQ = { suzune: 'まだまだ、こんなもんじゃないッス！', aoi: '解析完了。――この勝負、わたしの勝ち。', arca: '観測、完了です。……え、もう終わりですか？', sakura: 'わたしの設計に、狂いはないの。', mio: 'ほら、世界がちょっとキレイになった！', aria: 'へへっ、空はあたしの整備場っす！', enjo: '浮世は煙。掴めたと思った？', rei: 'この涙は、私が人間だった最後の証。', kanna: 'She was never built to win. She was built to bloom.', ichika: 'あなたの一秒、もらったから。', isana: '沈んだ勝ちでも、引き揚げりゃあたしの宝さ。' };
 const WM = { w: null, timers: [], typing: null, ready: false };
 function winMovieStart(w) {
   const box = $('#winMovie'), v = box.querySelector(`video[data-char="${w.id}"]`);
@@ -3889,7 +4125,7 @@ async function boot() {
   buildBg();
   await Promise.all([buildAssets(), buildAnims(), loadBGM().then(() => Promise.all([loadVoices(), loadSfx()]))]);
   document.querySelectorAll('[data-src]').forEach(i => i.src = window.ASSETS[i.dataset.src]);
-  document.querySelectorAll('.card img').forEach(i => { const id = i.closest('.card').dataset.char; i.src = window.ASSETS[{ suzune: 'suci', aoi: 'aoci', arca: 'arcard', sakura: 'sacard', mio: 'micard', aria: 'ar2card', enjo: 'encard', rei: 'recard', kanna: 'kacard', ichika: 'iccard' }[id]]; });
+  document.querySelectorAll('.card img').forEach(i => { const id = i.closest('.card').dataset.char; i.src = window.ASSETS[{ suzune: 'suci', aoi: 'aoci', arca: 'arcard', sakura: 'sacard', mio: 'micard', aria: 'ar2card', enjo: 'encard', rei: 'recard', kanna: 'kacard', ichika: 'iccard', isana: 'iscard' }[id]]; });
   {   // more cards than fit: fade the right edge so it reads as a swipeable row
     const cs = $('.cards'), upd = () => cs.classList.toggle('more', cs.scrollWidth - cs.clientWidth - cs.scrollLeft > 24);
     cs.addEventListener('scroll', upd, { passive: true }); addEventListener('resize', upd); new ResizeObserver(upd).observe(cs); upd();
