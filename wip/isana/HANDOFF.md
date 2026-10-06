@@ -25,7 +25,14 @@ isana: { id: 'isana', name: 'ISANA', role: 'サルベージ海賊・錨', c1: '#
 - ミラー時の色：シアン→錆オレンジ
 - 勝利セリフ（仮）：「沈んだ勝ちでも、引き揚げりゃあたしの宝さ。」
 
-## 素材（2026-10-06 時点）
-- 入っているもの：`assets/isana.webp`（シート1の正面図を切り抜いた静止画）、`isana_card` / `isana_cutin` / `title_isana`（シート2の顔アップから切り出し）
-- 未作成：スプライト（`anim/isana*`、グリーンバックの全モーション動画 → `tools/sprite_tool.py`）、ULTモーション（ultCharge / ultFire / ultEnd）、選択画面の intro/confirm、ULT・勝利ムービー、ステージ（`stage_isana.mp4`）、ボイス `is_01..18`
-- 素材が無い間は静止画のまま動き、ムービーはキャンバス内のカットインで代用される
+## 素材（2026-10-06）
+- Topview Seedance 2.5（480p・16:9）で3本。原本は `C:\Users\szou\isana_work\`（リポジトリ外）
+  - 全モーション30s（グリーンバック）→ `python tools/sprite_tool.py pack tools/isana_sprites.json` で `anim/isana*`
+    - ULT 専用モーションは作っていない：ultCharge＝盾を据えて構える、ultFire＝ジャンプ中（錨が下）、ultEnd＝錨の叩きつけ を流用
+    - b（アンカーショット）は腕を前に伸ばしたコマで止まるよう 16.85–17.4s を使用
+  - 演出リール30s → 選択 intro（モノクル点灯 0–3.33s）／confirm（錨の叩きつけ 3.35–5.3s）／ULT（ウインチ→フィン展開→上昇→急降下→水しぶき 5.3–15.0s）／勝利（沈没船の船首 15.1–21.45s）
+  - ステージ20s（夕暮れのサルベージ港・沈没船）→ 9.5–19.5s を明るめに補正して往復ループ `stage_isana.mp4`
+- 静止画：`isana.webp`（シート1の正面図）、`isana_card` / `isana_cutin` / `title_isana`（シート2の顔アップ）
+- セリフ：ElevenLabs eleven_v4・声 Haruno（Calm & Low）で18本1テイク → 無音検出＋Whisper の時刻で分割 `media/voice/is_01..18.mp3`。テイク原本 `wip/isana/voice_take.mp3`。**全部仮セリフ**
+  - EX「砲門、全開！ 舷側斉射！」ULT「錨鎖、巻き上げ！ 背びれ展開――ダイブモード！ 深淵まで、連れてってやる！」選択「イサナだ。お宝の匂いがするねぇ……引き揚げさせてもらうよ。」勝利「沈んだ勝ちでも、引き揚げりゃあたしの宝さ。」敗北「……覚えときな。次は、あんたを引き揚げてやる。」
+- ULT／勝利ムービーの BGM（video-to-music）は未作成
