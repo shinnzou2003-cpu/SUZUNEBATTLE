@@ -28,3 +28,12 @@
 ## 対象外
 - SUZUNE / AOI / ARCA は sprite 設定ファイルがない（旧パイプライン）。元動画と切り出し区間が分かる場合のみ
   `tools/<id>_sprites.json` を作って同様に。分からなければスキップでOK（1VS1 でも通常フレームで動く）
+
+## 2026-10-07 結果（PCセッション）
+- 作成済み: REI / ENJO / KANNA / ICHIKA / ISANA → `anim/hi/`（合計 約52MB：REI 8.5 / ENJO 14 / KANNA 16 / ICHIKA 6.4 / ISANA 8.1MB）
+  - ENJO の元動画は `C:/Users/szou/enjo_work/`（設定ファイルの `wip/enjo/*.mp4` は存在しないため、パスを差し替えた一時設定で実行）
+- **未作成: SAKURA / MIO / ARIA** — 元動画（moves.mp4 / dragon.mp4 / dog.mp4）がPCに無いためスキップ（1VS1 でも通常フレームで動く）
+- ISANA 後処理: 全15アトラスに `isana_rematte.py` → `isana_work/smooth/smooth.py` の `smooth()` を1コマずつ（d490522 と同じ）。処理前の原本は `C:/Users/szou/hifps_tmp/isana_raw/`
+- 他4キャラは通常素材に後付けの修正コミットが無い（cut-in 追加のみ）ので後処理なし
+- 目視チェック: 5キャラの idle / walk / a1（先頭・中間コマ）を足元基準で通常版と重ねて比較。足元の高さ・大きさ一致、先頭コマの原点ずれは数px以内。抜け・緑フチなし
+- 通常の `anim/<id>.json` / `anim/<id>_*.webp` は作業前後で sha1 一致（無変更）
