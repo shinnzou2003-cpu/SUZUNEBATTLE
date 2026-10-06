@@ -35,7 +35,7 @@ isana: { id: 'isana', name: 'ISANA', role: 'サルベージ海賊・錨', c1: '#
 - 静止画：`isana.webp`（シート1の正面図）、`isana_card` / `isana_cutin` / `title_isana`（シート2の顔アップ）
 - セリフ：ElevenLabs eleven_v4・声 Itsuki（Anime energetic・`oAlEJuW30knHWhA6cF0e`、2026-10-06 に Haruno から差し替え）で18本1テイク → 無音検出＋Whisper の時刻で分割 `media/voice/is_01..18.mp3`。テイク原本 `wip/isana/voice_take.mp3`。**全部仮セリフ**
   - EX「砲門、全開！ 舷側斉射！」ULT「錨鎖、巻き上げ！ 背びれ展開――ダイブモード！ 深淵まで、連れてってやる！」選択「イサナだ。お宝の匂いがするねぇ……引き揚げさせてもらうよ。」勝利「沈んだ勝ちでも、引き揚げりゃあたしの宝さ。」敗北「……覚えときな。次は、あんたを引き揚げてやる。」
-- ULT／勝利ムービーの BGM（video-to-music）は未作成
+- ULT／勝利ムービーの BGM：ElevenLabs video-to-music で作成（2026-10-06）→ `media/sfx/movie_ex_isana.mp3`（18s 生成を動画尺 9.75s に切ってフェード）・`movie_win_isana.mp3`（6.5s）。読み込みは既存の `loadMovieAudio` が自動で拾う
 
 ## 2026-10-06 修正（クラウドセッション）
 - **透過の穴を修正済み**：グリーンバックのキーで緑青（ベルディグリ）の盾・装甲・帽子に穴が空いていた。アトラスの透明部分にも元の色が残っていたので、

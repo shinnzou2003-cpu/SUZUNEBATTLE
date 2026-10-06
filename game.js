@@ -513,12 +513,13 @@ function duckFor(t0, dur) {
   } g.cancelScheduledValues(t0); g.setValueAtTime(g.value, t0);
   g.linearRampToValueAtTime(.42, t0 + .08); g.setValueAtTime(.42, t0 + dur); g.linearRampToValueAtTime(1, t0 + dur + .45);
 }
+const VOICE_REV = '20261006';   // bump when clips are re-recorded so browsers drop the cached ones (ISANA re-voiced 2026-10-06)
 async function loadVoices() {
   if (!SND.ac) return;
   const ids = new Set(); Object.values(VOICE_MAP).forEach(m => Object.values(m).forEach(l => l.forEach(i => ids.add(i))));
   await Promise.all([...ids].map(async id => {
     try {
-      const r = await fetch('media/voice/' + id + '.mp3'); if (!r.ok) return;
+      const r = await fetch('media/voice/' + id + '.mp3?v=' + VOICE_REV); if (!r.ok) return;
       const ab = await r.arrayBuffer(); VOICE.buf[id] = await new Promise((res, rej) => SND.ac.decodeAudioData(ab, res, rej));
     } catch (e) { }
   }));
