@@ -30,7 +30,7 @@ kanna: { id: 'kanna', name: 'KANNA', role: '花弁冠・巨大神機', c1: '#ff8
 - 全モーション動画の後半（24s〜）はカメラが寄ってしまったため、ultCharge / winPose は寄る直前のコマを `scale` で縮めて使用。勝利ポーズは起き上がり→胸を開く流れ
 - スプライト再パック：`python tools/sprite_tool.py pack tools/kanna_sprites.json`
 - セリフ：ElevenLabs eleven_v4・声 kagura（Anime Tender）で18本を1テイク → 無音検出＋Whisper で分割 `media/voice/ka_01..18.mp3`。テイク原本 `wip/kanna/voice_take.mp3`（Topview TTS 版の予備は `voice_take_topview.mp3`）
-- ULT／勝利ムービーの BGM（video-to-music）は未作成
+- ULT／勝利ムービーの BGM：ElevenLabs video-to-music で作成（2026-10-06）→ `media/sfx/movie_ex_kanna.mp3`・`movie_win_kanna.mp3`（動画尺 8.0s に切ってフェード、静かな曲なので音量を他キャラに合わせて持ち上げ）
 
 ## 未整理
 - 相棒の旅の子（HARU／仮名）はゲームには未登場

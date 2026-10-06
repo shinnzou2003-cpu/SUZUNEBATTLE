@@ -26,4 +26,4 @@ ichika: { id: 'ichika', name: 'ICHIKA', role: '時間操作・1秒スロー', c1
 - スプライト再パック：`python tools/sprite_tool.py pack tools/ichika_sprites.json`
 - セリフ：ElevenLabs eleven_v4・声 Itsuki で18本1テイク → Whisper の時刻で分割 `media/voice/ic_01..18.mp3`。テイク原本 `wip/ichika/voice_take.mp3`
   - EX「ワン・セカンド。」ULT「世界ごと、止まって――ゼロ・セカンド！」選択「イチカ。鈴音姉さんの、妹。……一秒だけ、付き合って。」勝利「遅いよ。……姉さんなら、もっと速い。」敗北「……次は、二秒。」
-- ULT／勝利ムービーの BGM（video-to-music）は未作成
+- ULT／勝利ムービーの BGM：ElevenLabs video-to-music で作成（2026-10-06）→ `media/sfx/movie_ex_ichika.mp3`（8.625s）・`movie_win_ichika.mp3`（6.42s）。動画尺に切ってフェード
