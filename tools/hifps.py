@@ -29,16 +29,21 @@ def main(cfg_path, only=None):
         if 'play' in a: b['play'] = round(a['play'] * f1 / f0, 3)
         picked[name] = b
     # anchor is measured on the first idle frame: keep idle first so ground/anchorX match the normal set
+    # group anchors are measured on the first clip of each group (config order): pack the whole group, in order
+    groups = {cfg['anims'][k].get('group') for k in picked} - {None}
     anims = {}
     if 'idle' in cfg['anims']: anims['idle'] = picked.get('idle', cfg['anims']['idle'])
-    anims.update({k: v for k, v in picked.items() if k != 'idle'})
+    for k, a in cfg['anims'].items():
+        if k == 'idle': continue
+        if k in picked or a.get('group') in groups: anims[k] = picked.get(k, a)
     hi['anims'] = anims
     st.pack(hi)
     meta = json.load(open(f'anim/hi/{cid}.json'))
     meta['anims'] = {k: v for k, v in meta['anims'].items() if k in picked}
     for k, v in meta['anims'].items():
         v['atlases'] = [p.replace('anim/', 'anim/hi/', 1) for p in v['atlases']]
-    if 'idle' not in picked and os.path.exists(f'anim/hi/{cid}_idle_0.webp'): os.remove(f'anim/hi/{cid}_idle_0.webp')
+    for k in anims:
+        if k not in picked and os.path.exists(f'anim/hi/{cid}_{k}_0.webp'): os.remove(f'anim/hi/{cid}_{k}_0.webp')
     meta['storeH'] = base['storeH']
     json.dump(meta, open(f'anim/hi/{cid}.json', 'w'), separators=(',', ':'))
     for k, v in meta['anims'].items():
