@@ -33,7 +33,7 @@ isana: { id: 'isana', name: 'ISANA', role: 'サルベージ海賊・錨', c1: '#
   - 演出リール30s → 選択 intro（モノクル点灯 0–3.33s）／confirm（錨の叩きつけ 3.35–5.3s）／ULT（ウインチ→フィン展開→上昇→急降下→水しぶき 5.3–15.0s）／勝利（沈没船の船首 15.1–21.45s）
   - ステージ20s（夕暮れのサルベージ港・沈没船）→ 9.5–19.5s を明るめに補正して往復ループ `stage_isana.mp4`
 - 静止画：`isana.webp`（シート1の正面図）、`isana_card` / `isana_cutin` / `title_isana`（シート2の顔アップ）
-- セリフ：ElevenLabs eleven_v4・声 Haruno（Calm & Low）で18本1テイク → 無音検出＋Whisper の時刻で分割 `media/voice/is_01..18.mp3`。テイク原本 `wip/isana/voice_take.mp3`。**全部仮セリフ**
+- セリフ：ElevenLabs eleven_v4・声 Itsuki（Anime energetic・`oAlEJuW30knHWhA6cF0e`、2026-10-06 に Haruno から差し替え）で18本1テイク → 無音検出＋Whisper の時刻で分割 `media/voice/is_01..18.mp3`。テイク原本 `wip/isana/voice_take.mp3`。**全部仮セリフ**
   - EX「砲門、全開！ 舷側斉射！」ULT「錨鎖、巻き上げ！ 背びれ展開――ダイブモード！ 深淵まで、連れてってやる！」選択「イサナだ。お宝の匂いがするねぇ……引き揚げさせてもらうよ。」勝利「沈んだ勝ちでも、引き揚げりゃあたしの宝さ。」敗北「……覚えときな。次は、あんたを引き揚げてやる。」
 - ULT／勝利ムービーの BGM（video-to-music）は未作成
 
@@ -42,7 +42,7 @@ isana: { id: 'isana', name: 'ISANA', role: 'サルベージ海賊・錨', c1: '#
   シルエットの内側の穴を埋め、背景色（デスピル後の平坦な灰緑 ≈ 85,104,104）と質感（局所の揺らぎ）で本当の隙間（錨の内側・手足の間）だけ残す方式で全18枚を再マット（`anim/isana_*.webp`、json は `?v=2` でキャッシュ更新）。
   次に原本動画から作り直すときは `tools/isana_sprites.json` に kp を足してキーを緩めること：`{"lo": 14, "span": 26, "hue": 0}`（緑青は g≈b なので hue キャッチを切るのが効く）
 - **勝利ムービーを作り直し済み**：船首の引き絵が小さすぎて顔が見えなかった → 船首へのプッシュイン（〜2.25倍）→ 白フラッシュ → 選択イントロのモノクル点灯〜不敵な笑みのアップ。勝利プレートは顔を隠さないよう右下へ（`#winMovie[data-char="isana"]`）
-- **声：未対応（PCで要作業）**：Haruno の声が男性に聞こえる。女性の声で18本を1テイクで作り直して差し替え（クラウドからは ElevenLabs の音声をダウンロードできない）
+- **声：対応済み（2026-10-06 PC）**：Haruno の声が男性に聞こえたため、女性の声 Itsuki で下の台本18本を1テイクで作り直し、無音検出＋Whisper の時刻で分割して `is_01..18.mp3` を上書き。テイク原本 `wip/isana/voice_take.mp3` も差し替え
   - 推奨ボイス：**Itsuki - Anime energetic voice**（voice_id `oAlEJuW30knHWhA6cF0e`、低めで自信のあるボーイッシュな女性声）。モデル eleven_v4
   - 台本（枠は他キャラと同じ a0[01,03] a1[02] a2[04] b[05] jump[06] guard[07] hit[08] hitBig[09] getup[10] ko[11] ex[12] ult[13] select[14] round[15] winMovie[16] win[17] lose[18]）
 ```
