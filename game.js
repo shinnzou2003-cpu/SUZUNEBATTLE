@@ -3386,7 +3386,8 @@ function drawRwCut() {
   // the clip itself (24fps, holds on its last frame)
   const i = Math.min(fr.length - 1, Math.floor(t * (AN.fps.cutin || 24) / 60)), q = fr[i], box = AN.cutBox;
   const sc = (bandH + 60) / box[1], bw = box[0] * sc, bh = box[1] * sc, drift = t * .5 * dir;
-  const bx = dir * 170 - bw / 2 + drift, by = -bh / 2 + 20;
+  // wide close-ups sit further from the name plate on the 2P side so the text never lands on the eyes
+  const bx = (dir > 0 ? 170 : -170 - Math.max(0, bw - 640) * .55) - bw / 2 + drift, by = -bh / 2 + 20;
   ctx.drawImage(frameSrc(q, f), q.sx, q.sy, q.w, q.h, bx + q.ox * sc, by + q.oy * sc, q.w * sc, q.h * sc);
   const lg = ctx.createLinearGradient(-W / 2, 0, W / 2, 0);
   if (dir > 0) { lg.addColorStop(0, 'rgba(10,6,22,.92)'); lg.addColorStop(.38, 'rgba(10,6,22,0)'); } else { lg.addColorStop(.62, 'rgba(10,6,22,0)'); lg.addColorStop(1, 'rgba(10,6,22,.92)'); }
