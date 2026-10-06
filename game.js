@@ -3583,7 +3583,7 @@ function drawComboHud() {
     const alpha = gone > 50 ? 1 - (gone - 50) / 20 : 1;
     const age = G.frame - c.f, punch = 1 + .5 * Math.exp(-age / 4);
     const n = c.n, tier = n >= 30 ? 2 : n >= 10 ? 1 : 0;
-    const dir = side ? -1 : 1, x0 = side ? W - 64 : 64, y0 = 318;
+    const dir = side ? -1 : 1, x0 = side ? W - 64 : 64, y0 = 342;
     const shake = tier === 2 ? 3 : tier === 1 ? 1.2 : 0, jx = shake ? (Math.random() - .5) * shake * 2 : 0, jy = shake ? (Math.random() - .5) * shake * 2 : 0;
     ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x0 + jx, y0 + jy); ctx.transform(1, 0, -.12, 1, 0, 0);
     ctx.textAlign = side ? 'right' : 'left'; ctx.textBaseline = 'alphabetic';
@@ -3940,6 +3940,7 @@ const WM = { w: null, timers: [], typing: null, ready: false };
 function winMovieStart(w) {
   const box = $('#winMovie'), v = box.querySelector(`video[data-char="${w.id}"]`);
   if (!v) return false;
+  box.dataset.char = w.id;
   const [a, b] = G.fighters, col = w.col;
   WM.w = w; WM.ready = false; WM.timers.forEach(clearTimeout); WM.timers = []; clearInterval(WM.typing);
   box.style.setProperty('--wm1', col.c1); box.style.setProperty('--wm2', col.c2);

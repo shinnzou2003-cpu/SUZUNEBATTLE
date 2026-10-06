@@ -234,6 +234,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 #winMovie video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
 #winMovie video.on{display:block}
 #winMovie video[data-char="arca"]{object-position:50% 6%}
+#winMovie[data-char="isana"] .wm-plate{left:auto;right:max(28px,5vw);text-align:right;padding-left:0;padding-right:18px;border-left:0;border-right:5px solid var(--wm1)}   /* close-up ending: keep her eyes, monocle and smile clear */
 .wm-bar{position:absolute;left:0;right:0;height:9vh;background:#000;z-index:1;transform:scaleY(0)}
 .wm-bar.top{top:0;transform-origin:top}.wm-bar.bot{bottom:0;transform-origin:bottom}
 #winMovie.on .wm-bar{animation:wmbar .5s cubic-bezier(.2,.9,.3,1) forwards}
@@ -439,7 +440,7 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
   <video data-char="rei" src="media/win_rei.mp4" poster="media/win_rei_poster.jpg" muted playsinline preload="auto"></video>
   <video data-char="kanna" src="media/win_kanna.mp4" poster="media/win_kanna_poster.jpg" muted playsinline preload="auto"></video>
   <video data-char="ichika" src="media/win_ichika.mp4" poster="media/win_ichika_poster.jpg" muted playsinline preload="auto"></video>
-  <video data-char="isana" src="media/win_isana.mp4" poster="media/win_isana_poster.jpg" muted playsinline preload="auto"></video>
+  <video data-char="isana" src="media/win_isana.mp4?v=2" poster="media/win_isana_poster.jpg?v=2" muted playsinline preload="auto"></video>
   <video data-char="mio" src="media/win_mio.mp4" poster="media/win_mio_poster.jpg" muted playsinline preload="auto"></video>
   <div class="wm-bar top"></div><div class="wm-bar bot"></div>
   <div class="wm-band"></div>
@@ -476,6 +477,6 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 <div id="loading">読み込み中… <span id="loadPct">0%</span></div>
 
 <script>window.ASSETS={"su": "assets/suzune.webp", "ao": "assets/aoi.webp", "drone": "assets/drone.webp", "suci": "assets/suzune_cutin.webp", "aoci": "assets/aoi_cutin.webp", "ar": "assets/arca.webp", "arci": "assets/arca_cutin.webp", "arp": "assets/arca_pilot.webp", "arcard": "assets/arca_card.webp", "tsu": "assets/title_suzune.webp", "tao": "assets/title_aoi.webp", "tar": "assets/title_arca.webp", "tsa": "assets/title_sakura.webp", "sa": "assets/sakura.webp", "saci": "assets/sakura_cutin.webp", "sacard": "assets/sakura_card.webp", "mi": "assets/mio.webp", "mici": "assets/mio_cutin.webp", "micard": "assets/mio_card.webp", "ar2": "assets/aria.webp", "ar2ci": "assets/aria_cutin.webp", "ar2card": "assets/aria_card.webp", "tari": "assets/title_aria.webp", "en": "assets/enjo.webp", "enci": "assets/enjo_cutin.webp", "encard": "assets/enjo_card.webp", "enskull": "assets/enjo_skull.webp", "tenj": "assets/title_enjo.webp", "re": "assets/rei.webp", "reci": "assets/rei_cutin.webp", "recard": "assets/rei_card.webp", "trei": "assets/title_rei.webp", "ka": "assets/kanna.webp", "kaci": "assets/kanna_cutin.webp", "kacard": "assets/kanna_card.webp", "tkan": "assets/title_kanna.webp", "ic": "assets/ichika.webp", "icci": "assets/ichika_cutin.webp", "iccard": "assets/ichika_card.webp", "tich": "assets/title_ichika.webp", "is": "assets/isana.webp", "isci": "assets/isana_cutin.webp", "iscard": "assets/isana_card.webp", "tisa": "assets/title_isana.webp", "tmi": "assets/title_mio.webp"};</script>
-<script src="game.js?v=20261006a"></script>
+<script src="game.js?v=20261006c"></script>
 </body>
 </html>
