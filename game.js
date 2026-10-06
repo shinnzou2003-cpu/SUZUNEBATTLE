@@ -1052,7 +1052,7 @@ function hitTarget(att, tgt, o) {
   const hx = (att.x + tgt.x) / 2 + fromDir * 20, hy = tgt.y - (o.hy || 160);
   if (guarding) {   // every attack is guardable (no unblockables)
     tgt.face = -fromDir;
-    tgt.hp = Math.max(1, tgt.hp - o.dmg * (o.ult ? .2 : .05)); tgt.vx = fromDir * (o.kb || 4) * (o.ult ? .5 : .4); tgt.stun = o.ult ? 9 : 7; tgt.t = 0;   // stronger guard: small chip, short blockstun, little pushback
+    { const hp0 = tgt.hp; tgt.hp = Math.max(1, tgt.hp - o.dmg * (o.ult ? .2 : .05)); dmgPop(hp0 - tgt.hp, hx, hy, att, true); } tgt.vx = fromDir * (o.kb || 4) * (o.ult ? .5 : .4); tgt.stun = o.ult ? 9 : 7; tgt.t = 0;   // stronger guard: small chip, short blockstun, little pushback
     tgt.gauge = Math.min(100, tgt.gauge + o.dmg * .6); att.gauge = Math.min(100, att.gauge + o.dmg * .4);
     fxHex(tgt.x - fromDir * 40, tgt.y - 150, tgt.col.rgb, -fromDir); fxSpark(hx, hy, '180,220,255', 8, .6, -fromDir); fxRing(hx, hy, '180,220,255', 10, 70, 12, 4);
     G.hitstop = Math.max(G.hitstop, 4); shake(4); sfx.guard(); pfxKick({ ca: o.ult ? 1.2 : .45 }); voice(tgt, 'guard', { p: .5, cd: 240 });
@@ -1062,6 +1062,7 @@ function hitTarget(att, tgt, o) {
   const sc = o.noScale ? 1 : Math.max(.45, 1 - .08 * (tgt.combo - 1));
   const dmg = o.dmg * sc;
   tgt.hp = Math.max(0, tgt.hp - dmg);
+  dmgPop(dmg, hx, hy, att, false);
   att.gauge = Math.min(100, att.gauge + o.dmg * 2.1); tgt.gauge = Math.min(100, tgt.gauge + o.dmg * 1.2); if (tgt.id === 'aoi') tgt.glitch = 8;
   tgt.face = -fromDir; tgt.flip = false; tgt.whiteT = 6; tgt.t = 0; tgt.move = null;
   tgt.vx = fromDir * (o.kb || 5);
@@ -2939,7 +2940,7 @@ async function startMatch() {
 function startRound() {
   makeTeams(); G.tagCd = [0, 0]; G.pendingTag = null; G.benched = [];
   G.resultShown = false; G.victory = null; G.fx = []; G.proj = []; G.paintFloor = []; G.bloomFloor = []; G.orange = null; G.chrono = null; G.oneSec = null; G.luna = null; G.ink = null; G.inkWash = null; G.timer = 99; G.timerF = 0; G.phase = 'intro'; G.phaseT = 0; G.cutin = null; G.rwCut = null; G.freeze = 0; G.tintA = 0; G.slow = 1;
-  G.cam.x = STAGE_W / 2; G.cam.z = 1; G.comboHud = [null, null]; TEL.list = []; G.cam.tilt = 0; G.cam.push = 0; G.koCam = null;
+  G.cam.x = STAGE_W / 2; G.cam.z = 1; G.comboHud = [null, null]; TEL.list = []; DMG.list = []; G.cam.tilt = 0; G.cam.push = 0; G.koCam = null;
   for (const f of G.fighters) {
     if (f.id === 'arca') { f.boarding = G.round === 1; f._boardFx = f._boardFx2 = f._bootSnd = false; f.state = 'idle'; continue; }
     f.x -= f.face * 400; f.vx = f.face * 28; f.state = 'dashin';
@@ -3447,6 +3448,60 @@ function drawBanner() {
   const g = ctx.createLinearGradient(0, -60, 0, 60); g.addColorStop(0, '#fff'); g.addColorStop(.55, b.rgb ? `rgb(${b.rgb})` : '#ffe2a8'); g.addColorStop(1, '#ff8a5a');
   ctx.fillStyle = g; ctx.fillText(b.txt, 0, 0); ctx.restore();
 }
+/* ---------- damage numbers: the battle is shown at x100 (HP 10000), 1000+ hits get a CRITICAL pop with a burst ---------- */
+const HP_SHOW = 100;
+const DMG = { list: [] };
+function dmgPop(d, x, y, att, guard) {
+  const v = Math.round(d * HP_SHOW); if (v <= 0) return;
+  const big = !guard && v >= 1000, huge = !guard && v >= 2000;
+  // consecutive pops on one target fan out instead of stacking
+  const near = DMG.list.filter(p => performance.now() - p.t0 < 500 && Math.abs(p.x - x) < 160).length;
+  DMG.list.push({ v, x: x + rnd(-24, 24), y: y - near * 34, t0: performance.now(), big, huge, guard, rgb: att.col.rgb, hot: auraHot(att), seed: Math.random() * 6 });
+  if (DMG.list.length > 24) DMG.list.shift();
+  if (big) {
+    playLoud('impact_big', huge ? 1 : .7, huge ? .82 : 1.15); shake(huge ? 14 : 8);
+    pfxKick({ ca: huge ? 2.4 : 1.4, bloom: huge ? .5 : .25 });
+    fxRing(x, y, att.col.rgb, 20, huge ? 300 : 200, 18, 6); if (huge) flash(.3, '255,200,120');
+  }
+}
+function drawDmgPops() {
+  const now = performance.now();
+  DMG.list = DMG.list.filter(p => now - p.t0 < (p.big ? 1300 : p.guard ? 600 : 850));
+  for (const p of DMG.list) {
+    const ms = now - p.t0, life = p.big ? 1300 : p.guard ? 600 : 850, u = ms / life;
+    const s = w2s(p.x, p.y); if (!s) continue;
+    const rise = (p.big ? 55 : 42) * easeOut(Math.min(1, ms / 450));
+    const pop = 1 + (p.big ? 1.3 : .7) * Math.exp(-ms / 70);
+    const alpha = u > .72 ? 1 - (u - .72) / .28 : 1;
+    const size = p.guard ? 22 : p.huge ? 92 : p.big ? 74 : 30 + Math.min(14, p.v / 60);
+    const txt = String(p.v);
+    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(s[0], s[1] - rise); ctx.scale(pop, pop); ctx.transform(1, 0, -.14, 1, 0, 0);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    if (p.big) {   // spinning starburst + CRITICAL tag
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.rotate(p.seed + ms * .002);
+      const R = (p.huge ? 150 : 115) * (1 + .1 * Math.sin(ms * .02));
+      for (let i = 0; i < 14; i++) { const a = i * TAU / 14, r1 = R * (i % 2 ? .5 : 1);
+        ctx.fillStyle = i % 2 ? `rgba(${p.hot},.35)` : (p.huge ? 'rgba(255,60,40,.42)' : 'rgba(255,200,80,.38)');
+        ctx.beginPath(); ctx.moveTo(0, -size * .35); ctx.lineTo(Math.cos(a - .08) * r1, Math.sin(a - .08) * r1 - size * .35); ctx.lineTo(Math.cos(a + .08) * r1, Math.sin(a + .08) * r1 - size * .35); ctx.fill(); }
+      ctx.restore();
+      ctx.font = `700 ${p.huge ? 24 : 20}px 'Chakra Petch', sans-serif`; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(20,0,6,.9)';
+      const tag = p.huge ? 'OVERKILL!!' : 'CRITICAL!'; ctx.strokeText(tag, 0, -size * .92); ctx.fillStyle = p.huge ? '#ff5038' : '#ffd040'; ctx.fillText(tag, 0, -size * .92);
+    }
+    ctx.font = `700 ${size}px 'Chakra Petch', sans-serif`;
+    ctx.lineWidth = p.big ? 9 : 6; ctx.strokeStyle = 'rgba(12,4,18,.92)'; ctx.lineJoin = 'round'; ctx.strokeText(txt, 0, 0);
+    if (p.big) {
+      ctx.shadowColor = p.huge ? 'rgba(255,90,30,.95)' : 'rgba(255,190,60,.9)'; ctx.shadowBlur = p.huge ? 30 : 22;
+      const g = ctx.createLinearGradient(0, -size, 0, 0);
+      if (p.huge) { g.addColorStop(0, '#fff6c8'); g.addColorStop(.4, '#ffb030'); g.addColorStop(.75, '#ff3a24'); g.addColorStop(1, '#a8001a'); }
+      else { g.addColorStop(0, '#ffffff'); g.addColorStop(.45, '#ffe070'); g.addColorStop(1, '#ff9a20'); }
+      ctx.fillStyle = g;
+    } else if (p.guard) ctx.fillStyle = 'rgba(190,210,230,.9)';
+    else { ctx.shadowColor = `rgba(${p.rgb},.9)`; ctx.shadowBlur = 12; ctx.fillStyle = '#fff'; }
+    ctx.fillText(txt, 0, 0); ctx.shadowBlur = 0;
+    if (p.big) { ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.strokeText(txt, 0, 0); }
+    ctx.restore();
+  }
+}
 /* ---------- in-game telop motion (PV style): ULT name band, EX band, 覚醒 / LIMIT BREAK when the ULT unlocks ---------- */
 const TEL = { list: [] };
 const TEL_EN = {
@@ -3661,7 +3716,7 @@ function drawHUD2() {
     ctx.font = `700 ${active ? 14 : 13}px 'Chakra Petch', sans-serif`; ctx.textBaseline = 'middle'; ctx.textAlign = dir < 0 ? 'left' : 'right';
     const tx = dir < 0 ? x0 + 8 : x0 + barW - 8, ty = y + h / 2 + 1;
     const ready = !active && !ko && !(G.tagCd[f.side] > 0);
-    const label = (active ? '▶ ' : '') + m.ch.name + (ko ? '  K.O.' : ready ? '  ⇄' : '') + `  ${Math.max(0, Math.ceil(m.hp))}`;
+    const label = (active ? '▶ ' : '') + m.ch.name + (ko ? '  K.O.' : ready ? '  ⇄' : '') + `  ${Math.max(0, Math.ceil(m.hp * HP_SHOW))}`;
     ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(10,6,20,.85)'; ctx.strokeText(label, tx, ty);
     ctx.fillStyle = ko ? '#aaa' : '#fff'; ctx.fillText(label, tx, ty);
     ctx.textBaseline = 'alphabetic'; ctx.globalAlpha = 1;
@@ -3752,7 +3807,7 @@ function interpBegin() {
   return () => { for (const [f, x, y] of saved) { f.x = x; f.y = y; } };
 }
 function renderHUD() {
-  if (G.victory) drawVictory(); else { drawHUD2(); drawComboHud(); drawTelops(); drawCutin(); drawBanner(); drawRwCut(); }
+  if (G.victory) drawVictory(); else { drawHUD2(); drawDmgPops(); drawComboHud(); drawTelops(); drawCutin(); drawBanner(); drawRwCut(); }
   if (G.flash > 0 && !(PFX.on && PFX.impact > 0)) { ctx.fillStyle = `rgba(${G.flashCol},${Math.min(1, G.flash)})`; ctx.fillRect(0, 0, W, H); }   // the impact frame replaces the white-out
   ctx.font = `600 12px 'Chakra Petch', sans-serif`; ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fillText('© SZOU', W - 14, H - 8);
 }
