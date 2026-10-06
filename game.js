@@ -225,10 +225,11 @@ function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = d
 // Atlases are NOT decoded at boot any more: only the fighters in the current match are kept in memory,
 // so the roster can grow (10+ characters) without phones running out of RAM.
 const ANIM_META = {};
+const ANIM_REV = '20261006';   // bump when an anim/*.json changes so browsers drop the cached one (ISANA edges smoothed 2026-10-06)
 const ANIM_LOAD = {};          // id -> Promise while loading
 async function buildAnims() {
   await Promise.all(Object.keys(CHARS).map(async id => {
-    try { ANIM_META[id] = await (await fetch('anim/' + id + '.json')).json(); } catch (e) { }
+    try { ANIM_META[id] = await (await fetch('anim/' + id + '.json?v=' + ANIM_REV)).json(); } catch (e) { }
   }));
 }
 function loadAnim(id, onTick) {
@@ -1046,9 +1047,11 @@ function startUlt(f) {
 function hitTarget(att, tgt, o) {
   if (tgt.inv > 0 || tgt.ko || tgt.state === 'down' || G.phase !== 'fight') return false;
   const fromDir = Math.sign(tgt.x - att.x) || att.face;
-  const guarding = (tgt.state === 'guard' || (tgt.holdBack && (tgt.state === 'walk' || tgt.state === 'idle'))) && onGround(tgt) && tgt.face === -fromDir;
+  // guard works from either side: a grounded fighter holding guard blocks even a cross-up that lands before they turn round
+  const guarding = (tgt.state === 'guard' || (tgt.holdBack && (tgt.state === 'walk' || tgt.state === 'idle'))) && onGround(tgt);
   const hx = (att.x + tgt.x) / 2 + fromDir * 20, hy = tgt.y - (o.hy || 160);
-  if (guarding && !o.unblock) {
+  if (guarding) {   // every attack is guardable (no unblockables)
+    tgt.face = -fromDir;
     tgt.hp = Math.max(1, tgt.hp - o.dmg * (o.ult ? .2 : .05)); tgt.vx = fromDir * (o.kb || 4) * (o.ult ? .5 : .4); tgt.stun = o.ult ? 9 : 7; tgt.t = 0;   // stronger guard: small chip, short blockstun, little pushback
     tgt.gauge = Math.min(100, tgt.gauge + o.dmg * .6); att.gauge = Math.min(100, att.gauge + o.dmg * .4);
     fxHex(tgt.x - fromDir * 40, tgt.y - 150, tgt.col.rgb, -fromDir); fxSpark(hx, hy, '180,220,255', 8, .6, -fromDir); fxRing(hx, hy, '180,220,255', 10, 70, 12, 4);
@@ -1410,9 +1413,9 @@ function ariaWireDash(f, o, m, t, k, at, dt, first) {
     const hb = { x0: Math.min(px, f.x) - 80, x1: Math.max(px, f.x) + 80, y0: Math.min(py, f.y) - 280, y1: Math.max(py, f.y) + 20 };
     if (z.hit < z.multi && z.ft >= z.next && G.phase === 'fight' && overlap(hb, hurt(o))) {
       z.hit++; z.next = z.ft + 4; const fin = (EX ? z.pass === 1 : true) && z.hit === z.multi;
-      hitTarget(f, o, { dmg: EX ? 3.8 : 6, kb: fin ? 13 : 4, stun: 26, power: fin ? (EX ? 2.2 : 1.5) : 1.1, launch: fin ? -11 : 0, hy: clamp(o.y - f.y + 150, 60, 240), unblock: EX && z.hit > 1 });
+      hitTarget(f, o, { dmg: EX ? 3.8 : 6, kb: fin ? 13 : 4, stun: 26, power: fin ? (EX ? 2.2 : 1.5) : 1.1, launch: fin ? -11 : 0, hy: clamp(o.y - f.y + 150, 60, 240) });
       fxGears(o.x, o.y - 150, EX ? 10 : 6, 1.2, z.dir); fxArc(o.x, o.y - 150, 120, -1.2, 1.2, BRASS.teal, z.dir, 12, 30);
-      if (EX) { fxBig(o.x, o.y - 150, BRASS.glow, BRASS.hot, 1.6, z.dir); if (!fin) { o.vx = z.dir * 20; o.vy = Math.min(o.vy, -6); } }   // gravity wake drags the foe along
+      if (EX) { fxBig(o.x, o.y - 150, BRASS.glow, BRASS.hot, 1.6, z.dir); if (!fin && o.state !== 'guard') { o.vx = z.dir * 20; o.vy = Math.min(o.vy, -6); } }   // gravity wake drags the foe along (not a guarding one: lifting them would make the rest unguardable)
     }
     if (L < 2) {   // arrived: anchor burst
       fxRing(f.x + z.dir * 50, f.y - 160, f.col.rgb, 20, 200, 18, 8); fxGears(f.x + z.dir * 60, f.y - 160, 8, 1.2, -z.dir); shake(7); quake(5, .25); playS('arca_armor', .4, 1.4);
@@ -2625,7 +2628,11 @@ function stepFighter(f, o, inp, dt) {
   const grounded = onGround(f);
   if (canAct && f.gauge < 100) f.gauge = Math.min(100, f.gauge + .035 * dt);
   const away = Math.sign(f.x - o.x) || -f.face, dirIn = (inp.r ? 1 : 0) - (inp.l ? 1 : 0);
-  f.holdBack = grounded && dirIn !== 0 && dirIn === away;
+  // cross-up grace: for a moment after the foe switches sides (jumps or flies over), holding either direction still guards,
+  // so a fighter who was holding back isn't hit just because 'back' flipped under them
+  const oSide = Math.sign(f.x - o.x); if (oSide && f.oSide && oSide !== f.oSide) f.crossT = 12; if (oSide) f.oSide = oSide;
+  if (f.crossT > 0) f.crossT -= dt;
+  f.holdBack = grounded && dirIn !== 0 && (dirIn === away || f.crossT > 0);
   if (f.state === 'idle' || f.state === 'walk' || f.state === 'guard') {
     if (grounded) f.face = Math.sign(o.x - f.x) || f.face;
     if (canAct) {
