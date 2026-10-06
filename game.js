@@ -232,23 +232,40 @@ async function buildAnims() {
     try { ANIM_META[id] = await (await fetch('anim/' + id + '.json?v=' + ANIM_REV)).json(); } catch (e) { }
   }));
 }
-function loadAnim(id, onTick) {
-  if (ANIMS[id]) return Promise.resolve();
-  if (ANIM_LOAD[id]) return ANIM_LOAD[id];
+// 1VS1 only: anim/hi/<id>.json holds the same clips re-cut at ~2x the frame rate (same storeH / anchor).
+// Only the clips it lists are swapped; everything else keeps the normal atlas. Missing file = no hi set.
+const ANIM_HI = {};            // id -> meta | null (null = checked, none)
+async function hiMeta(id) {
+  if (id in ANIM_HI) return ANIM_HI[id];
+  let m = null;
+  try { const r = await fetch('anim/hi/' + id + '.json?v=' + ANIM_REV); if (r.ok) m = await r.json(); } catch (e) { }
+  if (m && m.storeH && ANIM_META[id] && Math.abs(m.storeH - ANIM_META[id].storeH) > .5) m = null;   // different scale/anchor: unsafe, ignore
+  return ANIM_HI[id] = m;
+}
+const wantHi = () => !!G.solo;
+function loadAnim(id, onTick, hi) {
+  if (hi === undefined) hi = wantHi();
+  if (ANIMS[id] && (ANIMS[id].hiWanted === hi || ANIMS[id].hi === hi || (hi && !ANIMS[id].hi && ANIM_HI[id] === null))) { ANIMS[id].hiWanted = hi; return Promise.resolve(); }
+  if (ANIM_LOAD[id] && ANIM_LOAD[id].hi === hi) return ANIM_LOAD[id];
+  if (ANIMS[id] || ANIM_LOAD[id]) unloadAnim(id);
   const meta = ANIM_META[id]; if (!meta) return Promise.resolve();
-  const AN = { k: DH / meta.storeH * (CHAR_SCALE[id] || 1) * (RESIZE[id] || 1), a: {}, fps: {}, atlases: [], alt: [], altBusy: false, cutBox: meta.cutinBox || [564, 420], dragonK: meta.dragonK || 1 };
+  const pr0 = (hi ? hiMeta(id) : Promise.resolve(null)).then(hm => loadAnimWith(id, meta, hm, hi, onTick));
+  pr0.hi = hi; pr0.count = atlasCount(id);
+  ANIM_LOAD[id] = pr0;
+  return pr0;
+}
+function loadAnimWith(id, meta, hm, hi, onTick) {
+  const AN = { k: DH / meta.storeH * (CHAR_SCALE[id] || 1) * (RESIZE[id] || 1), a: {}, fps: {}, mul: {}, atlases: [], alt: [], altBusy: false, cutBox: meta.cutinBox || [564, 420], dragonK: meta.dragonK || 1, hiWanted: hi, hi: !!hm };
   const idx = {}, paths = [];
   for (const k in meta.anims) {
-    const an = meta.anims[k];
-    AN.fps[k] = an.fps || 24;
+    const hk = hm && hm.anims && hm.anims[k], an = hk || meta.anims[k];
+    AN.fps[k] = an.fps || 24; AN.mul[k] = hk ? (hk.fps || 24) / (meta.anims[k].fps || 24) : 1;
     const ais = an.atlases.map(p => { if (!(p in idx)) { idx[p] = paths.length; paths.push(p); } return idx[p]; });
     AN.a[k] = an.frames.map(r => ({ ai: ais[r.a], sx: r.x, sy: r.y, w: r.w, h: r.h, ox: r.ox, oy: r.oy }));
   }
   const dec = im => (im.decode ? im.decode().catch(() => { }) : Promise.resolve()).then(() => im);
-  const pr = Promise.all(paths.map((p, i) => loadImg(p).then(dec).then(im => { AN.atlases[i] = im; onTick && onTick(); })))
-    .then(() => { if (ANIM_LOAD[id] === pr) { ANIMS[id] = AN; delete ANIM_LOAD[id]; } });
-  pr.count = paths.length;
-  return ANIM_LOAD[id] = pr;
+  return Promise.all(paths.map((p, i) => loadImg(p).then(dec).then(im => { AN.atlases[i] = im; onTick && onTick(); })))
+    .then(() => { if (ANIM_LOAD[id] && ANIM_LOAD[id].hi === hi) { ANIMS[id] = AN; delete ANIM_LOAD[id]; } });
 }
 function unloadAnim(id) {
   const AN = ANIMS[id]; delete ANIMS[id]; delete ANIM_LOAD[id];
@@ -260,16 +277,20 @@ function unloadAnim(id) {
 const atlasCount = id => { const m = ANIM_META[id]; if (!m) return 0; const s = new Set(); for (const k in m.anims) m.anims[k].atlases.forEach(p => s.add(p)); return s.size; };
 // keep exactly `ids` in memory; free everyone else. onPct(0..100) reports progress.
 async function ensureAnims(ids, onPct) {
-  const keep = new Set(ids);
+  const keep = new Set(ids), hi = wantHi();
   Object.keys(ANIMS).concat(Object.keys(ANIM_LOAD)).forEach(id => { if (!keep.has(id)) unloadAnim(id); });
-  const need = [...keep].filter(id => !ANIMS[id]);
+  if (hi) await Promise.all([...keep].map(hiMeta));
+  // a fighter loaded at the other frame rate is reloaded (only if a hi set actually exists for it)
+  const need = [...keep].filter(id => !ANIMS[id] || (ANIMS[id].hiWanted !== hi && (!hi ? ANIMS[id].hi : ANIM_HI[id])));
+  [...keep].forEach(id => { if (ANIMS[id] && !need.includes(id)) ANIMS[id].hiWanted = hi; });
   let total = need.reduce((a, id) => a + atlasCount(id), 0), done = 0;
   const tick = () => { done++; onPct && onPct(Math.min(99, Math.round(done / Math.max(1, total) * 100))); };
-  await Promise.all(need.map(id => loadAnim(id, tick)));
+  need.forEach(id => { if (ANIMS[id]) unloadAnim(id); });
+  await Promise.all(need.map(id => loadAnim(id, tick, hi)));
   onPct && onPct(100);
 }
 // warm up a character while the player is still on the select screen (nothing is freed here)
-function preloadAnim(id) { if (ANIM_META[id]) loadAnim(id); }
+function preloadAnim(id) { if (ANIM_META[id]) loadAnim(id, null, wantHi()); }
 // colour-variant atlases for mirror matches, built a few at a time so the game never stalls
 function prepareAlt(id) {
   const AN = ANIMS[id]; if (!AN || AN.altBusy || AN.alt.length === AN.atlases.length) return;
@@ -315,7 +336,7 @@ function pickFrame(f) {
       if (a.winPose) {   // victory pose clip: stance -> rise -> pose, then a slow breathing ping-pong on its last frames
         const n = a.winPose.length, i = t * (AN.fps.winPose || 24) / 60;
         if (i < n - 1) return at('winPose', i);
-        const L = Math.min(8, n), per = 2 * L - 2, x = ((i - (n - 1)) * .4) % per, k = x < L - 1 ? x : per - x;
+        const L = Math.min(Math.round(8 * (AN.mul.winPose || 1)), n), per = 2 * L - 2, x = ((i - (n - 1)) * .4) % per, k = x < L - 1 ? x : per - x;
         return at('winPose', n - 1 - k);
       }
       const wl = f.id === 'arca' ? 105 : 18;
@@ -722,7 +743,7 @@ function readHuman(side) {
 
 /* ---------- state ---------- */
 const G = {
-  scene: 'title', mode: 'cpu', diff: 1, picks: ['suzune', 'aoi'], fighters: [], fx: [], proj: [], frame: 0,
+  scene: 'title', mode: 'cpu', diff: 1, solo: /[?&]solo=1/.test(location.search), picks: ['suzune', 'aoi'], fighters: [], fx: [], proj: [], frame: 0,
   cam: { x: STAGE_W / 2, z: 1, shake: 0, kick: 0, tilt: 0, push: 0 }, hitstop: 0, slow: 1, slowT: 0, flash: 0, flashCol: '255,255,255', freeze: 0, cutin: null,
   round: 1, timer: 99, timerF: 0, phase: 'intro', phaseT: 0, banner: null, paused: false, speedlines: 0, tintA: 0, tintC: '110,195,255', matchOver: false
 };
@@ -2936,6 +2957,7 @@ async function startMatch() {
   G.teams.flat().forEach(f => { if (f.alt) prepareAlt(f.id); });
   startRound();
   G.scene = 'game'; showScreen(null); setTouch(true); bgmTrack('battle', .5);
+  const tp = document.getElementById('touch'); if (tp) tp.dataset.solo = G.picks[0].length === 1 ? '1' : '0';
 }
 function startRound() {
   makeTeams(); G.tagCd = [0, 0]; G.pendingTag = null; G.benched = [];
@@ -3716,7 +3738,7 @@ function drawHUD2() {
     // name tag inside the bar, at the outer end
     ctx.font = `700 ${active ? 14 : 13}px 'Chakra Petch', sans-serif`; ctx.textBaseline = 'middle'; ctx.textAlign = dir < 0 ? 'left' : 'right';
     const tx = dir < 0 ? x0 + 8 : x0 + barW - 8, ty = y + h / 2 + 1;
-    const ready = !active && !ko && !(G.tagCd[f.side] > 0);
+    const ready = !active && !ko && !(G.tagCd[f.side] > 0) && !!partnerOf(f);
     const label = (active ? '▶ ' : '') + m.ch.name + (ko ? '  K.O.' : ready ? '  ⇄' : '') + `  ${Math.max(0, Math.ceil(m.hp * HP_SHOW))}`;
     ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(10,6,20,.85)'; ctx.strokeText(label, tx, ty);
     ctx.fillStyle = ko ? '#aaa' : '#fff'; ctx.fillText(label, tx, ty);
@@ -3724,7 +3746,7 @@ function drawHUD2() {
   };
   const bar = (f, dir) => {
     const x0 = dir < 0 ? W / 2 - 66 - barW : W / 2 + 66, team = (G.teams && G.teams[f.side]) || [f];
-    team.forEach((m, i) => memberBar(m, f, dir, top - 22 + i * 26, 22));
+    if (team.length === 1) memberBar(team[0], f, dir, top - 22, 48); else team.forEach((m, i) => memberBar(m, f, dir, top - 22 + i * 26, 22));
     const by = top + 30;
     ctx.font = `700 22px 'Chakra Petch', sans-serif`; ctx.fillStyle = '#fff'; ctx.textAlign = dir < 0 ? 'left' : 'right';
     const lab = G.mode === 'pvp' ? (f.side ? '2P' : '1P') : G.mode === 'watch' ? 'CPU' : (f.side ? 'CPU' : 'YOU');
@@ -4097,24 +4119,32 @@ function setupUI() {
   document.querySelectorAll('.mbtn[data-mode]').forEach(b => b.addEventListener('click', () => {
     goFull(); audioInit(); G.mode = b.dataset.mode; pickStep = 0; G.sel = []; updateSelect(); showScreen('select'); selReset(); bgmVolume(.6);
   }));
+  try { if (!/[?&]solo=/.test(location.search)) G.solo = localStorage.getItem('cf_solo') === '1'; } catch (e) { }
+  document.querySelectorAll('[data-solo]').forEach(b => b.addEventListener('click', () => {
+    const v = b.dataset.solo === '1'; if (v === !!G.solo) return;
+    G.solo = v; try { localStorage.setItem('cf_solo', v ? '1' : '0'); } catch (e) { }
+    pickStep = 0; G.sel = []; updateSelect(); selReset(); tone(.08, 660, 990, .08, 'triangle');
+  }));
   document.querySelectorAll('[data-diff]').forEach(b => b.addEventListener('click', () => { G.diff = +b.dataset.diff; document.querySelectorAll('[data-diff]').forEach(x => x.setAttribute('aria-pressed', x === b)); }));
   // team select: 4 picks — side A member 1/2, then side B member 1/2
   G.sel = [];
+  const PER = () => G.solo ? 1 : 2;   // picks per side: 2VS2 tag team or 1VS1
   const SLOT = () => {
-    const team = pickStep < 2 ? 0 : 1, n = pickStep % 2 + 1;
-    const who = G.mode === 'pvp' ? (team ? '2P' : '1P') : G.mode === 'watch' ? (team ? '右チーム' : '左チーム') : (team ? '相手チーム' : 'あなたのチーム');
+    const per = PER(), team = pickStep < per ? 0 : 1, n = pickStep % per + 1;
+    const who = G.mode === 'pvp' ? (team ? '2P' : '1P') : G.mode === 'watch' ? (team ? '右' : '左') + (per > 1 ? 'チーム' : '') : (team ? '相手' : 'あなた') + (per > 1 ? 'チーム' : '');
     return { team, n, who };
   };
   function updateSelect() {
     const sl = SLOT();
-    $('#selPrompt').textContent = `${sl.who}：${sl.n}人目を選んでください`;
+    $('#selPrompt').textContent = G.solo ? `${sl.who}：キャラを選んでください` : `${sl.who}：${sl.n}人目を選んでください`;
+    document.querySelectorAll('[data-solo]').forEach(x => x.setAttribute('aria-pressed', (x.dataset.solo === '1') === !!G.solo));
     $('#diffRow').hidden = G.mode === 'pvp';
     document.querySelectorAll('.card').forEach(c => {
-      const tags = []; G.sel.forEach((id, i) => { if (id === c.dataset.char) tags.push(`${i < 2 ? (G.mode === 'pvp' ? '1P' : G.mode === 'watch' ? 'L' : 'YOU') : (G.mode === 'pvp' ? '2P' : G.mode === 'watch' ? 'R' : 'CPU')}${'①②'[i % 2]}`); });
+      const per = PER(), tags = []; G.sel.forEach((id, i) => { if (id === c.dataset.char) tags.push(`${i < per ? (G.mode === 'pvp' ? '1P' : G.mode === 'watch' ? 'L' : 'YOU') : (G.mode === 'pvp' ? '2P' : G.mode === 'watch' ? 'R' : 'CPU')}${per > 1 ? '①②'[i % 2] : ''}`); });
       if (tags.length) c.dataset.tag = tags.join(' '); else delete c.dataset.tag;
       c.classList.remove('p1');
     });
-    $('#selNote').textContent = sl.n === 2 ? '同じチームに同じキャラは選べません。試合中は「交代」でいつでも入れ替え！' : '2人1組のチームバトル。1人目が先鋒で出撃します';
+    $('#selNote').textContent = G.solo ? '1VS1 タイマン勝負。交代なし・キャラのアニメーションが2倍なめらかに' : sl.n === 2 ? '同じチームに同じキャラは選べません。試合中は「交代」でいつでも入れ替え！' : '2人1組のチームバトル。1人目が先鋒で出撃します';
   }
   // --- select-screen video: intro plays when the screen opens, confirm plays on pick ---
   let selBusy = false, selTimer = null, selNext = null;
@@ -4142,7 +4172,7 @@ function setupUI() {
       audioInit();
       if (selBusy) { selProceed(); return; }                // tap again to skip the confirm animation
       const sl = SLOT();
-      if (sl.n === 2 && G.sel[pickStep - 1] === c.dataset.char) { tone(.1, 300, 200, .1, 'square'); $('#selNote').textContent = '同じチームに同じキャラは選べません'; return; }
+      if (!G.solo && sl.n === 2 && G.sel[pickStep - 1] === c.dataset.char) { tone(.1, 300, 200, .1, 'square'); $('#selNote').textContent = '同じチームに同じキャラは選べません'; return; }
       selBusy = true;
       tone(.12, 880, 1200, .1, 'triangle'); sfx.cutin(); voice(c.dataset.char, 'select', { delay: .15 });
       G.sel[pickStep] = c.dataset.char; preloadAnim(c.dataset.char);
@@ -4152,8 +4182,8 @@ function setupUI() {
       setTimeout(() => sfx.hit(1.2), 1150);
       selNext = () => {
         pickStep++;
-        if (pickStep < 4) { updateSelect(); selReset(); }
-        else { G.picks = [[G.sel[0], G.sel[1]], [G.sel[2], G.sel[3]]]; startMatch(); }
+        if (pickStep < PER() * 2) { updateSelect(); selReset(); }
+        else { G.picks = G.solo ? [[G.sel[0]], [G.sel[1]]] : [[G.sel[0], G.sel[1]], [G.sel[2], G.sel[3]]]; startMatch(); }
       };
       selTimer = setTimeout(selProceed, c.querySelector('.sv-confirm') ? 3600 : 1500);             // safety if 'ended' never fires
     });
