@@ -334,6 +334,7 @@ function pickFrame(f) {
       if (f.id === 'mio') return f.dashDir === f.face ? loop('walk', 26) : at('guard', 0);
       if (f.id === 'enjo') return loop('idle', AN.fps.idle || 8);   // she dissolves into smoke and re-forms (drawn faint)
       if (a.dash) return f.dashDir === f.face ? prog('dash', t / DASH.len) : at('guard', 0);
+      if (f.id !== 'suzune') return f.dashDir === f.face ? loop('walk', (AN.fps.walk || 12) * 2) : at('guard', 0);
       return f.dashDir === f.face ? at('ex', 99) : at('guard', 0);
     case 'tagin': if (f.id === 'arca') return loop('walk', 20); return f.t < f.tg.L * .45 ? at('jump', 0) : at('jump', 1);
     case 'dashin': return f.id !== 'suzune' ? loop('walk', (AN.fps.walk || 12) * 1.2) : at('ex', 99);
@@ -3034,7 +3035,7 @@ function onKO(att, tgt) {
 }
 
 /* SUZUNE's short step-dash: brief invulnerability (slips through AOI's shots), short cooldown */
-const CAN_DASH = { suzune: 1, arca: 1, mio: 1, aria: 1, enjo: 1, rei: 1, kanna: 1, ichika: 1, isana: 1, noxnix: 1 };
+const CAN_DASH = { suzune: 1, aoi: 1, arca: 1, sakura: 1, mio: 1, aria: 1, enjo: 1, rei: 1, kanna: 1, ichika: 1, isana: 1, noxnix: 1 };   // 2026-10-07: every fighter can dash (the boss doesn't)
 const TAG_CD = 150;
 function doTag(side, forced) {
   const out = G.fighters[side], inn = partnerOf(out);
@@ -3088,8 +3089,18 @@ function updateTeams(dt) {
   if (pt) { pt.t += dt; const down = G.fighters[pt.side]; if (pt.t > 75 && (down.state === 'down' || pt.t > 140)) { G.pendingTag = null; doTag(pt.side, true); } }
 }
 const DASH = { len: 30, speed: 52, inv: 30, cd: 62, cancel: 16 };
+// cornered against the wall (stage end or screen edge) and dashing at the foe: slip right through them to the other side
+function cornered(f, o) {
+  const back = -(Math.sign(o.x - f.x) || f.face), half = W / 2 / (G.cam.z || 1);
+  const wall = back > 0 ? Math.min(STAGE_W - 70, G.cam.x + half - 40) : Math.max(70, G.cam.x - half + 40);
+  return Math.abs(wall - f.x) < 240 && Math.abs(o.x - f.x) < 520;
+}
 function startDash(f, d) {
-  f.state = 'dash'; f.t = 0; f.move = null; f.dashDir = d; f.vx = d * DASH.speed; f.inv = DASH.inv; f.dashCd = DASH.cd;
+  const o = G.fighters[1 - f.side];
+  f.passThru = !!(o && !o.hidden && d === (Math.sign(o.x - f.x) || f.face) && cornered(f, o) && Math.abs(f.y - o.y) < 260);
+  f.passFoe = f.passThru ? o : null;
+  f.state = 'dash'; f.t = 0; f.move = null; f.dashDir = d; f.vx = d * DASH.speed * (f.passThru ? 1.12 : 1); f.inv = DASH.inv + (f.passThru ? 8 : 0); f.dashCd = DASH.cd;
+  if (f.passThru) { G.speedlines = Math.max(G.speedlines || 0, 14); playS('whoosh_kick_heavy', .6, 1.3); }
   f.sx = 1.14; f.sy = .9; sfx.dash(); playS('whoosh_punch2', .7, 1.2);
   const rgb = auraRgb(f), fwd = d === (Math.sign(G.fighters[1 - f.side].x - f.x) || f.face);
   fxRing(f.x, f.y - 4, rgb, 10, 150, 16, 6, .22); fxDust(f.x, f.y, 6, 1);
@@ -3171,7 +3182,12 @@ function stepFighter(f, o, inp, dt) {
       else if (f.buf.a > 0) { f.buf.a = 0; startMove(f, 'a'); }
       else if (f.buf.u > 0 && f.id !== 'arca') { f.buf.u = 0; f.state = 'jump'; f.vy = f.ch.jump; f.vx = f.dashDir * f.ch.speed * 1.4; sfx.jump(); }
     }
-    if (f.state === 'dash' && f.t >= DASH.len) { f.state = 'idle'; f.land = 6; f.vx *= .3; if (f.id === 'enjo') fxSmoke(f.x, f.y - 160, 10, 1.4, 0, f.col.rgb); else fxDust(f.x, f.y, 4, .7); }
+    if (f.passThru && f.passFoe) {   // carry on until we're properly on the far side, then turn round
+      const o2 = f.passFoe, past = (f.x - o2.x) * f.dashDir, clear = o2.id === 'shuten' ? 260 : o2.id === 'kanna' ? 200 : 140;
+      if (past < clear && f.t >= DASH.len - 4) { f.t = DASH.len - 4; f.vx = f.dashDir * Math.max(Math.abs(f.vx), 18); f.inv = Math.max(f.inv, 6); }
+      if (past >= clear && f.t >= DASH.len) { f.passThru = false; f.passFoe = null; f.face = Math.sign(o2.x - f.x) || f.face; }
+    }
+    if (f.state === 'dash' && f.t >= DASH.len) { f.state = 'idle'; f.passThru = false; f.passFoe = null; f.land = 6; f.vx *= .3; if (f.id === 'enjo') fxSmoke(f.x, f.y - 160, 10, 1.4, 0, f.col.rgb); else fxDust(f.x, f.y, 4, .7); }
   } else if (f.state === 'tagin') {   // arcing leap in from off-screen
     const g = f.tg, q = Math.min(1, f.t / g.L), e = 1 - Math.pow(1 - q, 2);
     f.x = lerp(g.x0, g.x1, e); f.y = g.y0 + (GROUND - g.y0) * q * q - Math.sin(q * Math.PI) * 160; f.vx = 0; f.vy = 0;
@@ -3335,7 +3351,7 @@ function poseOf(f) {
 function pushApart(a, b) {
   if (a.hidden || b.hidden) return;
   const passing = x => x.state === 'atk' && x.move && (((x.move.key === 'ex' || x.move.key === 'ult') && x.id === 'suzune') || (x.id === 'aria' && x.move.zip));
-  if (passing(a) || passing(b)) return;
+  if (passing(a) || passing(b) || (a.state === 'dash' && a.passThru) || (b.state === 'dash' && b.passThru)) return;
   const dx = b.x - a.x, d = Math.abs(dx), min = a.id === 'shuten' || b.id === 'shuten' ? 230 : a.id === 'kanna' || b.id === 'kanna' ? 170 : 100;
   if (d < min && Math.abs(a.y - b.y) < 200) { const push = (min - d) / 2, s = Math.sign(dx) || 1; a.x -= s * push; b.x += s * push; }
 }
@@ -3358,6 +3374,7 @@ function aiInput(f, o) {
   if (CAN_DASH[f.id] && !(f.dashCd > 0) && onGround(f)) {   // slip through AOI's shots / close the gap
     const shot = G.proj.some(p => p.owner === o && Math.abs(p.x - f.x) < 300 && Math.sign(p.vx) === -dir);
     if ((shot && Math.random() < .35 + D.guard * .5) || (ad > 520 && Math.random() < .22)) { set({ [toward]: true }, 6); ai.press = 'dh'; return out; }
+    if (cornered(f, o) && ad < 380 && o.state !== 'atk' && Math.random() < .18 + D.guard * .3) { set({ [toward]: true }, 6); ai.press = 'dh'; return out; }   // escape the corner
   }
   if (threatened && Math.random() < D.guard) { set({ d: true }, 14 + (Math.random() * 10 | 0)); return out; }
   if (canUlt(f) && Math.random() < .5 && (f.id !== 'suzune' || ad < 700)) { ai.press = 'ult'; return out; }
