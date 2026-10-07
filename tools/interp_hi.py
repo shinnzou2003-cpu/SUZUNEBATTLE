@@ -75,7 +75,12 @@ def mid(A, B, key=None):
         hs = ndimage.sum(holes, hl, range(1, hn + 1)); small = np.isin(hl, 1 + np.where(hs < 500)[0])
         al = np.where(small, 1.0, al)
     al = np.where(ndimage.binary_erosion(al > .5, iterations=2), np.maximum(al, .985), al)   # body interior stays solid
-    rgb = cb / np.maximum(al[..., None], .03)
+    A3 = np.maximum(al[..., None], .03)
+    rgb_b = cb / A3; rgb_w = (cw - 255 * (1 - al[..., None])) / A3
+    bad = np.abs(rgb_b - rgb_w).max(-1) > 55          # the two passes warped this pixel differently
+    core = ndimage.binary_erosion((a[..., 3] > 250) & (b[..., 3] > 250), iterations=2)
+    al = np.where(bad & ~core, 0, al)                   # unreliable edge/effect pixels: drop rather than paint black blotches
+    rgb = np.where(bad[..., None], np.clip((rgb_b + rgb_w) / 2, 0, 255), rgb_b)
     out = np.dstack([rgb.clip(0, 255), al * 255]).astype(np.uint8)
     out[..., 3][out[..., 3] < 14] = 0
     im = Image.fromarray(out, 'RGBA'); bb = im.getbbox()
@@ -108,6 +113,9 @@ def build(cid, only=None):
         for im, px, py, ox, oy in place:
             at.paste(im, (px, py)); fr.append({'a': 0, 'x': px, 'y': py, 'w': im.width, 'h': im.height, 'ox': round(float(ox), 1), 'oy': round(float(oy), 1)})
         path = f'anim/hi/{cid}_{k}_0.webp'; at.save(path, 'WEBP', quality=82, method=6)
+        if held > (n - 1) * .3:   # mostly held: uneven cadence would look worse than the plain clip
+            os.remove(path); hi['anims'].pop(k, None); print(f'{cid} {k:10s} skipped (held {held}/{n - 1})', flush=True)
+            json.dump(hi, open(hp, 'w'), separators=(',', ':')); continue
         hi['anims'][k] = {'fps': an.get('fps', 24) * 2, 'atlases': [path], 'frames': fr}
         print(f'{cid} {k:10s} {an.get("fps")}fps x{n} -> {an.get("fps")*2}fps x{len(fr)} (held {held})  {os.path.getsize(path)//1024}KB', flush=True)
         json.dump(hi, open(hp, 'w'), separators=(',', ':'))
