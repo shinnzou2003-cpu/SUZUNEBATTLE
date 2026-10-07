@@ -225,7 +225,7 @@ function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = d
 // Atlases are NOT decoded at boot any more: only the fighters in the current match are kept in memory,
 // so the roster can grow (10+ characters) without phones running out of RAM.
 const ANIM_META = {};
-const ANIM_REV = '20261006';   // bump when an anim/*.json changes so browsers drop the cached one (ISANA edges smoothed 2026-10-06)
+const ANIM_REV = '20261007';   // bump when an anim/*.json changes so browsers drop the cached one (ISANA edges smoothed 2026-10-06)
 const ANIM_LOAD = {};          // id -> Promise while loading
 async function buildAnims() {
   await Promise.all(Object.keys(CHARS).map(async id => {
@@ -743,7 +743,7 @@ function readHuman(side) {
 
 /* ---------- state ---------- */
 const G = {
-  scene: 'title', mode: 'cpu', diff: 1, solo: !/[?&]solo=0/.test(location.search),   // 1VS1 single battle is the default format picks: ['suzune', 'aoi'], fighters: [], fx: [], proj: [], frame: 0,
+  scene: 'title', mode: 'cpu', diff: 1, solo: !/[?&]solo=0/.test(location.search) /* 1VS1 single battle is the default format */, picks: ['suzune', 'aoi'], fighters: [], fx: [], proj: [], frame: 0,
   cam: { x: STAGE_W / 2, z: 1, shake: 0, kick: 0, tilt: 0, push: 0 }, hitstop: 0, slow: 1, slowT: 0, flash: 0, flashCol: '255,255,255', freeze: 0, cutin: null,
   round: 1, timer: 99, timerF: 0, phase: 'intro', phaseT: 0, banner: null, paused: false, speedlines: 0, tintA: 0, tintC: '110,195,255', matchOver: false
 };
