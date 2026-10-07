@@ -229,7 +229,7 @@ function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = d
 // Atlases are NOT decoded at boot any more: only the fighters in the current match are kept in memory,
 // so the roster can grow (10+ characters) without phones running out of RAM.
 const ANIM_META = {};
-const ANIM_REV = '20261006';   // bump when an anim/*.json changes so browsers drop the cached one (ISANA edges smoothed 2026-10-06)
+const ANIM_REV = '20261007b';   // bump when an anim/*.json changes so browsers drop the cached one (ISANA edges smoothed 2026-10-06)
 const ANIM_LOAD = {};          // id -> Promise while loading
 async function buildAnims() {
   await Promise.all(Object.keys(CHARS).map(async id => {
@@ -760,7 +760,7 @@ function readHuman(side) {
 
 /* ---------- state ---------- */
 const G = {
-  scene: 'title', mode: 'cpu', diff: 1, solo: /[?&]solo=1/.test(location.search), picks: ['suzune', 'aoi'], fighters: [], fx: [], proj: [], frame: 0,
+  scene: 'title', mode: 'cpu', diff: 1, solo: !/[?&]solo=0/.test(location.search) /* 1VS1 single battle is the default format */, picks: ['suzune', 'aoi'], fighters: [], fx: [], proj: [], frame: 0,
   cam: { x: STAGE_W / 2, z: 1, shake: 0, kick: 0, tilt: 0, push: 0 }, hitstop: 0, slow: 1, slowT: 0, flash: 0, flashCol: '255,255,255', freeze: 0, cutin: null,
   round: 1, timer: 99, timerF: 0, phase: 'intro', phaseT: 0, banner: null, paused: false, speedlines: 0, tintA: 0, tintC: '110,195,255', matchOver: false
 };
@@ -4367,11 +4367,14 @@ function setupUI() {
   document.querySelectorAll('.mbtn[data-mode]').forEach(b => b.addEventListener('click', () => {
     goFull(); audioInit(); G.mode = b.dataset.mode; pickStep = 0; G.sel = []; updateSelect(); showScreen('select'); selReset(); bgmVolume(.6);
   }));
-  try { if (!/[?&]solo=/.test(location.search)) G.solo = localStorage.getItem('cf_solo') === '1'; } catch (e) { }
-  document.querySelectorAll('[data-solo]').forEach(b => b.addEventListener('click', () => {
-    const v = b.dataset.solo === '1'; if (v === !!G.solo) return;
-    G.solo = v; try { localStorage.setItem('cf_solo', v ? '1' : '0'); } catch (e) { }
-    pickStep = 0; G.sel = []; updateSelect(); selReset(); tone(.08, 660, 990, .08, 'triangle');
+  try { const v = localStorage.getItem('cf_fmt'); if (!/[?&]solo=/.test(location.search) && v) G.solo = v !== '2v2'; } catch (e) { }
+  const syncFmt = () => document.querySelectorAll('button[data-solo]').forEach(x => x.setAttribute('aria-pressed', (x.dataset.solo === '1') === !!G.solo));
+  syncFmt();
+  document.querySelectorAll('button[data-solo]').forEach(b => b.addEventListener('click', () => {
+    audioInit(); const v = b.dataset.solo === '1'; if (v === !!G.solo) return;
+    G.solo = v; try { localStorage.setItem('cf_fmt', v ? '1v1' : '2v2'); } catch (e) { }
+    syncFmt(); tone(.08, 660, 990, .08, 'triangle');
+    if (b.closest('#select')) { pickStep = 0; G.sel = []; updateSelect(); selReset(); }
   }));
   document.querySelectorAll('[data-diff]').forEach(b => b.addEventListener('click', () => { G.diff = +b.dataset.diff; document.querySelectorAll('[data-diff]').forEach(x => x.setAttribute('aria-pressed', x === b)); }));
   // team select: 4 picks — side A member 1/2, then side B member 1/2
@@ -4379,20 +4382,20 @@ function setupUI() {
   const PER = () => G.solo ? 1 : 2;   // picks per side: 2VS2 tag team or 1VS1
   const SLOT = () => {
     const per = PER(), team = pickStep < per ? 0 : 1, n = pickStep % per + 1;
-    const who = G.mode === 'pvp' ? (team ? '2P' : '1P') : G.mode === 'watch' ? (team ? '右' : '左') + (per > 1 ? 'チーム' : '') : (team ? '相手' : 'あなた') + (per > 1 ? 'チーム' : '');
+    const who = G.mode === 'pvp' ? (team ? '2P' : '1P') : G.mode === 'watch' ? (team ? '右' : '左') + (per > 1 ? 'チーム' : '') : (per > 1 ? (team ? '相手チーム' : 'あなたのチーム') : (team ? '相手' : 'あなた'));
     return { team, n, who };
   };
   function updateSelect() {
     const sl = SLOT();
     $('#selPrompt').textContent = G.solo ? `${sl.who}：キャラを選んでください` : `${sl.who}：${sl.n}人目を選んでください`;
-    document.querySelectorAll('[data-solo]').forEach(x => x.setAttribute('aria-pressed', (x.dataset.solo === '1') === !!G.solo));
+    syncFmt();
     $('#diffRow').hidden = G.mode === 'pvp';
     document.querySelectorAll('.card').forEach(c => {
       const per = PER(), tags = []; G.sel.forEach((id, i) => { if (id === c.dataset.char) tags.push(`${i < per ? (G.mode === 'pvp' ? '1P' : G.mode === 'watch' ? 'L' : 'YOU') : (G.mode === 'pvp' ? '2P' : G.mode === 'watch' ? 'R' : 'CPU')}${per > 1 ? '①②'[i % 2] : ''}`); });
       if (tags.length) c.dataset.tag = tags.join(' '); else delete c.dataset.tag;
       c.classList.remove('p1');
     });
-    $('#selNote').textContent = G.solo ? '1VS1 タイマン勝負。交代なし・キャラのアニメーションが2倍なめらかに' : sl.n === 2 ? '同じチームに同じキャラは選べません。試合中は「交代」でいつでも入れ替え！' : '2人1組のチームバトル。1人目が先鋒で出撃します';
+    $('#selNote').textContent = G.solo ? '1VS1 シングルバトル。キャラのアニメーションが2倍なめらか（2VS2 タッグは下で切り替え）' : sl.n === 2 ? '同じチームに同じキャラは選べません。試合中は「交代」でいつでも入れ替え！' : '2人1組のチームバトル。1人目が先鋒で出撃します';
   }
   // --- select-screen video: intro plays when the screen opens, confirm plays on pick ---
   let selBusy = false, selTimer = null, selNext = null;
