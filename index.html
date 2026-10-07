@@ -103,6 +103,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 .menu{position:relative;display:flex;flex-direction:column;gap:10px;min-width:min(300px,38vw)}
 .mbtn{display:flex;justify-content:space-between;align-items:baseline;gap:18px;padding:clamp(10px,1.8vh,16px) 20px;border:0;border-left:4px solid var(--gold);
   background:rgba(22,14,40,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);text-align:left;font-family:var(--serif);font-weight:800;font-size:clamp(16px,2.2vw,22px);transition:transform .12s,background .12s}
+.mbtn.boss{border-left-color:#e8222c;background:linear-gradient(90deg,rgba(120,10,16,.55),rgba(20,8,10,.35));color:#ffd9a0;letter-spacing:.06em}
+.mbtn.boss small{color:#ff9a7a}
 .mbtn small{font-family:var(--tech);font-weight:600;font-size:13px;color:var(--muted)}
 .mbtn:nth-child(2){border-left-color:var(--coral)} .mbtn:nth-child(3){border-left-color:var(--cyan)}
 .mbtn:hover,.mbtn:active{transform:translateX(-6px);background:rgba(40,26,70,.85)}
@@ -227,6 +229,14 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 .card[data-char="aoi"].confirm{box-shadow:inset 0 0 0 3px var(--cyan),0 0 40px 6px rgba(92,200,255,.55)}
 
 /* EX movie (game pauses while it plays) */
+#bossIntro{position:fixed;inset:0;z-index:9;display:none;background:#000;align-items:center;justify-content:center;overflow:hidden}
+#bossIntro.on{display:flex}
+#bossIntro video{width:100%;height:100%;object-fit:contain}
+#bossIntro .bi-name{position:absolute;left:max(24px,5vw);bottom:max(28px,8vh);color:#fff;text-shadow:0 0 18px rgba(232,34,44,.9),0 2px 0 #000;opacity:0;animation:biname .8s ease-out 6.6s forwards}
+#bossIntro .bi-name small{display:block;font:700 15px var(--tech);letter-spacing:.3em;color:#ff7a6a}
+#bossIntro .bi-name b{display:block;font:800 clamp(34px,6vw,64px) 'Shippori Mincho B1',serif;letter-spacing:.08em}
+#bossIntro .bi-skip{position:absolute;right:16px;bottom:12px;font:600 12px var(--tech);color:rgba(255,255,255,.55)}
+@keyframes biname{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
 #exMovie{position:fixed;inset:0;z-index:8;display:none;align-items:center;justify-content:center;overflow:hidden;pointer-events:auto}
 #exMovie.on{display:flex}
 .ex-bg{position:absolute;inset:0;background:rgba(6,4,14,.82)}
@@ -235,7 +245,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 .ex-frame{position:relative;display:none;overflow:hidden}
 .ex-frame video{display:block;width:100%;height:100%;object-fit:cover}
 .ex-frame.on{display:block}
-.ex-frame[data-char="aoi"],.ex-frame[data-char="arca"],.ex-frame[data-char="sakura"],.ex-frame[data-char="mio"],.ex-frame[data-char="aria"],.ex-frame[data-char="enjo"],.ex-frame[data-char="rei"],.ex-frame[data-char="kanna"],.ex-frame[data-char="ichika"],.ex-frame[data-char="isana"],.ex-frame[data-char="noxnix"]{width:100%;height:100%}
+.ex-frame[data-char="aoi"],.ex-frame[data-char="arca"],.ex-frame[data-char="sakura"],.ex-frame[data-char="mio"],.ex-frame[data-char="aria"],.ex-frame[data-char="enjo"],.ex-frame[data-char="rei"],.ex-frame[data-char="kanna"],.ex-frame[data-char="ichika"],.ex-frame[data-char="isana"],.ex-frame[data-char="noxnix"],.ex-frame[data-char="shuten"]{width:100%;height:100%}
 .ex-frame[data-char="suzune"]{height:auto;width:min(100vw,calc(100vh * 560 / 752));aspect-ratio:560/752;clip-path:polygon(12% 0,100% 0,88% 100%,0 100%);box-shadow:0 0 0 3px var(--gold)}
 .ex-frame.on{animation:exin .3s cubic-bezier(.2,1.3,.4,1)}
 @keyframes exin{from{transform:translateX(-30%) scale(1.15);opacity:0}}
@@ -248,8 +258,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 #exMovie[data-char="suzune"] .ex-name{left:max(24px,5vw);right:auto;text-align:left}
 /* portrait phones: show the whole wide clip (letterboxed) instead of cropping it */
 @media (orientation: portrait){
-  .ex-frame[data-char="aoi"],.ex-frame[data-char="arca"],.ex-frame[data-char="sakura"],.ex-frame[data-char="mio"],.ex-frame[data-char="aria"],.ex-frame[data-char="enjo"],.ex-frame[data-char="rei"],.ex-frame[data-char="kanna"],.ex-frame[data-char="ichika"],.ex-frame[data-char="isana"],.ex-frame[data-char="noxnix"]{width:100%;height:auto;aspect-ratio:16/9;border-top:3px solid var(--cyan);border-bottom:3px solid var(--cyan)}
-  .ex-frame[data-char="aoi"] video,.ex-frame[data-char="arca"] video,.ex-frame[data-char="sakura"] video,.ex-frame[data-char="mio"] video,.ex-frame[data-char="aria"] video,.ex-frame[data-char="enjo"] video,.ex-frame[data-char="rei"] video,.ex-frame[data-char="kanna"] video,.ex-frame[data-char="ichika"] video,.ex-frame[data-char="isana"] video,.ex-frame[data-char="noxnix"] video{object-fit:contain}
+  .ex-frame[data-char="aoi"],.ex-frame[data-char="arca"],.ex-frame[data-char="sakura"],.ex-frame[data-char="mio"],.ex-frame[data-char="aria"],.ex-frame[data-char="enjo"],.ex-frame[data-char="rei"],.ex-frame[data-char="kanna"],.ex-frame[data-char="ichika"],.ex-frame[data-char="isana"],.ex-frame[data-char="noxnix"],.ex-frame[data-char="shuten"]{width:100%;height:auto;aspect-ratio:16/9;border-top:3px solid var(--cyan);border-bottom:3px solid var(--cyan)}
+  .ex-frame[data-char="aoi"] video,.ex-frame[data-char="arca"] video,.ex-frame[data-char="sakura"] video,.ex-frame[data-char="mio"] video,.ex-frame[data-char="aria"] video,.ex-frame[data-char="enjo"] video,.ex-frame[data-char="rei"] video,.ex-frame[data-char="kanna"] video,.ex-frame[data-char="ichika"] video,.ex-frame[data-char="isana"] video,.ex-frame[data-char="noxnix"] video,.ex-frame[data-char="shuten"] video{object-fit:contain}
   .ex-frame[data-char="suzune"]{clip-path:none}
   .ex-name{bottom:max(28px,10vh)}
   .ex-name b{font-size:clamp(30px,9vw,60px)}
@@ -380,6 +390,7 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 <video id="stage-ichika" class="stage-vid" src="media/stage_ichika.mp4" muted loop playsinline preload="auto"></video>
 <video id="stage-isana" class="stage-vid" src="media/stage_isana.mp4" muted loop playsinline preload="auto"></video>
 <video id="stage-noxnix" class="stage-vid" src="media/stage_noxnix.mp4" muted loop playsinline preload="auto"></video>
+<video id="stage-shuten" class="stage-vid" src="media/stage_shuten.mp4" muted loop playsinline preload="auto"></video>
 <video id="stage-aoi" class="stage-vid" src="media/stage_aoi.mp4" muted loop playsinline preload="auto"></video>
 <canvas id="game" aria-label="対戦画面"></canvas>
 
@@ -407,6 +418,7 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
     <button class="mbtn" data-mode="cpu">CPUと対戦 <small>1人で遊ぶ</small></button>
     <button class="mbtn" data-mode="pvp">2人で対戦 <small>同じ端末で</small></button>
     <button class="mbtn" data-mode="watch">CPU同士を観戦 <small>演出を眺める</small></button>
+    <button class="mbtn boss" data-boss="1">BOSS BATTLE <small>鬼王 SHUTEN に2人で挑む</small></button>
     <div class="util"><button class="chip" id="bgmBtn" aria-pressed="true">BGM オン</button><button class="chip" id="snd" aria-pressed="true">効果音 オン</button><button class="chip" id="opReplay">オープニング</button><button class="chip" id="fsBtn">全画面</button></div>
   </nav>
 </section>
@@ -460,6 +472,7 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
   <div class="ex-frame" data-char="ichika"><video src="media/ex_ichika.mp4" poster="media/ex_ichika_poster.jpg" muted playsinline preload="auto"></video></div>
   <div class="ex-frame" data-char="isana"><video src="media/ex_isana.mp4" poster="media/ex_isana_poster.jpg" muted playsinline preload="auto"></video></div>
   <div class="ex-frame" data-char="noxnix"><video src="media/ex_noxnix.mp4" poster="media/ex_noxnix_poster.jpg" muted playsinline preload="auto"></video></div>
+  <div class="ex-frame" data-char="shuten"><video src="media/ex_shuten.mp4" poster="media/ex_shuten_poster.jpg" muted playsinline preload="auto"></video></div>
   <div class="ex-frame" data-char="mio"><video src="media/ex_mio.mp4" poster="media/ex_mio_poster.jpg" muted playsinline preload="auto"></video></div>
   <div class="ex-name"><small>ULTIMATE</small><b></b></div>
 </div>
@@ -476,6 +489,7 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
   <video data-char="ichika" src="media/win_ichika.mp4" poster="media/win_ichika_poster.jpg" muted playsinline preload="auto"></video>
   <video data-char="isana" src="media/win_isana.mp4?v=2" poster="media/win_isana_poster.jpg?v=2" muted playsinline preload="auto"></video>
   <video data-char="noxnix" src="media/win_noxnix.mp4" poster="media/win_noxnix_poster.jpg" muted playsinline preload="auto"></video>
+  <video data-char="shuten" src="media/win_shuten.mp4" poster="media/win_shuten_poster.jpg" muted playsinline preload="auto"></video>
   <video data-char="mio" src="media/win_mio.mp4" poster="media/win_mio_poster.jpg" muted playsinline preload="auto"></video>
   <div class="wm-bar top"></div><div class="wm-bar bot"></div>
   <div class="wm-band"></div>
@@ -508,10 +522,11 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 </div>
 
 <div id="rotate"><p>スマホを横向きにすると<br>大きな画面で遊べます</p><button class="pbtn" id="rotateOk">このまま遊ぶ</button></div>
+<div id="bossIntro" aria-hidden="true"><video src="media/boss_intro_shuten.mp4" poster="media/boss_intro_shuten_poster.jpg" muted playsinline preload="auto"></video><div class="bi-name"><small>BOSS BATTLE</small><b>鬼王 SHUTEN</b></div><span class="bi-skip">タップでスキップ</span></div>
 <div id="matchLoad" hidden>出撃準備中… <span id="matchPct">0%</span></div>
 <div id="loading">読み込み中… <span id="loadPct">0%</span></div>
 
-<script>window.ASSETS={"su": "assets/suzune.webp", "ao": "assets/aoi.webp", "drone": "assets/drone.webp", "suci": "assets/suzune_cutin.webp", "aoci": "assets/aoi_cutin.webp", "ar": "assets/arca.webp", "arci": "assets/arca_cutin.webp", "arp": "assets/arca_pilot.webp", "arcard": "assets/arca_card.webp", "tsu": "assets/title_suzune.webp", "tao": "assets/title_aoi.webp", "tar": "assets/title_arca.webp", "tsa": "assets/title_sakura.webp", "sa": "assets/sakura.webp", "saci": "assets/sakura_cutin.webp", "sacard": "assets/sakura_card.webp", "mi": "assets/mio.webp", "mici": "assets/mio_cutin.webp", "micard": "assets/mio_card.webp", "ar2": "assets/aria.webp", "ar2ci": "assets/aria_cutin.webp", "ar2card": "assets/aria_card.webp", "tari": "assets/title_aria.webp", "en": "assets/enjo.webp", "enci": "assets/enjo_cutin.webp", "encard": "assets/enjo_card.webp", "enskull": "assets/enjo_skull.webp", "tenj": "assets/title_enjo.webp", "re": "assets/rei.webp", "reci": "assets/rei_cutin.webp", "recard": "assets/rei_card.webp", "trei": "assets/title_rei.webp", "ka": "assets/kanna.webp", "kaci": "assets/kanna_cutin.webp", "kacard": "assets/kanna_card.webp", "tkan": "assets/title_kanna.webp", "ic": "assets/ichika.webp", "icci": "assets/ichika_cutin.webp", "iccard": "assets/ichika_card.webp", "tich": "assets/title_ichika.webp", "is": "assets/isana.webp", "isci": "assets/isana_cutin.webp", "iscard": "assets/isana_card.webp", "tisa": "assets/title_isana.webp", "tmi": "assets/title_mio.webp", "nx": "assets/noxnix.webp", "nxci": "assets/noxnix_cutin.webp", "nxcard": "assets/noxnix_card.webp", "tnx": "assets/title_noxnix.webp"};</script>
-<script src="game.js?v=20261007c"></script>
+<script>window.ASSETS={"su": "assets/suzune.webp", "ao": "assets/aoi.webp", "drone": "assets/drone.webp", "suci": "assets/suzune_cutin.webp", "aoci": "assets/aoi_cutin.webp", "ar": "assets/arca.webp", "arci": "assets/arca_cutin.webp", "arp": "assets/arca_pilot.webp", "arcard": "assets/arca_card.webp", "tsu": "assets/title_suzune.webp", "tao": "assets/title_aoi.webp", "tar": "assets/title_arca.webp", "tsa": "assets/title_sakura.webp", "sa": "assets/sakura.webp", "saci": "assets/sakura_cutin.webp", "sacard": "assets/sakura_card.webp", "mi": "assets/mio.webp", "mici": "assets/mio_cutin.webp", "micard": "assets/mio_card.webp", "ar2": "assets/aria.webp", "ar2ci": "assets/aria_cutin.webp", "ar2card": "assets/aria_card.webp", "tari": "assets/title_aria.webp", "en": "assets/enjo.webp", "enci": "assets/enjo_cutin.webp", "encard": "assets/enjo_card.webp", "enskull": "assets/enjo_skull.webp", "tenj": "assets/title_enjo.webp", "re": "assets/rei.webp", "reci": "assets/rei_cutin.webp", "recard": "assets/rei_card.webp", "trei": "assets/title_rei.webp", "ka": "assets/kanna.webp", "kaci": "assets/kanna_cutin.webp", "kacard": "assets/kanna_card.webp", "tkan": "assets/title_kanna.webp", "ic": "assets/ichika.webp", "icci": "assets/ichika_cutin.webp", "iccard": "assets/ichika_card.webp", "tich": "assets/title_ichika.webp", "is": "assets/isana.webp", "isci": "assets/isana_cutin.webp", "iscard": "assets/isana_card.webp", "tisa": "assets/title_isana.webp", "tmi": "assets/title_mio.webp", "nx": "assets/noxnix.webp", "nxci": "assets/noxnix_cutin.webp", "nxcard": "assets/noxnix_card.webp", "tnx": "assets/title_noxnix.webp", "sh": "assets/shuten.webp", "shci": "assets/shuten_cutin.webp", "shcard": "assets/shuten_card.webp"};</script>
+<script src="game.js?v=20261007d"></script>
 </body>
 </html>
