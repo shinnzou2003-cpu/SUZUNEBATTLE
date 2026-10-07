@@ -376,6 +376,39 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 .card b{font-size:clamp(13px,1.9vw,24px)}
 .card span{margin:0;font-size:clamp(9px,.95vw,12px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .card[data-tag]::before,.card.p1::before{top:6px;left:6px;transform:none}
+
+/* STORY MODE */
+.mbtn.story{border-left-color:#ff5a6a;background:linear-gradient(90deg,rgba(232,52,64,.35),rgba(20,12,38,.6))}
+#story{align-items:center;justify-content:center;background:#0b0716;overflow:hidden}
+#story::before{content:"";position:absolute;inset:-20px;background:var(--bg) center/cover no-repeat;filter:blur(6px) brightness(.38) saturate(1.1);transform:scale(1.05)}
+#story::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,4,14,.85),rgba(8,4,14,.35) 60%,rgba(8,4,14,.75))}
+.st-card{position:relative;z-index:1;display:flex;align-items:center;gap:clamp(14px,3vw,40px);max-width:min(1100px,96vw);width:100%}
+#stImg{flex:0 0 auto;width:clamp(150px,30vw,380px);max-height:72vh;object-fit:cover;transform:skewX(-5deg);border-left:5px solid #ff5a6a;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.st-body{flex:1;min-width:0;text-align:left}
+#stKick{margin:0;font:700 clamp(12px,1.6vw,16px) 'Chakra Petch',sans-serif;letter-spacing:.3em;color:#ffc96a}
+#stTitle{margin:.2em 0 .3em;font-family:var(--serif);font-weight:800;font-size:clamp(28px,5.4vw,64px);line-height:1.1;text-shadow:0 0 22px rgba(232,52,64,.6)}
+#stText{margin:0 0 1em;font-size:clamp(13px,1.7vw,18px);line-height:1.75;color:#eee}
+#stText b{color:#fff}
+.st-stat{display:inline-block;margin-top:.4em;padding:3px 10px;background:rgba(232,52,64,.25);border-left:3px solid #ff5a6a;font:700 .9em 'Chakra Petch',sans-serif;letter-spacing:.06em}
+#stBtns{display:flex;gap:10px;flex-wrap:wrap}
+#story.anim .st-card{animation:stIn .5s cubic-bezier(.2,.9,.2,1)}
+@keyframes stIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+@media (max-height:500px){#stImg{width:clamp(120px,24vw,260px)}#stText{line-height:1.5}}
+.seg[hidden]{display:none}
+.card.locked{filter:grayscale(1) brightness(.3)}
+.card.locked::before{content:"LOCK";position:absolute;inset:0;z-index:3;display:grid;place-items:center;font:800 clamp(14px,2vw,22px) 'Chakra Petch',sans-serif;letter-spacing:.3em;color:rgba(255,255,255,.85)}
+#storyEnd{position:fixed;inset:0;z-index:30;display:none;background:radial-gradient(ellipse at 50% 30%,#2a1430,#07040c 70%);overflow:hidden;color:#fff;text-align:center}
+#storyEnd.on{display:block}
+#seRoll{position:absolute;left:0;right:0;top:100%;display:flex;flex-direction:column;align-items:center;gap:22px;animation:seRoll 48s linear forwards}
+#storyEnd.on #seRoll{animation-play-state:running}
+@keyframes seRoll{to{transform:translateY(calc(-100% - 100vh))}}
+.se-big{font:800 clamp(34px,7vw,80px) var(--serif);letter-spacing:.08em;text-shadow:0 0 30px rgba(255,200,90,.6);margin:30px 0}
+.se-head{font:700 clamp(14px,2vw,20px) 'Chakra Petch',sans-serif;letter-spacing:.5em;color:#ffc96a;margin-top:30px}
+.se-text{font-size:clamp(14px,1.8vw,19px);line-height:1.9;color:#ddd}
+.se-cast{display:flex;align-items:center;gap:16px;min-width:min(520px,86vw)}
+.se-cast img{width:clamp(80px,12vw,140px);aspect-ratio:16/10;object-fit:cover;border-left:3px solid #ffc96a}
+.se-cast b{font:800 clamp(18px,2.6vw,28px) var(--serif)}.se-cast small{margin-left:auto;color:#aaa;font-size:.85em}
+.se-skip{position:absolute;right:16px;bottom:10px;margin:0;font:600 12px 'Chakra Petch',sans-serif;color:rgba(255,255,255,.5)}
 </style>
 </head>
 <body>
@@ -411,10 +444,11 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
   <div class="brand">
     <h1>CHRONO<br>FIGHT</h1>
     <p>SUZUNE・AOI・ARCA-07・SAKURA・MIO-07・ARIA・ENJO・REI・KANNA・ICHIKA・ISANA・NOX×NIX、2029年の東京スカイデッキで。<br>攻撃と必殺、2つのボタンで戦う2ラウンド先取バトル。</p>
-    <div class="keys">ボタンは「攻撃」と「必殺」だけ。攻撃連打で自動コンボ、必殺はゲージで 強攻撃→EX→ULT に変化。<br>1P：A D 移動 / W ジャンプ / J 攻撃 / K 必殺　2P：矢印キー / , 攻撃 / . 必殺　相手と反対に押すとガード<br>ダッシュ（全キャラ：1P I・2P / ・左右2回押しでもOK。画面端で相手に向かってダッシュすると反対側へすり抜け。ジャンプ中にもう一度ダッシュで空中ダッシュ）　基本は1VS1シングルバトル（2VS2タッグも選べます。タッグの交代 1P U・2P '）　ULTは体力50%以下で解放</div>
+    <div class="keys">ボタンは「攻撃」と「必殺」だけ。攻撃連打で自動コンボ、必殺はゲージで 強攻撃→EX→ULT に変化。<br>1P：A D 移動 / W ジャンプ / J 攻撃 / K 必殺　2P：矢印キー / , 攻撃 / . 必殺　相手と反対に押すとガード<br>ダッシュ（全キャラ：1P I・2P / ・左右2回押しでもOK。画面端で相手に向かってダッシュすると反対側へすり抜け。ジャンプ中にもう一度ダッシュで空中ダッシュ）　STORYモード：SUZUNE1人から始めて、倒した相手が仲間に！最後は鬼王SHUTEN。　基本は1VS1シングルバトル（2VS2タッグも選べます。タッグの交代 1P U・2P '）　ULTは体力50%以下で解放</div>
   </div>
   <nav class="menu" aria-label="モード選択">
     <div class="seg fmt" role="group" aria-label="試合形式"><button data-solo="1" aria-pressed="true">1VS1 シングル</button><button data-solo="0" aria-pressed="false">2VS2 タッグ</button></div>
+    <button class="mbtn story" data-story="1">STORY <small>SUZUNEから始まる12人の物語</small></button>
     <button class="mbtn" data-mode="cpu">CPUと対戦 <small>1人で遊ぶ</small></button>
     <button class="mbtn" data-mode="pvp">2人で対戦 <small>同じ端末で</small></button>
     <button class="mbtn" data-mode="watch">CPU同士を観戦 <small>演出を眺める</small></button>
@@ -451,6 +485,14 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
   <h2>一時停止中</h2>
   <div class="row"><button class="pbtn" id="resume">対戦に戻る</button><button class="pbtn alt" id="quit">タイトルへ</button></div>
 </section>
+
+<section class="screen" id="story" aria-label="ストーリー">
+  <div class="st-card">
+    <img id="stImg" alt="">
+    <div class="st-body"><p id="stKick"></p><h2 id="stTitle"></h2><p id="stText"></p><div class="row" id="stBtns"></div></div>
+  </div>
+</section>
+<div id="storyEnd" aria-label="エンディング"><div id="seRoll"></div><p class="se-skip">タップでタイトルへ</p></div>
 
 <section class="screen" id="result" aria-label="結果">
   <img id="resImg" alt="">
@@ -527,6 +569,6 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 <div id="loading">読み込み中… <span id="loadPct">0%</span></div>
 
 <script>window.ASSETS={"su": "assets/suzune.webp", "ao": "assets/aoi.webp", "drone": "assets/drone.webp", "suci": "assets/suzune_cutin.webp", "aoci": "assets/aoi_cutin.webp", "ar": "assets/arca.webp", "arci": "assets/arca_cutin.webp", "arp": "assets/arca_pilot.webp", "arcard": "assets/arca_card.webp", "tsu": "assets/title_suzune.webp", "tao": "assets/title_aoi.webp", "tar": "assets/title_arca.webp", "tsa": "assets/title_sakura.webp", "sa": "assets/sakura.webp", "saci": "assets/sakura_cutin.webp", "sacard": "assets/sakura_card.webp", "mi": "assets/mio.webp", "mici": "assets/mio_cutin.webp", "micard": "assets/mio_card.webp", "ar2": "assets/aria.webp", "ar2ci": "assets/aria_cutin.webp", "ar2card": "assets/aria_card.webp", "tari": "assets/title_aria.webp", "en": "assets/enjo.webp", "enci": "assets/enjo_cutin.webp", "encard": "assets/enjo_card.webp", "enskull": "assets/enjo_skull.webp", "tenj": "assets/title_enjo.webp", "re": "assets/rei.webp", "reci": "assets/rei_cutin.webp", "recard": "assets/rei_card.webp", "trei": "assets/title_rei.webp", "ka": "assets/kanna.webp", "kaci": "assets/kanna_cutin.webp", "kacard": "assets/kanna_card.webp", "tkan": "assets/title_kanna.webp", "ic": "assets/ichika.webp", "icci": "assets/ichika_cutin.webp", "iccard": "assets/ichika_card.webp", "tich": "assets/title_ichika.webp", "is": "assets/isana.webp", "isci": "assets/isana_cutin.webp", "iscard": "assets/isana_card.webp", "tisa": "assets/title_isana.webp", "tmi": "assets/title_mio.webp", "nx": "assets/noxnix.webp", "nxci": "assets/noxnix_cutin.webp", "nxcard": "assets/noxnix_card.webp", "tnx": "assets/title_noxnix.webp", "sh": "assets/shuten.webp", "shci": "assets/shuten_cutin.webp", "shcard": "assets/shuten_card.webp"};</script>
-<script src="game.js?v=20261007i"></script>
+<script src="game.js?v=20261008a"></script>
 </body>
 </html>

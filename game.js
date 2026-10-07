@@ -1136,6 +1136,7 @@ function startUlt(f) {
 function hitTarget(att, tgt, o) {
   if (tgt.inv > 0 || tgt.ko || tgt.state === 'down' || G.phase !== 'fight') return false;
   if (att.ch.dmgMul) o = { ...o, dmg: o.dmg * att.ch.dmgMul * (att.rage > 0 ? 1.2 : 1) };   // SHUTEN hits 1.5× as hard (more when enraged)
+  if (att.dmgMul) o = { ...o, dmg: o.dmg * att.dmgMul };   // STORY: later rivals hit harder   // SHUTEN hits 1.5× as hard (more when enraged)
   const fromDir = Math.sign(tgt.x - att.x) || att.face;
   // guard works from either side: a grounded fighter holding guard blocks even a cross-up that lands before they turn round
   const guarding = (tgt.state === 'guard' || (tgt.holdBack && (tgt.state === 'walk' || tgt.state === 'idle'))) && onGround(tgt);
@@ -3463,6 +3464,10 @@ function makeTeams() {
   const [t0, t1] = G.picks;
   G.teams = [t0.map(id => makeFighter(id, 0, false)), t1.map(id => makeFighter(id, 1, t0.includes(id)))];
   for (const t of G.teams) for (const f of t) f.wins = G.wins[f.side];
+  if (STORY.on && STORY.d && !G.boss) {   // STORY: the rival grows stronger every stage
+    const m = storyMul(STORY.d.stage);
+    for (const f of G.teams[1]) { f.maxHp *= m.hp; f.hp = f.dispHp = f.maxHp; f.dmgMul = m.atk; }
+  }
   G.fighters = [G.teams[0][0], G.teams[1][0]];
 }
 const partnerOf = f => G.teams && G.teams[f.side].find(x => x !== f);
@@ -3542,6 +3547,7 @@ function timeUp() {
 function endMatch(w) {
   { const l = G.fighters.find(x => x !== w); if (l) voice(l.id, 'lose', { delay: .5 }); }
   G.matchOver = true; G.phase = 'over'; setTouch(false);
+  if (STORY.on && window.storyAfterMatch) { window.storyAfterMatch(w.side === 0); return; }
   const [a, b] = G.fighters, label = G.mode === 'pvp' ? `${w.side ? '2P' : '1P'} WIN` : G.mode === 'watch' ? `${w.ch.name} WIN` : (w.side === 0 ? 'YOU WIN' : 'YOU LOSE');
   $('#resTitle').textContent = label; $('#resScore').textContent = `${a.wins} — ${b.wins}`;
   $('#resName').textContent = w.ch.name; $('#resImg').src = w.gfx.ci.toDataURL ? w.gfx.ci.toDataURL('image/webp', .8) : w.gfx.ci.src;
@@ -4608,6 +4614,29 @@ function rwEnd() {
   G.rwMovie = false; G.phaseT = Math.max(G.phaseT, 225); setTouch(true);
 }
 function stopStage() { document.querySelectorAll('.stage-vid').forEach(x => { try { x.pause(); } catch (e) { } }); }
+/* ---------- STORY MODE ----------
+   SUZUNE alone -> beat the 11 other fighters in a random order (each one you beat joins you) -> BOSS SHUTEN (pick 2) -> ending.
+   Every stage the foe gets more health and hits harder. Progress is kept in localStorage. */
+const STORY = { on: false, d: null };
+const STORY_ROSTER = () => Object.keys(CHARS).filter(id => !CHARS[id].boss);
+const STORY_N = () => STORY_ROSTER().length;   // 11 rivals + the boss = 12 stages
+function storyMul(stage) { return { hp: 1 + .15 * stage, atk: 1 + .1 * stage }; }
+function storyLoad() {
+  let d = null; try { d = JSON.parse(localStorage.getItem('cf_story') || 'null'); } catch (e) { }
+  const roster = STORY_ROSTER();
+  if (!d || !Array.isArray(d.order) || !Array.isArray(d.unlocked)) d = null;
+  if (d) { d.order = d.order.filter(id => roster.includes(id)); for (const id of roster) if (id !== 'suzune' && !d.order.includes(id)) d.order.push(id); }   // new fighters slot in
+  return d;
+}
+function storyNew() {
+  const order = STORY_ROSTER().filter(id => id !== 'suzune');
+  for (let i = order.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [order[i], order[j]] = [order[j], order[i]]; }
+  return { order, stage: 0, unlocked: ['suzune'], cleared: false };
+}
+function storySave() { try { localStorage.setItem('cf_story', JSON.stringify(STORY.d)); } catch (e) { } }
+const storyIsBoss = () => STORY.d && STORY.d.stage >= STORY.d.order.length;
+const portrait = id => id === 'shuten' ? 'assets/shuten_card.webp' : `assets/title_${id}.webp`;
+const bgPoster = id => id === 'shuten' ? 'media/boss_intro_shuten_poster.jpg' : id === 'arca' ? 'media/select_arca_intro_poster.jpg' : `media/select_${id}_poster.jpg`;
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); }
 function togglePause(force) {
   if (G.scene !== 'game' || G.matchOver) return;
@@ -4645,10 +4674,10 @@ function setupUI() {
   let pickStep = 0;
   const title = $('#title');
   document.querySelectorAll('.mbtn[data-mode]').forEach(b => b.addEventListener('click', () => {
-    goFull(); audioInit(); G.mode = b.dataset.mode; if (G.boss) { G.boss = false; G.solo = G.bossPrevSolo !== undefined ? G.bossPrevSolo : true; } pickStep = 0; G.sel = []; updateSelect(); showScreen('select'); selReset(); bgmVolume(.6);
+    goFull(); audioInit(); storyExit(); G.mode = b.dataset.mode; if (G.boss) { G.boss = false; G.solo = G.bossPrevSolo !== undefined ? G.bossPrevSolo : true; } pickStep = 0; G.sel = []; updateSelect(); showScreen('select'); selReset(); bgmVolume(.6);
   }));
   document.querySelectorAll('.mbtn[data-boss]').forEach(b => b.addEventListener('click', () => {   // BOSS BATTLE: a tag team of two against SHUTEN
-    goFull(); audioInit(); G.mode = 'cpu'; if (!G.boss) G.bossPrevSolo = G.solo; G.boss = true; G.solo = false; pickStep = 0; G.sel = []; updateSelect(); showScreen('select'); selReset(); bgmVolume(.6);
+    goFull(); audioInit(); storyExit(); G.mode = 'cpu'; if (!G.boss) G.bossPrevSolo = G.solo; G.boss = true; G.solo = false; pickStep = 0; G.sel = []; updateSelect(); showScreen('select'); selReset(); bgmVolume(.6);
     preloadAnim('shuten');
   }));
   try { const v = localStorage.getItem('cf_fmt'); if (!/[?&]solo=/.test(location.search) && v) G.solo = v !== '2v2'; } catch (e) { }
@@ -4671,6 +4700,15 @@ function setupUI() {
   };
   function updateSelect() {
     const sl = SLOT();
+    if (STORY.on) {
+      const opp = storyIsBoss() ? 'shuten' : STORY.d.order[STORY.d.stage];
+      $('#selPrompt').textContent = storyIsBoss() ? `STORY 最終ステージ ― 鬼王に挑む${sl.n}人目を選んでください` : `STORY ${STORY.d.stage + 1} ― VS ${CHARS[opp].name}：使うキャラを選んでください`;
+      $('#soloRow').hidden = true; $('#diffRow').hidden = false;
+      document.querySelectorAll('.card').forEach(c => { const ok = STORY.d.unlocked.includes(c.dataset.char); c.classList.toggle('locked', !ok); if (G.sel.includes(c.dataset.char)) c.dataset.tag = 'YOU'; else delete c.dataset.tag; });
+      $('#selNote').textContent = `仲間 ${STORY.d.unlocked.length} / ${STORY_N()}　倒した相手は次のステージから使えるッス` + (storyIsBoss() ? '（ボス戦は2人タッグ）' : '');
+      return;
+    }
+    document.querySelectorAll('.card.locked').forEach(c => c.classList.remove('locked'));
     $('#selPrompt').textContent = G.boss ? `BOSS BATTLE ― 鬼王に挑む${sl.n}人目を選んでください` : G.solo ? `${sl.who}：キャラを選んでください` : `${sl.who}：${sl.n}人目を選んでください`;
     $('#soloRow').hidden = !!G.boss;
     syncFmt();
@@ -4707,6 +4745,8 @@ function setupUI() {
     c.addEventListener('click', () => {
       audioInit();
       if (selBusy) { selProceed(); return; }                // tap again to skip the confirm animation
+      if (STORY.on && !STORY.d.unlocked.includes(c.dataset.char)) { tone(.1, 300, 200, .1, 'square'); $('#selNote').textContent = 'まだ仲間になっていないキャラッス。倒すと使えるようになるッス'; return; }
+      if (STORY.on && G.boss && G.sel[0] === c.dataset.char && pickStep === 1) { tone(.1, 300, 200, .1, 'square'); $('#selNote').textContent = '同じキャラは2人選べないッス'; return; }
       const sl = SLOT();
       if (!G.solo && sl.n === 2 && G.sel[pickStep - 1] === c.dataset.char) { tone(.1, 300, 200, .1, 'square'); $('#selNote').textContent = '同じチームに同じキャラは選べません'; return; }
       selBusy = true;
@@ -4718,16 +4758,98 @@ function setupUI() {
       setTimeout(() => sfx.hit(1.2), 1150);
       selNext = () => {
         pickStep++;
+        if (STORY.on) {
+          if (pickStep < (G.boss ? 2 : 1)) { updateSelect(); selReset(); }
+          else window.storyFight(G.boss ? [G.sel[0], G.sel[1]] : [G.sel[0]]);
+          return;
+        }
         if (pickStep < (G.boss ? 2 : PER() * 2)) { updateSelect(); selReset(); }
         else { G.picks = G.boss ? [[G.sel[0], G.sel[1]], ['shuten']] : G.solo ? [[G.sel[0]], [G.sel[1]]] : [[G.sel[0], G.sel[1]], [G.sel[2], G.sel[3]]]; startMatch(); }
       };
       selTimer = setTimeout(selProceed, c.querySelector('.sv-confirm') ? 3600 : 1500);             // safety if 'ended' never fires
     });
   });
-  $('#selBack').addEventListener('click', () => { if (pickStep > 0) { pickStep--; G.sel.length = pickStep; updateSelect(); selReset(); } else { showScreen('title'); bgmVolume(.8); } });
+  $('#selBack').addEventListener('click', () => { if (pickStep > 0) { pickStep--; G.sel.length = pickStep; updateSelect(); selReset(); } else if (STORY.on) storyCard(); else { showScreen('title'); bgmVolume(.8); } });
+  // ----- STORY MODE screens -----
+  const storyExit = () => { if (!STORY.on) return; STORY.on = false; G.boss = false; if (G.storyPrevSolo !== undefined) G.solo = G.storyPrevSolo; document.querySelectorAll('.card.locked').forEach(c => c.classList.remove('locked')); };
+  function storyScreen({ kicker, title, text, img, bg, buttons }) {
+    $('#stKick').textContent = kicker || ''; $('#stTitle').textContent = title || ''; $('#stText').innerHTML = text || '';
+    const im = $('#stImg'); if (img) { im.src = img; im.hidden = false; } else im.hidden = true;
+    $('#story').style.setProperty('--bg', bg ? `url(${bg})` : 'none');
+    const row = $('#stBtns'); row.innerHTML = '';
+    for (const [label, fn, alt] of buttons) { const b = document.createElement('button'); b.className = 'pbtn' + (alt ? ' alt' : ''); b.textContent = label; b.addEventListener('click', () => { audioInit(); fn(); }); row.appendChild(b); }
+    showScreen('story'); $('#story').classList.remove('anim'); void $('#story').offsetWidth; $('#story').classList.add('anim');
+  }
+  function storyCard() {
+    G.scene = 'title'; const d = STORY.d, n = STORY_N();
+    if (storyIsBoss()) {
+      storyScreen({ kicker: `FINAL STAGE  ${n} / ${n}`, title: '鬼王 SHUTEN', img: portrait('shuten'), bg: bgPoster('shuten'),
+        text: `11人の戦士を退けたその先で、血の海から鬼王が目を覚ます——。<br><b>仲間から2人を選び、タッグで挑め！</b><br><span class="st-stat">体力 ×5　攻撃力 ×1.5　巨体・スーパーアーマー</span>`,
+        buttons: [['2人を選んで挑む', () => storyPick(true)], ['タイトルへ', storyToTitle, 1]] });
+      return;
+    }
+    const opp = d.order[d.stage], m = storyMul(d.stage);
+    storyScreen({ kicker: `STAGE ${d.stage + 1} / ${n}`, title: `VS ${CHARS[opp].name}`, img: portrait(opp), bg: bgPoster(opp),
+      text: (d.stage === 0 ? '2029年、東京スカイデッキ。時空の歪みに呼ばれた戦士たちが集う——。<br>SUZUNEの戦いが、ここから始まるッス。<br>' : '') +
+        `<b>${CHARS[opp].name}</b>（${CHARS[opp].role || ''}）が立ちはだかる！<br><span class="st-stat">敵 体力 ×${m.hp.toFixed(2)}　攻撃力 ×${m.atk.toFixed(1)}</span>`,
+      buttons: [[d.unlocked.length > 1 ? 'キャラを選んで戦う' : 'SUZUNEで戦う', () => storyPick(false)], ['タイトルへ', storyToTitle, 1]].concat(d.stage > 0 ? [['最初から', () => { if (confirm('ストーリーを最初からやり直すッスか？（仲間はSUZUNEだけに戻ります）')) { STORY.d = storyNew(); storySave(); storyCard(); } }, 1]] : []) });
+  }
+  function storyPick(boss) {
+    G.mode = 'cpu'; G.boss = boss; pickStep = 0; G.sel = [];
+    if (!boss && STORY.d.unlocked.length === 1) { window.storyFight(['suzune']); return; }
+    if (boss) preloadAnim('shuten');
+    updateSelect(); showScreen('select'); selReset(); bgmVolume(.6);
+  }
+  window.storyFight = mine => {
+    const d = STORY.d; G.mode = 'cpu';
+    if (storyIsBoss()) { G.boss = true; G.solo = false; G.picks = [mine.slice(0, 2), ['shuten']]; }
+    else { G.boss = false; G.solo = true; G.picks = [[mine[0]], [d.order[d.stage]]]; }
+    startMatch();
+  };
+  function storyToTitle() { stopStage(); storyExit(); G.scene = 'title'; showScreen('title'); bgmTrack('title', .8); storyBadge(); }
+  window.storyAfterMatch = win => {
+    const d = STORY.d;
+    setTimeout(() => {
+      stopStage(); bgmTrack('title', .7);
+      if (!win) {
+        storyScreen({ kicker: storyIsBoss() ? 'FINAL STAGE' : `STAGE ${d.stage + 1}`, title: 'YOU LOSE', img: portrait(storyIsBoss() ? 'shuten' : d.order[d.stage]), bg: bgPoster(storyIsBoss() ? 'shuten' : d.order[d.stage]),
+          text: 'まだ終わりじゃないッス……！<br>CONTINUE？',
+          buttons: [['もう一度挑戦', () => storyIsBoss() ? storyPick(true) : (d.unlocked.length > 1 ? storyPick(false) : window.storyFight(['suzune']))], ['ステージ画面へ', storyCard, 1], ['タイトルへ', storyToTitle, 1]] });
+        return;
+      }
+      if (storyIsBoss()) { d.cleared = true; d.unlocked = STORY_ROSTER(); storySave(); storyEnding(); return; }
+      const got = d.order[d.stage]; if (!d.unlocked.includes(got)) d.unlocked.push(got); d.stage++; storySave();
+      sfx.cutin(); voice(got, 'select', { delay: .3 });
+      storyScreen({ kicker: `STAGE ${d.stage} CLEAR`, title: `${CHARS[got].name} が仲間になった！`, img: portrait(got), bg: bgPoster(got),
+        text: `次のステージから <b>${CHARS[got].name}</b> を使えるッス。<br>仲間 ${d.unlocked.length} / ${STORY_N()}`,
+        buttons: [[storyIsBoss() ? '最終ステージへ' : '次のステージへ', storyCard], ['タイトルへ', storyToTitle, 1]] });
+    }, 900);
+  };
+  function storyEnding() {
+    const box = $('#storyEnd'), roll = $('#seRoll'); roll.innerHTML = '';
+    const add = (h, cls) => { const e = document.createElement('div'); e.className = cls || ''; e.innerHTML = h; roll.appendChild(e); };
+    add('STORY CLEAR', 'se-big'); add('鬼王 SHUTEN は再び眠りにつき、<br>2029年の東京スカイデッキに朝が戻った——。', 'se-text');
+    add('CAST', 'se-head');
+    for (const id of STORY_ROSTER().concat('shuten')) add(`<img src="${portrait(id)}" alt=""><b>${CHARS[id].name}</b><small>${CHARS[id].role || ''}</small>`, 'se-cast');
+    add('CHRONO FIGHT', 'se-head'); add('GAME / CHARACTERS / DIRECTION　SZOU', 'se-text'); add('Made with Claude × Topview MCP', 'se-text');
+    add('THANK YOU FOR PLAYING', 'se-big'); add('全キャラ解放！ストーリーは何度でも挑戦できるッス', 'se-text');
+    box.classList.add('on'); bgmTrack('title', .9); voice('suzune', 'win', { delay: .6 });
+    const done = () => { box.classList.remove('on'); box.removeEventListener('click', done); storyToTitle(); };
+    setTimeout(() => box.addEventListener('click', done), 1500);
+    clearTimeout(box._t); box._t = setTimeout(done, 52000);
+  }
+  function storyBadge() { const b = document.querySelector('.mbtn[data-story] small'); const d = storyLoad(); if (b) b.textContent = !d ? 'SUZUNEから始まる12人の物語' : d.cleared ? '★CLEAR　もう一度最初から挑める' : `つづきから　STAGE ${Math.min(d.stage + 1, STORY_N())} / ${STORY_N()}`; }
+  storyBadge();
+  document.querySelectorAll('.mbtn[data-story]').forEach(b => b.addEventListener('click', () => {
+    goFull(); audioInit();
+    let d = storyLoad(); if (!d || d.cleared) d = storyNew();
+    STORY.d = d; storySave(); if (!STORY.on) G.storyPrevSolo = G.solo; STORY.on = true; G.mode = 'cpu'; G.boss = false;
+    storyCard();
+  }));
+  window.storyReset = () => { try { localStorage.removeItem('cf_story'); } catch (e) { } storyBadge(); };
   $('#pauseBtn').addEventListener('click', () => togglePause(true));
   $('#resume').addEventListener('click', () => togglePause(false));
-  $('#quit').addEventListener('click', () => { stopStage(); G.paused = false; G.scene = 'title'; setTouch(false); showScreen('title'); bgmTrack('title', .8); });
+  $('#quit').addEventListener('click', () => { stopStage(); G.paused = false; G.scene = 'title'; setTouch(false); if (STORY.on) { setTimeout(() => storyCard(), 0); bgmTrack('title', .8); return; } showScreen('title'); bgmTrack('title', .8); });
   $('#again').addEventListener('click', () => { startMatch(); });
   $('#toSelect').addEventListener('click', () => { stopStage(); bgmTrack('title', .6); G.scene = 'title'; pickStep = 0; G.sel = []; updateSelect(); showScreen('select'); selReset(); });
   $('#toTitle').addEventListener('click', () => { stopStage(); bgmTrack('title', .8); G.scene = 'title'; showScreen('title'); });
