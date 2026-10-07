@@ -40,6 +40,14 @@ shuten: { id: 'shuten', name: 'SHUTEN', role: '鬼王・ボス', c1: '#ffc23a', 
 16 また一つ、酒の肴が増えたな。  17 足りぬ……まるで足りぬわ。  18 見事……この首、くれてやる……
 ```
 
+## 音楽（2026-10-07）
+- Topview Music で3曲生成（各約3分半）：ボス戦テーマ／SHUTEN のシネマ曲／NOX×NIX のシネマ曲。原本 `C:\Users\szou\shuten_work\music\`
+- `media/bgm_boss.mp3`：ボス戦中の BGM（`bgmTrack('boss')`、-10 LUFS）。通常の対戦は今までどおり `bgm_battle.mp3`
+- `media/sfx/movie_intro_shuten.mp3`（登場ムービー、曲の頭0–10s）／`movie_ex_shuten.mp3`（ULT、120–130.8s）／`movie_win_shuten.mp3`（勝利、194.3–199.8s）
+- `media/sfx/movie_ex_noxnix.mp3`（158–169.3s）／`movie_win_noxnix.mp3`（185–191s）：NOX×NIX のムービーも無音ではなくなった
+- 各スライスは頭0.15s・終わり0.6sフェード、-11.5 LUFS（既存のムービー曲と同程度）
+
 ## 未対応・調整候補
+- 体力5倍・攻撃1.5倍での CPU 同士20秒：プレイヤー側は200中160を失い、ボスは500中39（8%）
 - バランス：最初の体力10倍・攻撃2倍では CPU 同士の観戦で、プレイヤー1人が約12秒で倒され、ボスは1.5%しか減らなかった → 体力5倍・攻撃1.5倍に下げた
-- ムービーの BGM（無音）、1VS1 用の倍フレーム版（ボス戦は2VS2なので不要）
+- 1VS1 用の倍フレーム版（ボス戦は2VS2なので不要）
