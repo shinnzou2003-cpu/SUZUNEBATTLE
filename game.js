@@ -185,9 +185,9 @@ const CHARS = {
   // NOX × NIX: a two-witch Halloween band from space — one slot, both on the field together with twin guitars (NIX in
   // front, NOX behind). They hop star to star in the pumpkin ship JACK-O' ARK, which is also their ULT. Black × purple × orange
   noxnix: { id: 'noxnix', name: 'NOX×NIX', role: 'ツインギター・魔女バンド', c1: '#b06bff', c2: '#ff8a1e', rgb: '176,107,255', rgb2: '255,138,30', speed: 5.4, jump: -24.5, anchor: .5, hurtW: 220, hurtH: 285, exName: 'ツイン・リフ', ultName: 'ジャック・オー・アーク' },
-  // SHUTEN 鬼王: the BOSS BATTLE boss (not on the select grid). Colossal demon king, 10× health, 2× damage, ≈2.5× size,
+  // SHUTEN 鬼王: the BOSS BATTLE boss (not on the select grid). Colossal demon king, 5× health, 1.5× damage, ≈2.5× size,
   // super armour. Black × gold × crimson
-  shuten: { id: 'shuten', name: 'SHUTEN', role: '鬼王・ボス', c1: '#ffc23a', c2: '#e8222c', rgb: '255,194,58', rgb2: '232,34,44', speed: 4.6, jump: -21.0, anchor: .5, hurtW: 150, hurtH: 720, boss: true, maxHp: 1000, dmgMul: 2, exName: '鬼酒・覚醒', ultName: '酒呑大蛇斬' }
+  shuten: { id: 'shuten', name: 'SHUTEN', role: '鬼王・ボス', c1: '#ffc23a', c2: '#e8222c', rgb: '255,194,58', rgb2: '232,34,44', speed: 4.6, jump: -21.0, anchor: .5, hurtW: 150, hurtH: 720, boss: true, maxHp: 500, dmgMul: 1.5, exName: '鬼酒・覚醒', ultName: '酒呑大蛇斬' }
 };
 const ALT = {
   suzune: { c1: '#7fd8ff', c2: '#4f7bff', rgb: '130,215,255', rgb2: '90,120,255', test: (h, s, l) => (h > 33 && h < 64 && s > .3) || ((h < 12 || h > 340) && s > .55), shift: 175 },
@@ -493,7 +493,7 @@ function tone(dur, f0, f1, vol, type = 'sine', delay = 0) {
   o.connect(g); g.connect(SND.master); o.start(t); o.stop(t + dur + .05);
 }
 /* ---------- BGM (opening + title loop) ---------- */
-const BGM = { buf: null, bufBattle: null, cur: 'title', src: null, gain: null, on: true, loopStart: 6.1, vol: .8 };
+const BGM = { buf: null, bufBattle: null, bufBoss: null, cur: 'title', src: null, gain: null, on: true, loopStart: 6.1, vol: .8 };
 async function loadBGM() {
   try {
     const ab = await (await fetch('media/bgm.mp3')).arrayBuffer();
@@ -504,9 +504,13 @@ async function loadBGM() {
     const ab2 = await (await fetch('media/bgm_battle.mp3')).arrayBuffer();
     BGM.bufBattle = await new Promise((res, rej) => SND.ac.decodeAudioData(ab2, res, rej));
   } catch (e) { BGM.bufBattle = null; }
+  try {   // BOSS BATTLE theme (SHUTEN)
+    const ab3 = await (await fetch('media/bgm_boss.mp3')).arrayBuffer();
+    BGM.bufBoss = await new Promise((res, rej) => SND.ac.decodeAudioData(ab3, res, rej));
+  } catch (e) { BGM.bufBoss = null; }
 }
 function bgmPlay(offset = 0) {
-  const battle = BGM.cur === 'battle' && BGM.bufBattle, buf = battle ? BGM.bufBattle : BGM.buf;
+  const boss = BGM.cur === 'boss' && BGM.bufBoss, battle = boss || (BGM.cur !== 'title' && BGM.bufBattle), buf = boss ? BGM.bufBoss : battle ? BGM.bufBattle : BGM.buf;
   if (!buf || !SND.ac) return;
   bgmStop();
   const ac = SND.ac;
@@ -519,10 +523,10 @@ function bgmPlay(offset = 0) {
 function bgmTrack(name, vol) {
   if (BGM.cur === name && BGM.src) { bgmVolume(vol); return; }
   BGM.cur = name; BGM.vol = vol;
-  if (!SND.ac || !BGM.gain) { bgmPlay(name === 'battle' ? 0 : BGM.loopStart); return; }
+  if (!SND.ac || !BGM.gain) { bgmPlay(name !== 'title' ? 0 : BGM.loopStart); return; }
   const t = SND.ac.currentTime, old = BGM.src; BGM.src = null;
   BGM.gain.gain.cancelScheduledValues(t); BGM.gain.gain.setValueAtTime(BGM.gain.gain.value, t); BGM.gain.gain.linearRampToValueAtTime(0, t + .35);
-  setTimeout(() => { if (old) { try { old.stop(); } catch (e) { } } bgmPlay(name === 'battle' ? 0 : BGM.loopStart); }, 380);
+  setTimeout(() => { if (old) { try { old.stop(); } catch (e) { } } bgmPlay(name !== 'title' ? 0 : BGM.loopStart); }, 380);
 }
 function bgmStop() { if (BGM.src) { try { BGM.src.stop(); } catch (e) { } BGM.src = null; } }
 function bgmVolume(v, sec = .6) { BGM.vol = v; if (!BGM.gain || !SND.ac) return; const t = SND.ac.currentTime; BGM.gain.gain.cancelScheduledValues(t); BGM.gain.gain.setValueAtTime(BGM.gain.gain.value, t); BGM.gain.gain.linearRampToValueAtTime(BGM.on ? v : 0, t + sec); }
@@ -667,7 +671,7 @@ function playS(name, vol = 1, rate = 1, delay = 0) {
 const MOVIE_AUDIO = { buf: {}, src: null, gain: null, bgmVol: null };
 async function loadMovieAudio() {
   if (!SND.ac) return;
-  const ids = Object.keys(CHARS).flatMap(id => ['ex_' + id, 'win_' + id]);
+  const ids = Object.keys(CHARS).flatMap(id => ['ex_' + id, 'win_' + id]).concat(['intro_shuten']);   // + the BOSS BATTLE entrance score
   await Promise.all(ids.map(async n => {
     try { const r = await fetch('media/sfx/movie_' + n + '.mp3'); if (!r.ok) return; const ab = await r.arrayBuffer(); MOVIE_AUDIO.buf[n] = await new Promise((res, rej) => SND.ac.decodeAudioData(ab, res, rej)); } catch (e) { }
   }));
@@ -1116,7 +1120,7 @@ function startUlt(f) {
 
 function hitTarget(att, tgt, o) {
   if (tgt.inv > 0 || tgt.ko || tgt.state === 'down' || G.phase !== 'fight') return false;
-  if (att.ch.dmgMul) o = { ...o, dmg: o.dmg * att.ch.dmgMul * (att.rage > 0 ? 1.2 : 1) };   // SHUTEN hits twice as hard (more when enraged)
+  if (att.ch.dmgMul) o = { ...o, dmg: o.dmg * att.ch.dmgMul * (att.rage > 0 ? 1.2 : 1) };   // SHUTEN hits 1.5× as hard (more when enraged)
   const fromDir = Math.sign(tgt.x - att.x) || att.face;
   // guard works from either side: a grounded fighter holding guard blocks even a cross-up that lands before they turn round
   const guarding = (tgt.state === 'guard' || (tgt.holdBack && (tgt.state === 'walk' || tgt.state === 'idle'))) && onGround(tgt);
@@ -2150,7 +2154,7 @@ function drawIsanaUlt(f, front) {   // behind her: the fins' cyan blades and jet
 }
 // SHUTEN 鬼王: the boss of the BOSS BATTLE (not on the select grid). A colossal demon king (≈2.5× a fighter) in black and
 // gold armour, half eaten by golden crystal, two giant spiral horns, a glowing crimson ring scar round the neck and crimson
-// scripture forever circling him. Ten times a fighter's health, double damage, super armour (only heavy hits make him
+// scripture forever circling him. Five times a fighter's health, 1.5× damage, super armour (only heavy hits make him
 // flinch). His serpent long sword is a chain of golden blade segments that crawls and coils like a living snake.
 // a1/a2/a3: serpent sweep → overhead slam (shockwave) → rising spiral (launch). b 大蛇這い: the blade crawls far along the
 // floor. EX 鬼酒・覚醒: drinks from the gourd — scar, eyes, scripture and horns ignite in turn — then a scripture blast all
@@ -2326,7 +2330,7 @@ function bossIntro(id) {
     let done = false; const end = () => { if (done) return; done = true; box.classList.remove('on'); try { v.pause(); } catch (e) { } stopMovieAudio(.3); box.removeEventListener('click', end); res(); };
     box.classList.add('on'); box.addEventListener('click', end);
     try { v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(end); } catch (e) { end(); }
-    movieAudio('ex_' + id); voice(id, 'select', { delay: (v.duration || 8) - 3 });
+    movieAudio('intro_' + id); voice(id, 'select', { delay: (v.duration || 8) - 3 });
     v.onended = end; setTimeout(end, ((v.duration || 10) + 1) * 1000);
   });
 }
@@ -3420,7 +3424,7 @@ async function startMatch() {
   if (G.boss && G.round === 1) { bgmVolume(.15, .3); await bossIntro('shuten'); }
   G.teams.flat().forEach(f => { if (f.alt) prepareAlt(f.id); });
   startRound();
-  G.scene = 'game'; showScreen(null); setTouch(true); bgmTrack('battle', .5);
+  G.scene = 'game'; showScreen(null); setTouch(true); bgmTrack(G.boss ? 'boss' : 'battle', .5);
   const tp = document.getElementById('touch'); if (tp) tp.dataset.solo = G.picks[0].length === 1 ? '1' : '0';
 }
 function startRound() {
@@ -4619,7 +4623,7 @@ function setupUI() {
       if (tags.length) c.dataset.tag = tags.join(' '); else delete c.dataset.tag;
       c.classList.remove('p1');
     });
-    $('#selNote').textContent = G.boss ? '鬼王 SHUTEN：体力10倍・攻撃力2倍・巨体。2人タッグで交代しながら挑め（時間無制限・1本勝負）' : G.solo ? '1VS1 シングルバトル。キャラのアニメーションが2倍なめらか（2VS2 タッグは下で切り替え）' : sl.n === 2 ? '同じチームに同じキャラは選べません。試合中は「交代」でいつでも入れ替え！' : '2人1組のチームバトル。1人目が先鋒で出撃します';
+    $('#selNote').textContent = G.boss ? '鬼王 SHUTEN：体力5倍・攻撃力1.5倍・巨体。2人タッグで交代しながら挑め（時間無制限・1本勝負）' : G.solo ? '1VS1 シングルバトル。キャラのアニメーションが2倍なめらか（2VS2 タッグは下で切り替え）' : sl.n === 2 ? '同じチームに同じキャラは選べません。試合中は「交代」でいつでも入れ替え！' : '2人1組のチームバトル。1人目が先鋒で出撃します';
   }
   // --- select-screen video: intro plays when the screen opens, confirm plays on pick ---
   let selBusy = false, selTimer = null, selNext = null;
