@@ -1096,13 +1096,25 @@ const MOVES = {
   }
 };
 
+// SHUTEN cooldowns: after each attack the boss has to rest before the next one (chaining a1→a2→a3 is still allowed),
+// a longer rest after the full 3-hit string, and b / EX can't be reused for a while — so the players get openings
+const BOSS_REST = { a: 34, aFin: 80, b: 110, ex: 80, ult: 60 };   // frames of idle after the move ends
+const BOSS_MOVE_CD = { b: 240, ex: 900 };                          // frames before the same move can start again
 function startMove(f, key) {
   const m = MOVES[f.id][key];
+  if (f.ch.boss) {
+    const chaining = key === 'a' && f.state === 'atk' && f.move && f.move.key === 'a' && f.chain < 2;
+    if (!chaining && (f.restT > 0 || (f.cd && f.cd[key] > 0))) return false;
+  }
   if (f.gauge < m.cost) return false;
   if (key === 'ult' && f.hp > f.maxHp * .5) return false;
   f.gauge -= m.cost;
   if (key === 'a' && f.state === 'atk' && f.move && f.move.key === 'a') f.chain++; else f.chain = 0;
   f.state = 'atk'; f.t = -1; f.move = { key, ...m, total: m.st + m.act + m.rec, id: Math.random() }; f.hitIds.clear();
+  if (f.ch.boss) {
+    f.restT = f.move.total + (key === 'a' ? BOSS_REST[f.chain >= 2 ? 'aFin' : 'a'] : BOSS_REST[key] || 0);
+    if (BOSS_MOVE_CD[key]) (f.cd = f.cd || {})[key] = BOSS_MOVE_CD[key];
+  }
   if (key === 'ult') { startUlt(f); voice(f, 'ult', { delay: .15 }); }
   if (key === 'ex') { telop('ex', f); fxPowerUp(f, false); sfx.special(); voice(f, 'ex'); f.inv = f.id === 'suzune' ? 30 : 0; sfx.charge(); }
   if (key === 'a') voice(f, 'a' + Math.min(2, f.chain), { p: f.chain === 2 ? 1 : .75 });
@@ -3088,6 +3100,8 @@ const canUlt = f => f.gauge >= 100 && f.hp <= f.maxHp * .5;   // ULT unlocks onl
 const spPick = f => canUlt(f) ? 'ult' : f.gauge >= 50 ? 'ex' : 'b';
 function stepFighter(f, o, inp, dt) {
   if (f.armorT > 0) f.armorT -= dt;
+  if (f.restT > 0) f.restT -= dt;
+  if (f.cd) for (const k in f.cd) if (f.cd[k] > 0) f.cd[k] -= dt;
   if (f.rage > 0) { f.rage -= dt; if ((G.frame | 0) % 3 === 0) addFx({ k: 'ember', x: f.x + rnd(-120, 120), y: f.y - rnd(100, 700), vx: rnd(-1, 1), vy: rnd(-3, -1), life: 40, t: 0, rgb: ONI.red }); }
   const pr = k => inp[k] && !f.prev[k];
   for (const k of ['a', 'b', 'ex', 'ult', 'u', 's', 'dh']) if (pr(k)) f.buf[k] = 9; else if (f.buf[k] > 0) f.buf[k] -= dt;
