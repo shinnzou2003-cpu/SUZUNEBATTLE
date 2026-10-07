@@ -336,6 +336,8 @@ function pickFrame(f) {
       if (a.dash) return f.dashDir === f.face ? prog('dash', t / DASH.len) : at('guard', 0);
       if (f.id !== 'suzune') return f.dashDir === f.face ? loop('walk', (AN.fps.walk || 12) * 2) : at('guard', 0);
       return f.dashDir === f.face ? at('ex', 99) : at('guard', 0);
+    case 'adash': if (f.id === 'enjo') return loop('idle', AN.fps.idle || 8);
+      if (a.dash) return prog('dash', Math.min(1, t / AIRDASH.len)); return at('jump', 1);
     case 'tagin': if (f.id === 'arca') return loop('walk', 20); return f.t < f.tg.L * .45 ? at('jump', 0) : at('jump', 1);
     case 'dashin': return f.id !== 'suzune' ? loop('walk', (AN.fps.walk || 12) * 1.2) : at('ex', 99);
     case 'hit': return prog('hit', t / (t + Math.max(1, f.stun)));
@@ -3095,6 +3097,16 @@ function cornered(f, o) {
   const wall = back > 0 ? Math.min(STAGE_W - 70, G.cam.x + half - 40) : Math.max(70, G.cam.x - half + 40);
   return Math.abs(wall - f.x) < 240 && Math.abs(o.x - f.x) < 520;
 }
+const AIRDASH = { len: 18, speed: 40, inv: 10, cancel: 7 };
+function startAirDash(f, d) {
+  f.state = 'adash'; f.t = 0; f.move = null; f.dashDir = d; f.face = d; f.vx = d * AIRDASH.speed; f.vy = 0; f.inv = Math.max(f.inv || 0, AIRDASH.inv);
+  f.airDashUsed = true; f.dashCd = DASH.cd * .6; f.flip = false; f.rot = 0; f.sx = 1.16; f.sy = .88;
+  sfx.dash(); playS('whoosh_punch2', .7, 1.35);
+  const rgb = auraRgb(f);
+  fxRing(f.x - d * 20, f.y - 150, rgb, 10, 170, 14, 6, .22);
+  fxArc(f.x + d * 30, f.y - 150, 120, -.6, .6, rgb, d, 12, 12);
+  for (let i = 0; i < 8; i++) addFx({ k: 'streak', x: f.x + rnd(-30, 30), y: f.y - rnd(40, 280), vx: -d * rnd(16, 28), vy: 0, life: rnd(8, 14), t: 0, rgb, w: rnd(1.5, 3) });
+}
 function startDash(f, d) {
   const o = G.fighters[1 - f.side];
   f.passThru = !!(o && !o.hidden && d === (Math.sign(o.x - f.x) || f.face) && cornered(f, o) && Math.abs(f.y - o.y) < 260);
@@ -3111,12 +3123,13 @@ const canUlt = f => f.gauge >= 100 && f.hp <= f.maxHp * .5;   // ULT unlocks onl
 const spPick = f => canUlt(f) ? 'ult' : f.gauge >= 50 ? 'ex' : 'b';
 function stepFighter(f, o, inp, dt) {
   if (f.armorT > 0) f.armorT -= dt;
+  if (f.airDashUsed && f.state !== 'adash' && f.y >= GROUND - .5) f.airDashUsed = false;
   if (f.restT > 0) f.restT -= dt;
   if (f.cd) for (const k in f.cd) if (f.cd[k] > 0) f.cd[k] -= dt;
   if (f.rage > 0) { f.rage -= dt; if ((G.frame | 0) % 3 === 0) addFx({ k: 'ember', x: f.x + rnd(-120, 120), y: f.y - rnd(100, 700), vx: rnd(-1, 1), vy: rnd(-3, -1), life: 40, t: 0, rgb: ONI.red }); }
   const pr = k => inp[k] && !f.prev[k];
   for (const k of ['a', 'b', 'ex', 'ult', 'u', 's', 'dh']) if (pr(k)) f.buf[k] = 9; else if (f.buf[k] > 0) f.buf[k] -= dt;
-  if (pr('tg') && G.phase === 'fight' && ['idle', 'walk', 'guard', 'jump', 'dash'].includes(f.state) && G.fighters[f.side] === f) { f.prev = { ...inp }; if (doTag(f.side, false)) return; }
+  if (pr('tg') && G.phase === 'fight' && ['idle', 'walk', 'guard', 'jump', 'dash', 'adash'].includes(f.state) && G.fighters[f.side] === f) { f.prev = { ...inp }; if (doTag(f.side, false)) return; }
   // SUZUNE step-dash: dash button, or double-tap left/right
   if (CAN_DASH[f.id]) {
     for (const [k, d] of [['l', -1], ['r', 1]]) if (pr(k)) { if (f.tapD === d && G.frame - f.tapF < 14) { f.buf.dh = 9; f.dashReq = d; f.tapD = 0; } else { f.tapD = d; f.tapF = G.frame; } }
@@ -3158,13 +3171,25 @@ function stepFighter(f, o, inp, dt) {
     } else { f.state = 'idle'; f.vx *= Math.pow(.7, dt); }
   } else if (f.state === 'jump') {
     if (f.flip) { f.flipT += dt; if (f.flipT >= 30) { f.flip = false; f.rot = 0; } }
-    if (canAct) {
+    if (canAct && f.buf.dh > 0 && CAN_DASH[f.id] && f.id !== 'arca' && !f.airDashUsed && !(f.dashCd > 0)) {   // AIR DASH: once per jump
+      f.buf.dh = 0; startAirDash(f, f.dashReq || dirIn || (Math.sign(o.x - f.x) || f.face)); f.dashReq = 0;
+    } else if (canAct) {
       if (f.buf.s > 0) { f.buf.s = 0; f.flip = false; f.rot = 0; startMove(f, f.gauge >= 50 ? 'ex' : 'b'); }
       else if (f.buf.b > 0) { f.buf.b = 0; f.flip = false; f.rot = 0; startMove(f, 'b'); }
       else if (f.buf.a > 0) { f.buf.a = 0; f.flip = false; f.rot = 0; startMove(f, 'a'); }
       else if (f.buf.ex > 0 && f.gauge >= 50) { f.buf.ex = 0; f.flip = false; f.rot = 0; startMove(f, 'ex'); }
       f.vx = lerp(f.vx, dirIn * f.ch.speed * 1.15, .04);
     }
+  } else if (f.state === 'adash') {   // AIR DASH: a flat burst through the air, gravity held off, then fall as a normal jump
+    f.vx *= Math.pow(.9, dt); f.vy = -GRAV * dt * (f.t < AIRDASH.len - 4 ? 1 : .4);
+    if (f.id === 'enjo') fxSmoke(f.x - f.dashDir * rnd(0, 60), f.y - rnd(40, 300), 2, 1, -f.dashDir, f.col.rgb);
+    else { f.trail.push(1); f.rail.push({ x: f.x - f.dashDir * 20, y: f.y - 10, t: G.frame }); }
+    if (canAct && f.t >= AIRDASH.cancel) {   // air attacks straight out of the dash
+      if (f.buf.s > 0) { f.buf.s = 0; startMove(f, f.gauge >= 50 ? 'ex' : 'b'); }
+      else if (f.buf.b > 0) { f.buf.b = 0; startMove(f, 'b'); }
+      else if (f.buf.a > 0) { f.buf.a = 0; startMove(f, 'a'); }
+    }
+    if (f.state === 'adash' && f.t >= AIRDASH.len) { f.state = 'jump'; f.t = 12; f.vy = 1.5; f.vx = f.dashDir * Math.max(Math.abs(f.vx), f.ch.speed * 1.2); f.flip = false; f.rot = 0; }
   } else if (f.state === 'dash') {
     f.vx *= Math.pow(.91, dt);
     if (f.id === 'enjo') {   // smoke warp: no after-images, a jade smoke trail instead
@@ -3245,13 +3270,13 @@ function stepFighter(f, o, inp, dt) {
     f.y = GROUND;
     if (f.vy > 0) {
       if (f.state === 'air') { f.state = 'down'; f.t = 0; f.vy = 0; fxDust(f.x, f.y, 12, 1.3); shake(8); sfx.land(); fxRing(f.x, f.y - 4, '255,255,255', 10, 140, 18, 4, .25); }
-      else { if (wasAir) { fxDust(f.x, f.y, 6, .8); sfx.land(); f.land = 9; } if (f.state === 'jump') { f.state = 'idle'; f.flip = false; f.rot = 0; } }
+      else { if (wasAir) { fxDust(f.x, f.y, 6, .8); sfx.land(); f.land = 9; } if (f.state === 'jump' || f.state === 'adash') { f.state = 'idle'; f.flip = false; f.rot = 0; } }
       f.vy = 0;
     }
   }
   const sep = W / G.cam.z - 320;   // keep both fighters inside the (zoomed) frame
   if (f.state !== 'tagin') f.x = clamp(f.x, 70, STAGE_W - 70);
-  if (Math.abs(f.x - o.x) > sep && !f.hidden && !o.hidden && f.state !== 'dashin' && o.state !== 'dashin' && f.state !== 'tagin' && o.state !== 'tagin' && f.state !== 'dash') f.x = o.x + Math.sign(f.x - o.x) * sep;
+  if (Math.abs(f.x - o.x) > sep && !f.hidden && !o.hidden && f.state !== 'dashin' && o.state !== 'dashin' && f.state !== 'tagin' && o.state !== 'tagin' && f.state !== 'dash' && f.state !== 'adash') f.x = o.x + Math.sign(f.x - o.x) * sep;
   if (f.trail.length) { f.trail.length = 0; f.ghosts = f.ghosts || []; { const pf = pickFrame(f); f.ghosts.push({ x: f.x, y: f.y, face: f.face, rot: f.rot, sx: f.sx, sy: f.sy, top: f.top, bot: f.bot, t: 0, fr: pf && pf.fr }); } }
   if (f.ghosts) { for (const g of f.ghosts) g.t += dt; f.ghosts = f.ghosts.filter(g => g.t < 16); }
   f.rail = f.rail.filter(r => G.frame - r.t < 40);
@@ -3300,6 +3325,7 @@ function poseOf(f) {
     case 'jump': if (f.vy < -4) { P.sy = 1.08; P.sx = .93; P.bot = -24; P.top = 6; } else { P.sy = .98; P.bot = 14; P.top = -6; } P.wave = 14; break;
     case 'tagin': P.sy = 1.05; P.sx = .95; P.bot = -18; P.wave = 14; break;
     case 'dashin': P.top = 40; P.sx = 1.18; P.sy = .9; P.wave = 16; P.rot = .08; break;
+    case 'adash': P.top = 30; P.sx = 1.18; P.sy = .88; P.rot = .14; P.wave = 18; break;
     case 'dash': if (f.dashDir === f.face) { P.top = 44; P.sx = 1.2; P.sy = .9; P.rot = .1; } else { P.top = -24; P.sx = .94; P.rot = -.06; } P.wave = 16; break;
     case 'hit': P.top = -30; P.bot = 6; P.sx = .95; P.rot = -.1; P.ox = Math.sin(f.t * 2.2) * 4; P.wave = 12; break;
     case 'air': P.rot = -.4 - Math.min(1, f.t / 28) * .9; P.top = -20; P.bot = 20; P.wave = 18; break;
@@ -3351,7 +3377,7 @@ function poseOf(f) {
 function pushApart(a, b) {
   if (a.hidden || b.hidden) return;
   const passing = x => x.state === 'atk' && x.move && (((x.move.key === 'ex' || x.move.key === 'ult') && x.id === 'suzune') || (x.id === 'aria' && x.move.zip));
-  if (passing(a) || passing(b) || (a.state === 'dash' && a.passThru) || (b.state === 'dash' && b.passThru)) return;
+  if (passing(a) || passing(b) || (a.state === 'dash' && a.passThru) || (b.state === 'dash' && b.passThru) || a.state === 'adash' || b.state === 'adash') return;
   const dx = b.x - a.x, d = Math.abs(dx), min = a.id === 'shuten' || b.id === 'shuten' ? 230 : a.id === 'kanna' || b.id === 'kanna' ? 170 : 100;
   if (d < min && Math.abs(a.y - b.y) < 200) { const push = (min - d) / 2, s = Math.sign(dx) || 1; a.x -= s * push; b.x += s * push; }
 }
@@ -3704,8 +3730,8 @@ function drawFighterBody(f, reflect) {
   ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = pulse * pwr;
   if (pwr > 0) drawGlow(src, fr, bx, by, bw, bh, arg);
   if (hotA) { ctx.globalAlpha = .35 + .2 * beat; drawGlow(src, fr, bx - 6, by - 6, bw + 12, bh + 12, ahot); }
-  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = f.inv > 0 && f.inv < 900 && f.state !== 'atk' && f.state !== 'getup' && f.state !== 'dash' ? (G.frame % 6 < 3 ? .5 : 1) : 1;
-  if (f.id === 'enjo' && f.state === 'dash') { const q = f.t / DASH.len; ctx.globalAlpha = .12 + .88 * Math.abs(q * 2 - 1); }   // smoke warp: fades out, then re-forms
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = f.inv > 0 && f.inv < 900 && f.state !== 'atk' && f.state !== 'getup' && f.state !== 'dash' && f.state !== 'adash' ? (G.frame % 6 < 3 ? .5 : 1) : 1;
+  if (f.id === 'enjo' && (f.state === 'dash' || f.state === 'adash')) { const q = f.t / (f.state === 'adash' ? AIRDASH.len : DASH.len); ctx.globalAlpha = .12 + .88 * Math.abs(q * 2 - 1); }   // smoke warp: fades out, then re-forms
   if (pwr < 1) ctx.filter = `brightness(${(.3 + .7 * pwr).toFixed(2)}) saturate(${(.5 + .5 * pwr).toFixed(2)})`;
   drawFrame(src, fr, bx, by, bw, bh, f.glitch > 0);
   if (pf.fr2 !== pf.fr && pf.mix > .04) {
