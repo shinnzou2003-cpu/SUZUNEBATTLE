@@ -225,7 +225,7 @@ async function buildAssets() {
 const ANIMS = {};
 const frameCount = (id, n) => ANIMS[id] && ANIMS[id].a[n] ? ANIMS[id].a[n].length : 0;
 // visual size balance between characters (SUZUNE's source video was framed larger)
-const RESIZE = { suzune: .9, aoi: .9, sakura: .9, enjo: 1.15, rei: 1.15 };   // ENJO / REI enlarged 2026-10-05; their summoned beasts keep their size   // 2026-10-04: these three trimmed to sit with the rest of the roster (sprite + hit/hurt boxes + attach points)
+const RESIZE = { suzune: .9, aoi: .9, sakura: .95, mio: 1.08, enjo: 1.17, rei: 1.28, ichika: 1.12, isana: 1.15, noxnix: 1.32 };   // 2026-10-07: everyone (but the giants ARCA / KANNA / SHUTEN) sized so their heads line up with SUZUNE / AOI standing upright (victory poses compared on one ground line); scales sprite + hit/hurt boxes + attach points; ENJO / REI's summoned beasts keep their size
 const RS = f => RESIZE[f.id] || 1;
 const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.2, mio: 1.22, aria: .95, enjo: 1.0, rei: 1.0, kanna: 2.1, ichika: 1.0, isana: 1.0, noxnix: 1.0, shuten: 2.5 };   // AOI stands taller; SUZUNE fights from a low crouch; KANNA is a giant (≈2.5× SUZUNE)
 const LOAD = { done: 0, total: 0 };
@@ -574,7 +574,7 @@ function duckFor(t0, dur) {
   } g.cancelScheduledValues(t0); g.setValueAtTime(g.value, t0);
   g.linearRampToValueAtTime(.42, t0 + .08); g.setValueAtTime(.42, t0 + dur); g.linearRampToValueAtTime(1, t0 + dur + .45);
 }
-const VOICE_REV = '20261006';   // bump when clips are re-recorded so browsers drop the cached ones (ISANA re-voiced 2026-10-06)
+const VOICE_REV = '20261007';   // bump when clips are re-recorded so browsers drop the cached ones (ISANA re-voiced 2026-10-06)
 async function loadVoices() {
   if (!SND.ac) return;
   const ids = new Set(); Object.values(VOICE_MAP).forEach(m => Object.values(m).forEach(l => l.forEach(i => ids.add(i))));

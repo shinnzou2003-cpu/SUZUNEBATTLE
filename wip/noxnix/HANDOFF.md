@@ -39,19 +39,24 @@ noxnix: { id: 'noxnix', name: 'NOX×NIX', role: 'ツインギター・魔女バ�
   - **注意**：リールの宇宙のカット（6.25–24.25s）に、参照に使った宇宙船画像の透かし「PixVerse.ai」が右上に写り込んでいた → `delogo=x=714:y=16:w=116:h=30` で消去済み。作り直すときは透かしの無い参照画像を使うこと
   - ステージ20s → 9.5–19.5s を往復ループ `stage_noxnix.mp4`
 - 静止画：`noxnix.webp`（モーション動画の立ち絵をキー抜き）、`noxnix_card`／`noxnix_cutin`／`title_noxnix`（リールの顔アップ）
-- セリフ：Topview TTS（minimax）で NOX＝Misaki、NIX＝Himari。1本ずつ生成して無音カット＋ラウドネス -18 LUFS で `media/voice/nx_01..18.mp3`。掛け合いの3本（13 ULT／14 選択／16 勝利ムービー）は2人の声を0.25s空けて連結。**全部仮セリフ**
+- セリフ（2026-10-07 差し替え）：最初の Topview TTS 版はロボットのようで感情が出なかったため、ElevenLabs **eleven_v3**（感情タグ付き）で全18本を作り直し。NIX＝**Kano - Cute & Anime**（`OSwaPSNdfituxkWcjlkR`、元気で明るい）、NOX＝**Sakuya - Cheerful and Clear**（`8kgj5469z1URcH4MB2G4`、明るく澄んだ少しクールな声）。2人とも「人間の元気な女の子の歌手」に寄せて、NOX のセリフも明るい言い回しに変更。1本ずつ生成 → 無音カット → -18 LUFS → `media/voice/nx_01..18.mp3`。掛け合いの3本は0.2s空けて連結。原本 `C:\Users\szou\noxnix_work\voice2\`。**全部仮セリフ**
 ```
-01 NIX はっ！            02 NOX 遅い。           03 NIX それっ！
-04 NIX せーのっ！        05 NIX 記憶、鳴らすよ！  06 NIX よっ！
-07 NOX 読めてる。        08 NIX きゃっ！          09 NOX くっ……！
-10 NOX ……まだ、夜は明けてない。   11 NIX ごめん、ノクス……アンコール、できないや……
-12 NIX ツイン・リフ、いっくよー！
-13 NOX 来い、ジャック・オー・アーク。／NIX 未来のハロウィン、開演だよ！
-14 NIX ねえ、今夜いちばん楽しいのはどこ？／NOX ……ここ、みたいね。
-15 NOX 明日を盗もう。
-16 NOX 着陸は……まあ、いつも通り。／NIX それ、墜落って言うんだよ！
-17 NOX 夜明けまでが、私たちの時間。   18 NOX ……今夜のライブは、ここまで。
+01 NIX [energetic] はっ！      02 NOX [confident] 遅いよ！      03 NIX [energetic] それっ！
+04 NIX [shouting excitedly] せーのっ！   05 NIX [cheerful] 記憶、鳴らすよっ！   06 NIX [playful] よっと！
+07 NOX [smug] 読めてるって！   08 NIX [surprised] きゃっ！      09 NOX [pained] くっ……！
+10 NOX [determined] まだまだ、夜は明けてないよ！   11 NIX [sad, weakly] ごめん、ノクス……アンコール、できないや……
+12 NIX [excited shouting] ツイン・リフ、いっくよー！
+13 NOX 来て、ジャック・オー・アーク！／NIX 未来のハロウィン、開演だよっ！
+14 NIX ねえ、今夜いちばん楽しいのはどこ？／NOX [laughs] ……ここ、みたいだね！
+15 NOX [energetic] 明日を盗もう！
+16 NOX [sheepish laugh] 着陸は……まあ、いつも通りかな！／NIX [laughing] それ、墜落って言うんだよ！
+17 NOX [cheerful, proud] 夜明けまでが、私たちの時間！   18 NOX [sad, softly] 今夜のライブは……ここまで、かぁ。
 ```
+
+## 大きさ（2026-10-07）
+- NOX×NIX は他キャラより小さく見えたので拡大（`RESIZE.noxnix` 1.32。スプライト・当たり判定・技の出る位置ごと拡大）。同時に全キャラ（巨大キャラ ARCA／KANNA／SHUTEN を除く）を SUZUNE／AOI の頭の高さに揃えた：勝利ポーズを同じ地面に並べて頭頂（帽子・耳は除く）を比較
+  - RESIZE: suzune .9 / aoi .9 / sakura .90→.95 / mio 1→1.08 / aria 1 / enjo 1.15→1.17 / rei 1.15→1.28 / ichika 1→1.12 / isana 1→1.15 / noxnix 1→1.32
+  - 比較用スクリプト `C:\Users\szou\noxnix_work\lineup.py '{RESIZE}' out.jpg winPose|walk|idle`
 
 ## 未対応
 - ~~ULT／勝利ムービーの BGM~~ → 2026-10-07 に Topview Music で作成済み（`movie_ex_noxnix.mp3`・`movie_win_noxnix.mp3`、詳細は wip/shuten/HANDOFF.md）
