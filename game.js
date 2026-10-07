@@ -181,7 +181,10 @@ const CHARS = {
   // ISANA: salvage pirate captain (22, 172cm). Rusted steel, verdigris copper, chains and winches lit in cyan. ANCHOR CUTLASS
   // (right), HULL SHIELD (left), winch drum + turbine pods on the shoulders, fold-out back fins (DIVE MODE), hydraulic right leg
   // with a water-jet heel. Heavy and deliberate: big reach, an anchor-on-a-chain that reels foes in, cannon ports in the shield
-  isana: { id: 'isana', name: 'ISANA', role: 'サルベージ海賊・錨', c1: '#00e5ff', c2: '#39ffb0', rgb: '0,229,255', rgb2: '57,255,176', speed: 4.8, jump: -23.5, anchor: .55, hurtW: 58, hurtH: 285, exName: '舷側斉射', ultName: '深淵錨・ダイブモード' }
+  isana: { id: 'isana', name: 'ISANA', role: 'サルベージ海賊・錨', c1: '#00e5ff', c2: '#39ffb0', rgb: '0,229,255', rgb2: '57,255,176', speed: 4.8, jump: -23.5, anchor: .55, hurtW: 58, hurtH: 285, exName: '舷側斉射', ultName: '深淵錨・ダイブモード' },
+  // NOX × NIX: a two-witch Halloween band from space — one slot, both on the field together with twin guitars (NIX in
+  // front, NOX behind). They hop star to star in the pumpkin ship JACK-O' ARK, which is also their ULT. Black × purple × orange
+  noxnix: { id: 'noxnix', name: 'NOX×NIX', role: 'ツインギター・魔女バンド', c1: '#b06bff', c2: '#ff8a1e', rgb: '176,107,255', rgb2: '255,138,30', speed: 5.4, jump: -24.5, anchor: .5, hurtW: 220, hurtH: 285, exName: 'ツイン・リフ', ultName: 'ジャック・オー・アーク' }
 };
 const ALT = {
   suzune: { c1: '#7fd8ff', c2: '#4f7bff', rgb: '130,215,255', rgb2: '90,120,255', test: (h, s, l) => (h > 33 && h < 64 && s > .3) || ((h < 12 || h > 340) && s > .55), shift: 175 },
@@ -194,16 +197,17 @@ const ALT = {
   rei: { c1: '#5ab8ff', c2: '#e9e4d8', rgb: '90,184,255', rgb2: '233,228,216', test: (h, s, l) => (h < 20 || h > 340) && s > .3, shift: 205 },
   kanna: { c1: '#7fd8ff', c2: '#b8c8e8', rgb: '130,215,255', rgb2: '184,200,232', test: (h, s, l) => h > 12 && h < 52 && s > .3, shift: 175 },
   ichika: { c1: '#ff7aa8', c2: '#ffd0e0', rgb: '255,122,168', rgb2: '255,208,224', test: (h, s, l) => h > 30 && h < 62 && s > .3, shift: 300 },
-  isana: { c1: '#ff7a3c', c2: '#ffc070', rgb: '255,122,60', rgb2: '255,192,112', test: (h, s, l) => h > 150 && h < 200 && s > .25, shift: 190 }
+  isana: { c1: '#ff7a3c', c2: '#ffc070', rgb: '255,122,60', rgb2: '255,192,112', test: (h, s, l) => h > 150 && h < 200 && s > .25, shift: 190 },
+  noxnix: { c1: '#3fe0a0', c2: '#7fd8ff', rgb: '63,224,160', rgb2: '127,216,255', test: (h, s, l) => h > 250 && h < 310 && s > .25, shift: 200 }
 };
 const GFX = {};
 async function buildAssets() {
   const A = window.ASSETS;
-  const [su, ao, drone, suci, aoci, ar, arci, arp, sa, saci, mi, mici, ari, arici, en, enci, ensk, re, reci, ka, kaci, ic, icci, is, isci] = await Promise.all([A.su, A.ao, A.drone, A.suci, A.aoci, A.ar, A.arci, A.arp, A.sa, A.saci, A.mi, A.mici, A.ar2, A.ar2ci, A.en, A.enci, A.enskull, A.re, A.reci, A.ka, A.kaci, A.ic, A.icci, A.is, A.isci].map(p => track(loadImg(p))));
-  const base = { suzune: { img: su, ci: suci }, aoi: { img: ao, ci: aoci }, arca: { img: ar, ci: arci }, sakura: { img: sa, ci: saci }, mio: { img: mi, ci: mici }, aria: { img: ari, ci: arici }, enjo: { img: en, ci: enci }, rei: { img: re, ci: reci }, kanna: { img: ka, ci: kaci }, ichika: { img: ic, ci: icci }, isana: { img: is, ci: isci } };
+  const [su, ao, drone, suci, aoci, ar, arci, arp, sa, saci, mi, mici, ari, arici, en, enci, ensk, re, reci, ka, kaci, ic, icci, is, isci, nx, nxci] = await Promise.all([A.su, A.ao, A.drone, A.suci, A.aoci, A.ar, A.arci, A.arp, A.sa, A.saci, A.mi, A.mici, A.ar2, A.ar2ci, A.en, A.enci, A.enskull, A.re, A.reci, A.ka, A.kaci, A.ic, A.icci, A.is, A.isci, A.nx, A.nxci].map(p => track(loadImg(p))));
+  const base = { suzune: { img: su, ci: suci }, aoi: { img: ao, ci: aoci }, arca: { img: ar, ci: arci }, sakura: { img: sa, ci: saci }, mio: { img: mi, ci: mici }, aria: { img: ari, ci: arici }, enjo: { img: en, ci: enci }, rei: { img: re, ci: reci }, kanna: { img: ka, ci: kaci }, ichika: { img: ic, ci: icci }, isana: { img: is, ci: isci }, noxnix: { img: nx, ci: nxci } };
   GFX.arcaPilot = arp; GFX.skull = ensk; GFX.skullAlt = null;
   GFX.skullAltLazy = () => GFX.skullAlt || (GFX.skullAlt = recolor(ensk, ALT.enjo.test, ALT.enjo.shift));
-  for (const id of ['suzune', 'aoi', 'arca', 'sakura', 'mio', 'aria', 'enjo', 'rei', 'kanna', 'ichika', 'isana']) {
+  for (const id of ['suzune', 'aoi', 'arca', 'sakura', 'mio', 'aria', 'enjo', 'rei', 'kanna', 'ichika', 'isana', 'noxnix']) {
     const ch = CHARS[id], al = ALT[id];
     const make = (img, ci, c1, rgb) => ({ img, ci, white: silhouette(img, '#fff'), tint: silhouette(img, c1), glow: glowOf(img, `rgb(${rgb})`) });
     GFX[id] = [make(base[id].img, base[id].ci, ch.c1, ch.rgb), null];
@@ -219,7 +223,7 @@ const frameCount = (id, n) => ANIMS[id] && ANIMS[id].a[n] ? ANIMS[id].a[n].lengt
 // visual size balance between characters (SUZUNE's source video was framed larger)
 const RESIZE = { suzune: .9, aoi: .9, sakura: .9, enjo: 1.15, rei: 1.15 };   // ENJO / REI enlarged 2026-10-05; their summoned beasts keep their size   // 2026-10-04: these three trimmed to sit with the rest of the roster (sprite + hit/hurt boxes + attach points)
 const RS = f => RESIZE[f.id] || 1;
-const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.2, mio: 1.22, aria: .95, enjo: 1.0, rei: 1.0, kanna: 2.1, ichika: 1.0, isana: 1.0 };   // AOI stands taller; SUZUNE fights from a low crouch; KANNA is a giant (≈2.5× SUZUNE)
+const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.2, mio: 1.22, aria: .95, enjo: 1.0, rei: 1.0, kanna: 2.1, ichika: 1.0, isana: 1.0, noxnix: 1.0 };   // AOI stands taller; SUZUNE fights from a low crouch; KANNA is a giant (≈2.5× SUZUNE)
 const LOAD = { done: 0, total: 0 };
 function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = document.getElementById('loadPct'); if (el) el.textContent = Math.round(LOAD.done / Math.max(1, LOAD.total) * 100) + '%'; return v; }); }
 // Atlases are NOT decoded at boot any more: only the fighters in the current match are kept in memory,
@@ -397,6 +401,17 @@ function pickFrame(f) {
           return prog(a.ultEnd ? 'ultEnd' : 'a3', Math.min(1, (u - U.slam) / (U.end - U.slam)));
         }
       }
+      if (f.id === 'noxnix') {
+        if (m.key === 'a') { const n = ['a1', 'a2', 'a3'][Math.min(2, f.chain)]; return prog(a[n] ? n : 'a', p); }
+        if (m.key === 'b') return prog('b', Math.min(1, t / (m.st + 10)));
+        if (m.key === 'ex') return t < m.st ? prog('ex', t / m.st * .3) : loop('ex', AN.fps.ex || 12);   // back to back, the twin solo keeps going
+        if (m.key === 'ult') {   // guitars to the sky → twin solo while the ship plays → the crash
+          const u = t - m.st, U = NOXNIX_ULT;
+          if (u < U.beam) return prog(a.ultCharge ? 'ultCharge' : 'idle', u / U.beam);
+          if (u < U.dive) return loop(a.ultFire ? 'ultFire' : 'ex', AN.fps.ultFire || 12);
+          return prog(a.ultEnd ? 'ultEnd' : 'idle', Math.min(1, (u - U.dive) / (U.end - U.dive)));
+        }
+      }
       if (f.id === 'kanna') {
         if (m.key === 'a') { const n = ['a1', 'a2', 'a3'][Math.min(2, f.chain)]; return prog(a[n] ? n : 'a', p); }
         if (m.key === 'b') return prog('b', p);
@@ -522,7 +537,9 @@ const VOICE_MAP = {
   ichika: { a0: ['ic_01', 'ic_03'], a1: ['ic_02'], a2: ['ic_04'], b: ['ic_05'], jump: ['ic_06'], guard: ['ic_07'], hit: ['ic_08'], hitBig: ['ic_09'],
     getup: ['ic_10'], ko: ['ic_11'], ex: ['ic_12'], ult: ['ic_13'], select: ['ic_14'], round: ['ic_15'], winMovie: ['ic_16'], win: ['ic_17'], lose: ['ic_18'] },
   isana: { a0: ['is_01', 'is_03'], a1: ['is_02'], a2: ['is_04'], b: ['is_05'], jump: ['is_06'], guard: ['is_07'], hit: ['is_08'], hitBig: ['is_09'],
-    getup: ['is_10'], ko: ['is_11'], ex: ['is_12'], ult: ['is_13'], select: ['is_14'], round: ['is_15'], winMovie: ['is_16'], win: ['is_17'], lose: ['is_18'] }
+    getup: ['is_10'], ko: ['is_11'], ex: ['is_12'], ult: ['is_13'], select: ['is_14'], round: ['is_15'], winMovie: ['is_16'], win: ['is_17'], lose: ['is_18'] },
+  noxnix: { a0: ['nx_01', 'nx_03'], a1: ['nx_02'], a2: ['nx_04'], b: ['nx_05'], jump: ['nx_06'], guard: ['nx_07'], hit: ['nx_08'], hitBig: ['nx_09'],
+    getup: ['nx_10'], ko: ['nx_11'], ex: ['nx_12'], ult: ['nx_13'], select: ['nx_14'], round: ['nx_15'], winMovie: ['nx_16'], win: ['nx_17'], lose: ['nx_18'] }
 };
 const VOICE = { buf: {}, gain: null, last: {} };
 // BGM ducking bus: music dips while a character is speaking so lines cut through
@@ -769,7 +786,7 @@ function fxDust(x, y, n = 8, pw = 1) { for (let i = 0; i < n; i++) addFx({ k: 'd
 function fxText(x, y, txt, rgb, size = 40, life = 50) { addFx({ k: 'text', x, y, txt, rgb, size, life, t: 0 }); }
 function fxHex(x, y, rgb, face) { addFx({ k: 'hex', x, y, rgb, face, life: 18, t: 0 }); }
 /* SF-mecha energy colours: SUZUNE gold / AOI blue (mirror-match colour swaps keep their own palette) */
-const AURA = { suzune: { rgb: '255,196,64', hot: '255,244,200' }, aoi: { rgb: '64,168,255', hot: '205,240,255' }, arca: { rgb: '46,230,200', hot: '215,255,245' }, sakura: { rgb: '255,150,200', hot: '255,236,246' }, mio: { rgb: '110,180,255', hot: '232,246,255' }, aria: { rgb: '245,165,70', hot: '255,240,205' }, enjo: { rgb: '95,211,188', hot: '225,255,246' }, rei: { rgb: '232,70,60', hot: '255,214,200' }, kanna: { rgb: '255,140,40', hot: '255,228,176' }, ichika: { rgb: '242,193,78', hot: '255,240,200' }, isana: { rgb: '0,229,255', hot: '210,255,250' } };
+const AURA = { suzune: { rgb: '255,196,64', hot: '255,244,200' }, aoi: { rgb: '64,168,255', hot: '205,240,255' }, arca: { rgb: '46,230,200', hot: '215,255,245' }, sakura: { rgb: '255,150,200', hot: '255,236,246' }, mio: { rgb: '110,180,255', hot: '232,246,255' }, aria: { rgb: '245,165,70', hot: '255,240,205' }, enjo: { rgb: '95,211,188', hot: '225,255,246' }, rei: { rgb: '232,70,60', hot: '255,214,200' }, kanna: { rgb: '255,140,40', hot: '255,228,176' }, ichika: { rgb: '242,193,78', hot: '255,240,200' }, isana: { rgb: '0,229,255', hot: '210,255,250' }, noxnix: { rgb: '176,107,255', hot: '255,232,210' } };
 const auraRgb = f => f.alt ? f.col.rgb : AURA[f.id].rgb;
 const auraHot = f => f.alt ? '255,255,255' : AURA[f.id].hot;
 function fxBolt(x0, y0, x1, y1, rgb, life = 9) {
@@ -823,6 +840,7 @@ function updateFx(dt) {
     else if (f.k === 'dust') { f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= Math.pow(.92, dt); }
     else if (f.k === 'text') { f.y -= .8 * dt; }
     else if (f.k === 'ember') { f.x += f.vx * dt; f.y += f.vy * dt; f.vy -= .05 * dt; }
+    else if (f.k === 'note') { f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= Math.pow(.95, dt); f.vy *= Math.pow(.98, dt); f.rot += Math.sin(f.t * .2) * .02 * dt; }
     else if (f.k === 'bit') { f.y += f.vy * dt; f.x += Math.sin((f.t + f.ph) * .15) * .4 * dt; }
     else if (f.k === 'paint') { f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= Math.pow(.97, dt); f.vy += .55 * dt; if (f.y >= GROUND) { if (!f.landed) { f.landed = true; if (Math.random() < .5) fxPuddle(f.x, f.rgb, f.r * 4, 160); } f.t = f.life; } }
     else if (f.k === 'shard') { f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= Math.pow(.95, dt); f.vy = f.vy * Math.pow(.95, dt) + .45 * dt; f.rot += f.vr * dt; }
@@ -864,6 +882,7 @@ function drawFx(layer) {
         ctx.strokeStyle = `rgba(255,240,210,${a})`; ctx.lineWidth = 2.4; ctx.stroke();
       }
       else if (f.k === 'ember') { ctx.fillStyle = `rgba(${f.rgb},${a})`; ctx.fillRect(f.x, f.y, 3, 3); }
+      else if (f.k === 'note') { ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.rot); ctx.font = `bold ${f.s | 0}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = `rgba(${f.rgb},${a})`; ctx.fillText(f.ch, 0, 0); ctx.restore(); }
       else if (f.k === 'bit') {
         const al = Math.min(1, f.t / 6) * a;
         if (f.sq) { ctx.fillStyle = `rgba(${f.rgb},${al})`; ctx.fillRect(f.x - 2, f.y - 2, 4, 4); ctx.fillStyle = `rgba(255,255,255,${al * .8})`; ctx.fillRect(f.x - 1, f.y - 1, 2, 2); }
@@ -1005,6 +1024,12 @@ const MOVES = {
     ex: { st: 6, act: 6, rec: 10, cost: 50 },
     ult: { st: 0, act: 190, rec: 30, cost: 100 }
   },
+  noxnix: {
+    a: { st: 5, act: 4, rec: 12, cost: 0 },
+    b: { st: 8, act: 12, rec: 16, cost: 0 },
+    ex: { st: 12, act: 32, rec: 18, cost: 50 },
+    ult: { st: 0, act: 200, rec: 30, cost: 100 }
+  },
   isana: {
     a: { st: 6, act: 5, rec: 14, cost: 0 },
     b: { st: 10, act: 34, rec: 14, cost: 0 },
@@ -1093,7 +1118,7 @@ function hitTarget(att, tgt, o) {
   const pw = o.power || 1;
   fxCore(hx, hy, att.col.rgb, 70 + 50 * pw, 12 + 4 * pw); fxSpark(hx, hy, att.col.rgb, 10 + 10 * pw, .8 + .5 * pw, fromDir);
   fxRing(hx, hy, att.col.rgb, 10, 60 + 60 * pw, 14 + 6 * pw, 5 + 3 * pw);
-  if (att.id === 'suzune') fxPetals(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'mio') fxPaint(hx, hy, 6 + 6 * pw, .8 + .3 * pw, fromDir); else if (att.id === 'aria') fxGears(hx, hy, 4 + 4 * pw, pw, fromDir); else if (att.id === 'enjo') fxSmoke(hx, hy, 3 + 3 * pw, pw, fromDir, att.col.rgb); else if (att.id === 'rei') { fxSmoke(hx, hy, 2 + 2 * pw, pw, fromDir, JADE.ink); fxPetals(hx, hy, 1 + 2 * pw, pw, !att.alt); } else if (att.id === 'kanna') fxBloom(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'ichika') { fxSpark(hx, hy, ICHI.hot, 6 + 6 * pw, .8 + .4 * pw, fromDir); fxRing(hx, hy, ICHI.rgb, 6, 50 + 40 * pw, 10, 3); } else if (att.id === 'isana') fxSalvage(hx, hy, 3 + 4 * pw, pw, fromDir); else fxHex(hx, hy, att.col.rgb, fromDir);
+  if (att.id === 'suzune') fxPetals(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'mio') fxPaint(hx, hy, 6 + 6 * pw, .8 + .3 * pw, fromDir); else if (att.id === 'aria') fxGears(hx, hy, 4 + 4 * pw, pw, fromDir); else if (att.id === 'enjo') fxSmoke(hx, hy, 3 + 3 * pw, pw, fromDir, att.col.rgb); else if (att.id === 'rei') { fxSmoke(hx, hy, 2 + 2 * pw, pw, fromDir, JADE.ink); fxPetals(hx, hy, 1 + 2 * pw, pw, !att.alt); } else if (att.id === 'kanna') fxBloom(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'ichika') { fxSpark(hx, hy, ICHI.hot, 6 + 6 * pw, .8 + .4 * pw, fromDir); fxRing(hx, hy, ICHI.rgb, 6, 50 + 40 * pw, 10, 3); } else if (att.id === 'isana') fxSalvage(hx, hy, 3 + 4 * pw, pw, fromDir); else if (att.id === 'noxnix') fxHalloween(hx, hy, 4 + 4 * pw, pw, fromDir, att.col.rgb); else fxHex(hx, hy, att.col.rgb, fromDir);
   G.hitstop = Math.max(G.hitstop, o.hitstop || (4 + 4 * pw)); shake(4 + 7 * pw);
   if (pw >= 1.4 || o.launch) { quake(3 + 5 * pw, .28 + .12 * pw, pw >= 2 ? 60 : 25); fxBig(hx, hy, auraRgb(att), auraHot(att), Math.max(1.4, pw), fromDir); }
   if (pw >= 2) flash(.35 * pw / 2, '255,230,200');
@@ -1161,6 +1186,7 @@ function updateMove(f, o, dt) {
   else if (f.id === 'kanna') updateKannaMove(f, o, m, t, k, act, at, dt, first);
   else if (f.id === 'ichika') updateIchikaMove(f, o, m, t, k, act, at, dt, first);
   else if (f.id === 'isana') updateIsanaMove(f, o, m, t, k, act, at, dt, first);
+  else if (f.id === 'noxnix') updateNoxnixMove(f, o, m, t, k, act, at, dt, first);
   else {
     const dx = f.droneX, dy = f.droneY;
     if (k === 'a') {
@@ -2095,6 +2121,219 @@ function drawIsanaUlt(f, front) {   // behind her: the fins' cyan blades and jet
     drawAnchorHead(f.x + f.face * 50, f.y + 90 + 60 * q, Math.PI / 2, 1.6 + .5 * q, rgb, .6 + .4 * q);
   }
 }
+// NOX × NIX: a two-witch Halloween band from space (one fighter slot, both on the field together — NIX in front, NOX
+// behind her) with twin guitars. Black / silver / purple with pumpkin orange. a1/a2/a3: NIX swings her guitar → NOX
+// thrusts hers → both slam a power chord (shockwave, launches). b 記憶の音弾: NIX strums three purple notes made of
+// someone's memories. EX ツイン・リフ: back to back, the twin solo pushes rings of sound across the floor.
+// ULT JACK-O' ARK: their pumpkin mothership drops out of the sky over the foe, its face windows blaze, the jaw opens and
+// the live show comes down as a beam of sound — then the ship lands the way it always does: it crashes, on top of them.
+const HALLO = { pur: '176,107,255', ora: '255,138,30', hot: '255,232,210', vio: '120,60,220', ink: '18,14,26' };
+const nxCol = f => f.alt ? f.col.rgb : HALLO.pur;
+const nxCol2 = f => f.alt ? f.col.rgb2 : HALLO.ora;
+function nxGuitar(f) { const r = RS(f); return { x: f.x + f.face * 85 * r, y: f.y - 150 * r }; }
+function fxNotes(x, y, n = 4, pw = 1, rgb = HALLO.pur) {   // little music notes floating up out of a hit
+  for (let i = 0; i < n; i++) addFx({ k: 'note', x: x + rnd(-20, 20), y: y + rnd(-20, 20), vx: rnd(-2.5, 2.5) * pw, vy: -rnd(1.5, 4) * pw, rot: rnd(-.4, .4), s: rnd(22, 36), ch: Math.random() < .5 ? '♪' : '♫', rgb: i % 3 === 2 ? HALLO.ora : rgb, life: rnd(30, 50), t: 0 });
+}
+function fxHalloween(x, y, n = 6, pw = 1, dir = 0, rgb = HALLO.pur) {   // purple notes + pumpkin-orange sparks
+  fxNotes(x, y, Math.ceil(n / 2), pw, rgb);
+  fxSpark(x, y, HALLO.ora, 3 + 3 * pw, .6 + .3 * pw, dir);
+}
+function fxSoundWave(f, x, y, n = 3, big = 1) {   // concentric arcs of sound in front of the guitars
+  for (let i = 0; i < n; i++) fxArc(x - f.face * i * 26, y, (70 + i * 34) * big, -.9, .9, i % 2 ? nxCol2(f) : nxCol(f), f.face, 12 + i * 3, 10);
+}
+function updateNoxnixMove(f, o, m, t, k, act, at, dt, first) {
+  const r = RS(f), rgb = nxCol(f), rgb2 = nxCol2(f);
+  if (k === 'a') {   // NIX swing → NOX thrust → twin power chord
+    const c = Math.min(2, f.chain);
+    if (t < m.st) f.vx *= .7;
+    if (first(0)) {
+      f.vx = f.face * [6, 8, 3][c];
+      if (c === 0) { fxArc(f.x + f.face * 50 * r, f.y - 150 * r, 200 * r, -1.4, 1.0, rgb, f.face, 16, 38); fxArc(f.x + f.face * 50 * r, f.y - 150 * r, 185 * r, -1.2, .8, rgb2, f.face, 12, 8); sfx.swing(); }
+      else if (c === 1) { const x = f.x + f.face * 150 * r, y = f.y - 170 * r; addFx({ k: 'streak', x, y, vx: f.face * 30, vy: 0, life: 10, t: 0, rgb, w: 6 }); fxCore(x, y, HALLO.hot, 80, 10); sfx.swing(); }
+      else { fxSoundWave(f, f.x + f.face * 110 * r, f.y - 160 * r, 4, 1.3); fxRing(f.x, f.y - 150 * r, rgb, 30, 260, 18, 8); fxCore(f.x + f.face * 60 * r, f.y - 160 * r, HALLO.hot, 120, 12); shake(8); sfx.heavySwing(); playS('beam', .35, 1.4); }
+    }
+    if (act) {
+      const hb = c === 0 ? box(f, 0, 260, -290, -50) : c === 1 ? box(f, 30, 300, -240, -110) : box(f, -40, 320, -320, 0);
+      tryHit(f, o, hb, { dmg: [4.5, 5, 8][c], kb: [4, 7, 6][c], stun: [16, 18, 22][c], power: [.9, 1.0, 1.6][c], launch: c === 2 ? -12 : 0 });
+    }
+  } else if (k === 'b') {   // 記憶の音弾: three purple notes, fanned slightly
+    if (t < m.st) { f.vx *= .6; if ((t | 0) % 3 === 0) { const g = nxGuitar(f); fxNotes(g.x, g.y, 1, .5, rgb); } }
+    for (let i = 0; i < 3; i++) if (first(i * 4)) {
+      const g = nxGuitar(f);
+      G.proj.push({ owner: f, x: g.x + f.face * 20, y: g.y - 10 + i * 6, vx: f.face * (17 + i * 2), vy: [-2.2, 0, 2.2][i] * .6, dmg: 3.2, kb: 4, type: 'note', life: 70, t: 0, trail: [], rgb: i === 1 ? rgb2 : rgb, ch: i === 1 ? '♫' : '♪', ph: rnd(0, TAU) });
+      fxSoundWave(f, g.x, g.y, 2, .8); sfx.swing(); playS('laser_shot', .3, 1.5 + i * .12);
+    }
+  } else if (k === 'ex') {   // ツイン・リフ: back to back, five rings of sound roll across the floor
+    if (t < m.st) { f.vx *= .5; if ((t | 0) % 2 === 0) fxNotes(f.x + rnd(-80, 80), f.y - rnd(80, 260), 1, .6, rgb); }
+    if (first(0)) { fxRing(f.x, f.y - 150 * r, rgb, 20, 300, 22, 10); fxRing(f.x, GROUND - 6, rgb2, 20, 260, 20, 8, .22); flash(.25, rgb); shake(8); playS('beam', .6, 1.1); }
+    for (let i = 0; i < 5; i++) if (first(2 + i * 6)) {
+      const last = i === 4, g = nxGuitar(f);
+      G.proj.push({ owner: f, x: g.x, y: f.y - 150, vx: f.face * (15 + i), vy: 0, dmg: last ? 6 : 2.8, pw: last ? 1.7 : .9, kb: last ? 13 : 3, launch: last ? -11 : 0, type: 'riff', life: 46, t: 0, trail: [], rgb: i % 2 ? rgb2 : rgb, big: last ? 1.4 : 1 });
+      fxSoundWave(f, g.x, g.y, 3, 1.1); shake(4); sfx.swing(); if (last) { quake(8, .35, 40); playS('beam', .5, .9); }
+    }
+  } else if (k === 'ult') updateNoxnixUlt(f, o, at, dt, first);
+}
+function drawNoteProj(p) {   // a glowing note glyph with a wavy purple trail
+  const tr = p.trail, big = p.big || 1;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+  if (p.type === 'riff') {   // a ring of sound: tall elliptical arcs
+    const sd = Math.sign(p.vx) || 1;
+    for (let j = 0; j < 3; j++) { ctx.strokeStyle = `rgba(${p.rgb},${.75 - j * .2})`; ctx.lineWidth = 10 - j * 3; ctx.beginPath(); ctx.ellipse(p.x - sd * j * 22, p.y, 40 * big, 120 * big, 0, -Math.PI / 2, Math.PI / 2, sd < 0); ctx.stroke(); }
+    ctx.strokeStyle = `rgba(${HALLO.hot},.85)`; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(p.x, p.y, 40 * big, 120 * big, 0, -Math.PI / 2, Math.PI / 2, sd < 0); ctx.stroke();
+    ctx.restore(); return;
+  }
+  ctx.beginPath(); tr.forEach((q, i) => i ? ctx.lineTo(q.x, q.y + Math.sin(i * .9 + p.ph) * 5) : ctx.moveTo(q.x, q.y));
+  ctx.strokeStyle = `rgba(${p.rgb},.5)`; ctx.lineWidth = 12; ctx.stroke(); ctx.strokeStyle = `rgba(${HALLO.hot},.6)`; ctx.lineWidth = 3; ctx.stroke();
+  const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 42); g.addColorStop(0, `rgba(${p.rgb},.8)`); g.addColorStop(1, `rgba(${p.rgb},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, 42, 0, TAU); ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.translate(p.x, p.y); ctx.rotate(Math.sin(p.t * .25 + p.ph) * .3);
+  ctx.font = 'bold 46px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(20,10,30,.9)'; ctx.strokeText(p.ch || '♪', 0, 0); ctx.fillStyle = `rgb(${p.rgb})`; ctx.fillText(p.ch || '♪', 0, 0);
+  ctx.restore();
+}
+// JACK-O' ARK: a black ribbed pumpkin hull (~60m) with orange jack-o'-lantern windows, spiked fins and purple thrusters.
+// open: 0..1 how far the jaw (the stage window) is open, burn: thruster strength, tilt: nose-down angle for the crash
+function drawJackOArk(x, y, s, open = 0, burn = 1, tilt = 0, rgb = HALLO.pur, rgb2 = HALLO.ora) {
+  const fl = G.frame;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(tilt); ctx.scale(s, s);
+  // thruster plumes (behind the hull)
+  ctx.globalCompositeOperation = 'lighter';
+  for (const tx of [-150, -60, 60, 150]) {
+    const L = (90 + 30 * Math.sin(fl * .7 + tx)) * burn, g = ctx.createLinearGradient(0, 120, 0, 120 + L);
+    g.addColorStop(0, `rgba(${HALLO.hot},.95)`); g.addColorStop(.3, `rgba(${rgb},.75)`); g.addColorStop(1, `rgba(${rgb},0)`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(tx, 120 + L / 2, 16 * burn + 4, L / 2, 0, 0, TAU); ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  // side fins with spikes
+  for (const sd of [-1, 1]) {
+    ctx.fillStyle = '#121016'; ctx.strokeStyle = '#3a3448'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(sd * 230, -40); ctx.lineTo(sd * 400, -20); ctx.lineTo(sd * 330, 10); ctx.lineTo(sd * 420, 40); ctx.lineTo(sd * 250, 70); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(sd * 300, 30, 26, 0, TAU); ctx.fillStyle = '#1c1922'; ctx.fill(); ctx.stroke();   // thruster pod
+    const pg = ctx.createRadialGradient(sd * 300, 30, 0, sd * 300, 30, 22); pg.addColorStop(0, `rgba(${HALLO.hot},1)`); pg.addColorStop(.5, `rgba(${rgb2},.95)`); pg.addColorStop(1, `rgba(${rgb2},.2)`);
+    ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(sd * 300, 30, 18, 0, TAU); ctx.fill();
+    ctx.strokeStyle = `rgba(${rgb},.9)`; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(sd * 240, -10); ctx.lineTo(sd * 300, -4 + 8 * Math.sin(fl * .4)); ctx.lineTo(sd * 340, 0); ctx.stroke();   // purple conduit
+  }
+  // stem tower and spikes on top
+  ctx.fillStyle = '#16131b'; ctx.strokeStyle = '#3a3448'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(-40, -170); ctx.lineTo(-24, -230); ctx.lineTo(24, -230); ctx.lineTo(40, -170); ctx.closePath(); ctx.fill(); ctx.stroke();
+  for (const sx of [-120, -10, 10, 120]) { ctx.beginPath(); ctx.moveTo(sx - 10, -150); ctx.lineTo(sx, -205); ctx.lineTo(sx + 10, -150); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  // ribbed pumpkin hull: overlapping lobes from the outside in
+  for (const [lx, lw] of [[-150, 120], [150, 120], [-80, 130], [80, 130], [0, 140]]) {
+    const g = ctx.createRadialGradient(lx - lw * .3, -60, 10, lx, 0, lw * 1.4); g.addColorStop(0, '#46404f'); g.addColorStop(.55, '#1d1a23'); g.addColorStop(1, '#09080c');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(lx, 0, lw, 175, 0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(110,100,130,.35)'; ctx.lineWidth = 2; ctx.stroke();
+  }
+  // panel seams + orange running lights
+  ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 2;
+  for (const yy of [-110, 120]) { ctx.beginPath(); ctx.moveTo(-200, yy); ctx.quadraticCurveTo(0, yy + (yy < 0 ? -22 : 22), 200, yy); ctx.stroke(); }
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 10; i++) { const a = -2.6 + i * .58, lx = Math.cos(a) * 210, ly = Math.sin(a) * 150; ctx.fillStyle = `rgba(${rgb2},${.5 + .5 * Math.sin(fl * .3 + i)})`; ctx.fillRect(lx - 5, ly - 2, 10, 4); }
+  for (const sd of [-1, 1]) {   // purple lightning veins along the flanks
+    ctx.strokeStyle = `rgba(${rgb},${.6 + .4 * Math.random()})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(sd * 200, -60);
+    for (let j = 1; j <= 5; j++) ctx.lineTo(sd * (200 - j * 6 + rnd(-8, 8)), -60 + j * 30); ctx.stroke();
+  }
+  // jack-o'-lantern face: triangle eyes, diamond nose, round cheek eyes
+  const glow = (pts, a = 1) => {
+    ctx.fillStyle = `rgba(${rgb2},${a})`; ctx.shadowColor = `rgb(${rgb2})`; ctx.shadowBlur = 26;
+    ctx.beginPath(); pts.forEach(([px, py], i) => i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)); ctx.closePath(); ctx.fill(); ctx.shadowBlur = 0;
+  };
+  const eye = .85 + .15 * Math.sin(fl * .5);
+  glow([[-150, -95], [-60, -70], [-120, -50]], eye); glow([[150, -95], [60, -70], [120, -50]], eye);
+  glow([[0, -120], [14, -102], [0, -84], [-14, -102]], 1);
+  for (const sd of [-1, 1]) {
+    const cx = sd * 165, cy = 0, g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 36); g.addColorStop(0, `rgba(${HALLO.hot},1)`); g.addColorStop(.35, `rgba(${rgb2},.95)`); g.addColorStop(1, `rgba(${rgb2},0)`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, 36, 0, TAU); ctx.fill();
+    ctx.strokeStyle = `rgba(${HALLO.hot},.9)`; ctx.lineWidth = 2; for (let k = 1; k <= 2; k++) { ctx.beginPath(); ctx.arc(cx, cy, 9 * k, 0, TAU); ctx.stroke(); }
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  // the jaw = the stage window: a jagged frame that opens downward onto the live show inside
+  const jh = 46 + 60 * open;
+  ctx.fillStyle = '#0b0a0e'; ctx.beginPath(); ctx.moveTo(-120, -10); ctx.lineTo(120, -10); ctx.lineTo(132, 20 + jh); ctx.lineTo(-132, 20 + jh); ctx.closePath(); ctx.fill();
+  const wg = ctx.createLinearGradient(0, -6, 0, 20 + jh); wg.addColorStop(0, `rgba(${rgb},.95)`); wg.addColorStop(.6, `rgba(${HALLO.vio},.9)`); wg.addColorStop(1, `rgba(${HALLO.hot},${.4 + .6 * open})`);
+  ctx.fillStyle = wg; ctx.beginPath(); ctx.moveTo(-104, 0); ctx.lineTo(104, 0); ctx.lineTo(114, 10 + jh); ctx.lineTo(-114, 10 + jh); ctx.closePath(); ctx.fill();
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 6; i++) { const sx = -90 + i * 36; ctx.fillStyle = `rgba(255,255,255,${.4 + .4 * Math.sin(fl * .6 + i * 1.3)})`; ctx.fillRect(sx, 4, 8, 4); }   // stage lights
+  ctx.fillStyle = `rgba(${rgb2},.95)`; ctx.font = `bold ${22 + 14 * open}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('▼ ▼', 0, 12 + jh * .35);   // the little pumpkin face on stage
+  ctx.fillStyle = 'rgba(20,10,30,.9)'; ctx.fillRect(-14, 4 + jh * .7, 6, 8); ctx.fillRect(8, 4 + jh * .7, 6, 8);   // the two of them, tiny, on stage
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.strokeStyle = '#2a2632'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(-120, -10); ctx.lineTo(120, -10); ctx.lineTo(132, 20 + jh); ctx.lineTo(-132, 20 + jh); ctx.closePath(); ctx.stroke();
+  ctx.fillStyle = '#1a1720'; for (let i = 0; i < 7; i++) { const tx = -108 + i * 36; ctx.beginPath(); ctx.moveTo(tx, 20 + jh); ctx.lineTo(tx + 12, 2 + jh); ctx.lineTo(tx + 24, 20 + jh); ctx.closePath(); ctx.fill(); }   // jagged teeth
+  ctx.restore();
+}
+// ULT JACK-O' ARK ― 未来のハロウィン (after the movie): the ship drops in over the foe → the jaw opens and the show comes
+// down as a beam (many small hits) → the ship nose-dives and crash-lands on them (big finisher). Guardable (chip only)
+const NOXNIX_ULT = { arrive: 40, beam: 52, every: 7, hits: 10, dive: 128, crash: 146, end: 196 };
+function updateNoxnixUlt(f, o, at, dt, first) {
+  const m = f.move, U = NOXNIX_ULT, rgb = nxCol(f), rgb2 = nxCol2(f);
+  if (first(0)) {
+    f.vx = 0; m.ship = { x: (o ? o.x : f.x + f.face * 400) - f.face * 120, y: -420, s: .6, open: 0, burn: 1.4, tilt: 0 };
+    flash(.3, rgb); playS('ult_start', .5, .8); G.speedlines = 30;
+  }
+  const S = m.ship; if (!S) return;
+  if (at < U.dive) {   // hover over the foe and follow them slowly
+    const tx = clamp(o ? o.x : S.x, 260, STAGE_W - 260), ty = GROUND - 430;
+    const q = smooth01(at / U.arrive);
+    S.x += (tx - S.x) * Math.min(1, (at < U.arrive ? .14 : .05) * dt); S.y = lerp(-420, ty, q) + Math.sin(at * .08) * 6; S.s = lerp(.55, .9, q);
+    S.burn = at < U.arrive ? 1.4 : .9; S.tilt = Math.sin(at * .05) * .02;
+    if (at < U.arrive && (at | 0) % 3 === 0) addFx({ k: 'streak', x: S.x + rnd(-300, 300), y: S.y - rnd(0, 200), vx: 0, vy: 30, life: 10, t: 0, rgb, w: 2 });
+    G.tintA = Math.max(G.tintA, .3 * q); G.tintC = HALLO.ink;
+  }
+  if (first(U.arrive)) { shake(10); quake(8, .5, 40); playS('arca_boot', .7, .8); fxRing(S.x, S.y, rgb2, 60, 520, 26, 10, .5); }
+  if (at >= U.arrive && at < U.dive) S.open = Math.min(1, (at - U.arrive) / 10);
+  if (o && at >= U.beam && at < U.beam + U.every * U.hits) {   // the live show, as a beam of sound and light
+    if ((at | 0) % 2 === 0) { fxNotes(S.x + rnd(-100, 100), S.y + 80, 1, 1.2, rgb); addFx({ k: 'streak', x: S.x + rnd(-90, 90), y: S.y + 100, vx: rnd(-2, 2), vy: 34, life: 12, t: 0, rgb: Math.random() < .5 ? rgb : rgb2, w: 4 }); }
+    for (let i = 0; i < U.hits; i++) if (first(U.beam + i * U.every)) {
+      if (G.phase === 'fight' && Math.abs(o.x - S.x) < 230) {
+        f.hitIds.clear(); const sx = f.x; f.x = o.x - f.face * 40;   // knockback from above: push away from the ship's side, not across the stage
+        hitTarget(f, o, { dmg: 2, kb: 0, stun: 24, power: .9, ult: true, noScale: true, hy: 160 }); f.x = sx; o.vx = 0;
+      }
+      fxRing(S.x, GROUND - 6, i % 2 ? rgb2 : rgb, 30, 240, 16, 8, .22); fxHalloween(o.x, o.y - 160, 4, 1.1, 0, rgb); shake(5); playS('beam', .35, 1 + (i % 3) * .1);
+    }
+    G.speedlines = Math.max(G.speedlines, 12);
+  }
+  if (first(U.dive)) { flash(.4, rgb2); G.speedlines = 44; playS('whoosh_kick_heavy', 1, .6); S.open = 0; }
+  if (at >= U.dive && at < U.crash) {   // nose-dive: it never could land properly
+    const q = (at - U.dive) / (U.crash - U.dive);
+    if (o) S.x += (o.x - S.x) * Math.min(1, .25 * dt);
+    S.y = lerp(GROUND - 430, GROUND - 150, q * q); S.tilt = f.face * .5 * q; S.burn = 1.6; S.s = .9 + .15 * q;
+    if ((at | 0) % 2 === 0) fxSmoke(S.x - f.face * 160, S.y - 80, 2, 1.4, -f.face, '60,50,70');
+  }
+  if (first(U.crash)) {   // CRASH: the finisher
+    S.y = GROUND - 150; S.burn = 0; S.crashed = true; f.inv = 30;
+    if (G.phase === 'fight' && o && Math.abs(o.x - S.x) < 360) { f.hitIds.clear(); const sx = f.x; f.x = S.x - f.face * 60; hitTarget(f, o, { dmg: 22, kb: 15, launch: -18, power: 3, hitstop: 14, ult: true, noScale: true, hy: 140 }); f.x = sx; }
+    for (let i = 0; i < 4; i++) fxRing(S.x, GROUND - 6, i % 2 ? rgb : rgb2, 40, 360 + i * 180, 28 + i * 6, 16 - i * 3, .22);
+    fxBig(S.x, GROUND - 160, rgb2, HALLO.hot, 3, f.face); fxDust(S.x, GROUND, 30, 2.6); fxSmoke(S.x, GROUND - 120, 16, 2.2, 0, '50,40,60'); fxNotes(S.x, GROUND - 250, 16, 2.2, rgb);
+    addFx({ k: 'pillar', x: S.x, y: GROUND, rgb: rgb2, hot: HALLO.hot, life: 50, t: 0, w: 380 });
+    flash(.9, HALLO.hot); quake(28, 1, 140); zoomKick(.14); sfx.boom(); playLoud('impact_big', 1, .7); G.speedlines = 60;
+  }
+  if (at > U.crash && S.crashed) { S.y += 1.2 * dt; S.alpha = clamp(1 - (at - U.crash - 20) / 28, 0, 1); if ((at | 0) % 3 === 0) fxSmoke(S.x + rnd(-120, 120), GROUND - rnd(60, 200), 1, 1, 0, '50,40,60'); }
+  if (first(U.end)) { f.inv = 0; G.tintA = 0; m.ship = null; f.t = Math.max(f.t, m.st + m.act - 1); }
+}
+function drawNoxnixUlt(f, front) {   // behind: the darkened sky glow; in front: the beam and the ship itself
+  if (f.id !== 'noxnix' || f.state !== 'atk' || !f.move || f.move.key !== 'ult' || !f.move.ship) return;
+  const m = f.move, U = NOXNIX_ULT, S = m.ship, at = f.t - m.st, rgb = nxCol(f), rgb2 = nxCol2(f);
+  if (!front) {   // a halo of purple light behind the ship
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(S.x, S.y, 50, S.x, S.y, 520 * S.s); g.addColorStop(0, `rgba(${rgb},.35)`); g.addColorStop(1, `rgba(${rgb},0)`);
+    ctx.fillStyle = g; ctx.globalAlpha = S.alpha == null ? 1 : S.alpha; ctx.beginPath(); ctx.arc(S.x, S.y, 520 * S.s, 0, TAU); ctx.fill(); ctx.restore();
+    return;
+  }
+  if (at >= U.beam - 4 && at < U.dive) {   // the beam from the jaw down to the floor
+    const top = S.y + 90 * S.s, w = 120 + 20 * Math.sin(at * .7), a = Math.min(1, (at - U.beam + 4) / 6);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createLinearGradient(S.x - w * 1.6, 0, S.x + w * 1.6, 0);
+    g.addColorStop(0, `rgba(${rgb},0)`); g.addColorStop(.3, `rgba(${rgb},${.55 * a})`); g.addColorStop(.5, `rgba(${HALLO.hot},${.95 * a})`); g.addColorStop(.7, `rgba(${rgb2},${.55 * a})`); g.addColorStop(1, `rgba(${rgb2},0)`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(S.x - w * .8, top); ctx.lineTo(S.x + w * .8, top); ctx.lineTo(S.x + w * 1.6, GROUND); ctx.lineTo(S.x - w * 1.6, GROUND); ctx.closePath(); ctx.fill();
+    for (let j = 0; j < 6; j++) {   // rings of sound travelling down the beam
+      const q = ((at * 4 + j * 40) % 240) / 240, yy = lerp(top, GROUND, q), ww = lerp(w * .8, w * 1.6, q);
+      ctx.strokeStyle = `rgba(${j % 2 ? rgb2 : HALLO.hot},${(1 - q) * .8 * a})`; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(S.x, yy, ww, ww * .18, 0, 0, TAU); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  ctx.save(); ctx.globalAlpha = S.alpha == null ? 1 : S.alpha;
+  drawJackOArk(S.x, S.y, S.s, S.open, S.burn, S.tilt, rgb, rgb2);
+  ctx.restore();
+}
 // KANNA 花守りの神機 GARDEN GOD-MACHINE: a giant pearl-and-gold god-machine (≈2.5× a person) who fights with flowers.
 // Her petal-blade wings "bloom" on every attack and leave petal-shaped arcs of light (always arcs, never straight sword
 // trails). 花弁射出 (b) launches wing blades that home in; 開花・花冠 (EX) cuts all round her, then flowers erupt along the
@@ -2413,6 +2652,8 @@ function updateProj(dt0) {
     p.trail.push({ x: p.x, y: p.y }); if (p.trail.length > (p.type === 'homing' || p.type === 'petal' ? 14 : p.type === 'rail' ? 10 : p.type === 'stroke' ? 14 : 7)) p.trail.shift();
     if (p.type === 'paint' && (p.t | 0) % 3 === 0) addFx({ k: 'paint', x: p.x, y: p.y, vx: -p.vx * .1, vy: rnd(-1, 1), r: rnd(3, 6), rgb: PAINT.deep, life: 30, t: 0 });
     if (p.type === 'petal' && (p.t | 0) % 3 === 0) fxBloom(p.x, p.y, 1, .4);
+    if (p.type === 'note') p.vy += Math.sin(p.t * .3 + p.ph) * .35 * dt;   // notes bob along
+    if (p.type === 'riff' && (p.t | 0) % 4 === 0) fxNotes(p.x, p.y - rnd(-80, 80), 1, .6, p.rgb);
     if (p.type === 'smoke' && (p.t | 0) % 2 === 0) fxSmoke(p.x, p.y, 1, .6, -Math.sign(p.vx), p.rgb);
     if (p.type === 'inkwave') { fxSmoke(p.x, GROUND - rnd(10, 120), 2, 1, -Math.sign(p.vx), JADE.ink); if ((p.t | 0) % 3 === 0) fxDust(p.x, GROUND, 1, .8); }
     if (p.type === 'anchor') { updateAnchor(p, o, i, dt); continue; }
@@ -2458,6 +2699,7 @@ function drawProj() {
     if (p.type === 'anchor') { drawAnchorProj(p); continue; }
     const tr = p.trail; if (tr.length < 2) continue;
     if (p.type === 'cball') { drawCball(p); continue; }
+    if (p.type === 'note' || p.type === 'riff') { drawNoteProj(p); continue; }
     if (p.type === 'paint' || p.type === 'stroke') { drawPaintProj(p); continue; }
     if (p.type === 'hook') { drawHook(p); continue; }
     if (p.type === 'petal') {   // KANNA's wing blade: a pearl petal in an orange glow, trailing light
@@ -2567,7 +2809,7 @@ function onKO(att, tgt) {
 }
 
 /* SUZUNE's short step-dash: brief invulnerability (slips through AOI's shots), short cooldown */
-const CAN_DASH = { suzune: 1, arca: 1, mio: 1, aria: 1, enjo: 1, rei: 1, kanna: 1, ichika: 1, isana: 1 };
+const CAN_DASH = { suzune: 1, arca: 1, mio: 1, aria: 1, enjo: 1, rei: 1, kanna: 1, ichika: 1, isana: 1, noxnix: 1 };
 const TAG_CD = 150;
 function doTag(side, forced) {
   const out = G.fighters[side], inn = partnerOf(out);
@@ -2911,6 +3153,11 @@ function aiInput(f, o) {
   } else if (f.id === 'isana') {   // heavy: holds mid range, hooks people in with the anchor, broadsides from afar
     if (f.gauge >= 50 && ad > 300 && ad < 900 && Math.random() < .25) { ai.press = 'ex'; return out; }
     if (ad > 260) { if (ad < 560 && Math.random() < D.agg * .5) ai.press = 'b'; else set({ [toward]: true }, 10 + (Math.random() * 10 | 0)); }
+    else if (Math.random() < D.agg) ai.press = Math.random() < .2 ? 'b' : 'a';
+    else set({ [away]: true }, 8);
+  } else if (f.id === 'noxnix') {   // the band: notes from mid range, the twin riff when lined up, guitars up close
+    if (f.gauge >= 50 && ad > 250 && ad < 800 && Math.random() < .3) { ai.press = 'ex'; return out; }
+    if (ad > 300) { if (ad < 720 && Math.random() < D.agg * .6) ai.press = 'b'; else set({ [toward]: true }, 10 + (Math.random() * 10 | 0)); }
     else if (Math.random() < D.agg) ai.press = Math.random() < .2 ? 'b' : 'a';
     else set({ [away]: true }, 8);
   } else if (f.id === 'kanna') {   // huge reach: blooms the crown up close, petal blades from mid range, flowers whenever it can
@@ -3529,7 +3776,7 @@ function drawDmgPops() {
 const TEL = { list: [] };
 const TEL_EN = {
   suzune: ['SAKURA FLASH RAIL', 'SAKURA COMET'], aoi: ['HOMING BIT', 'ORBITAL RAY'], arca: ['RUNE MISSILE', 'ARSENAL NOVA'], sakura: ['IDEA DRAGON', 'DRAFT NOVA'],
-  mio: ['BLUE STROKE', 'CANVAS HOUND'], aria: ['GRAVITY SLING', 'LUNA SATELLITE RAY'], enjo: ['GASHIRA', 'UKIYO-GIRI : RINDO'], rei: ['AGITO HOWL', 'SUMI-RYU : HIGAN'], kanna: ['FLOWER CROWN', 'FULL BLOOM : ORANGE'], ichika: ['1-SECOND TIME SLOW', 'TIME STOP'], isana: ['BROADSIDE', 'ABYSSAL ANCHOR : DIVE MODE'] };
+  mio: ['BLUE STROKE', 'CANVAS HOUND'], aria: ['GRAVITY SLING', 'LUNA SATELLITE RAY'], enjo: ['GASHIRA', 'UKIYO-GIRI : RINDO'], rei: ['AGITO HOWL', 'SUMI-RYU : HIGAN'], kanna: ['FLOWER CROWN', 'FULL BLOOM : ORANGE'], ichika: ['1-SECOND TIME SLOW', 'TIME STOP'], isana: ['BROADSIDE', 'ABYSSAL ANCHOR : DIVE MODE'], noxnix: ['TWIN RIFF', "JACK-O' ARK : FUTURE HALLOWEEN"] };
 const TEL_DUR = { ult: 1750, ex: 1150, awake: 1500 };
 function telop(kind, f) {
   if (!f || !f.ch) return;
@@ -3801,10 +4048,10 @@ function renderWorld() {
   ctx.globalCompositeOperation = 'lighter'; for (const f of G.fighters) drawRail(f); ctx.globalCompositeOperation = 'source-over';
   const order = [...G.fighters].sort((p, q) => (p.state === 'atk') - (q.state === 'atk'));
   drawPaintFloor(); drawInk(); drawBloomFloor();
-  for (const f of G.fighters) { drawDragon(f, false); drawDog(f, false); drawShishi(f, false); drawKannaUlt(f, false); drawIsanaUlt(f, false); }
+  for (const f of G.fighters) { drawDragon(f, false); drawDog(f, false); drawShishi(f, false); drawKannaUlt(f, false); drawIsanaUlt(f, false); drawNoxnixUlt(f, false); }
   for (const b of G.benched || []) drawFighter(b.f, false);
   for (const f of order) drawFighter(f, false);
-  for (const f of G.fighters) { drawDrone(f); drawSkull(f); drawDragon(f, true); drawDog(f, true); drawShishi(f, true); drawRindo(f); drawKannaUlt(f, true); drawIsanaUlt(f, true); }
+  for (const f of G.fighters) { drawDrone(f); drawSkull(f); drawDragon(f, true); drawDog(f, true); drawShishi(f, true); drawRindo(f); drawKannaUlt(f, true); drawIsanaUlt(f, true); drawNoxnixUlt(f, true); }
   drawFx('norm');
   ctx.globalCompositeOperation = 'lighter'; drawProj(); drawFx('add'); ctx.globalCompositeOperation = 'source-over';
   drawLunaBeam();
@@ -3901,7 +4148,8 @@ function updateCamera() {
     const big = G.fighters.some(f => f.state === 'atk' && f.move && (f.move.key === 'ult' || f.move.key === 'ex')) || G.luna || G.phase === 'intro' || vis.some(f => f.state === 'tagin' || f.state === 'dashin');
     let zt = CAM.zMax - (CAM.zMax - CAM.zMin) * smooth01((d - CAM.near) / (CAM.far - CAM.near));
     if (big) zt = Math.min(zt, 1);                                   // big moves and entrances need the wide shot
-    if (vis.some(f => f.id === 'kanna')) zt = Math.min(zt, CAM.zGiant);   // KANNA stands ~700px tall: stay wide enough to keep her halo in frame
+    if (vis.some(f => f.id === 'kanna')) zt = Math.min(zt, CAM.zGiant);
+    if (G.fighters.some(f => f.id === 'noxnix' && f.move && f.move.ship)) zt = Math.min(zt, CAM.zGiant);   // JACK-O' ARK hovers high over the foe   // KANNA stands ~700px tall: stay wide enough to keep her halo in frame
     if (wf) zt = CAM.zWin;                                           // victory pose: push in on the winner
     const kc = G.koCam; if (kc) { kc.t++; if (G.phase === 'ko' && kc.t < 90) { zt = 1.45; mid = kc.f.x; } else G.koCam = null; }   // final KO: crash in on the loser
     if (!c.z) c.z = 1;
@@ -4021,7 +4269,7 @@ function exMovieEnd() {
   }, 320);
 }
 /* ---------- match victory movie + telop ---------- */
-const WINQ = { suzune: 'まだまだ、こんなもんじゃないッス！', aoi: '解析完了。――この勝負、わたしの勝ち。', arca: '観測、完了です。……え、もう終わりですか？', sakura: 'わたしの設計に、狂いはないの。', mio: 'ほら、世界がちょっとキレイになった！', aria: 'へへっ、空はあたしの整備場っす！', enjo: '浮世は煙。掴めたと思った？', rei: 'この涙は、私が人間だった最後の証。', kanna: 'She was never built to win. She was built to bloom.', ichika: 'あなたの一秒、もらったから。', isana: '沈んだ勝ちでも、引き揚げりゃあたしの宝さ。' };
+const WINQ = { suzune: 'まだまだ、こんなもんじゃないッス！', aoi: '解析完了。――この勝負、わたしの勝ち。', arca: '観測、完了です。……え、もう終わりですか？', sakura: 'わたしの設計に、狂いはないの。', mio: 'ほら、世界がちょっとキレイになった！', aria: 'へへっ、空はあたしの整備場っす！', enjo: '浮世は煙。掴めたと思った？', rei: 'この涙は、私が人間だった最後の証。', kanna: 'She was never built to win. She was built to bloom.', ichika: 'あなたの一秒、もらったから。', isana: '沈んだ勝ちでも、引き揚げりゃあたしの宝さ。', noxnix: '夜明けまでが、私たちの時間。――ねえ、次はどこで鳴らす？' };
 const WM = { w: null, timers: [], typing: null, ready: false };
 function winMovieStart(w) {
   const box = $('#winMovie'), v = box.querySelector(`video[data-char="${w.id}"]`);
@@ -4220,7 +4468,7 @@ async function boot() {
   buildBg();
   await Promise.all([buildAssets(), buildAnims(), loadBGM().then(() => Promise.all([loadVoices(), loadSfx()]))]);
   document.querySelectorAll('[data-src]').forEach(i => i.src = window.ASSETS[i.dataset.src]);
-  document.querySelectorAll('.card img').forEach(i => { const id = i.closest('.card').dataset.char; i.src = window.ASSETS[{ suzune: 'suci', aoi: 'aoci', arca: 'arcard', sakura: 'sacard', mio: 'micard', aria: 'ar2card', enjo: 'encard', rei: 'recard', kanna: 'kacard', ichika: 'iccard', isana: 'iscard' }[id]]; });
+  document.querySelectorAll('.card img').forEach(i => { const id = i.closest('.card').dataset.char; i.src = window.ASSETS[{ suzune: 'suci', aoi: 'aoci', arca: 'arcard', sakura: 'sacard', mio: 'micard', aria: 'ar2card', enjo: 'encard', rei: 'recard', kanna: 'kacard', ichika: 'iccard', isana: 'iscard', noxnix: 'nxcard' }[id]]; });
   {   // more cards than fit: fade the right edge so it reads as a swipeable row
     const cs = $('.cards'), upd = () => cs.classList.toggle('more', cs.scrollWidth - cs.clientWidth - cs.scrollLeft > 24);
     cs.addEventListener('scroll', upd, { passive: true }); addEventListener('resize', upd); new ResizeObserver(upd).observe(cs); upd();
