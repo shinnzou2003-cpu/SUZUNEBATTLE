@@ -1,0 +1,26 @@
+{
+ "id": "noxnix",
+ "video": "C:/Users/szou/noxnix_work/moves.mp4",
+ "out": "anim",
+ "quality": 80,
+ "anims": {
+  "idle": {"t0": 0.2, "t1": 2.2, "fps": 8, "pingpong": true, "edgeFade": 30},
+  "walk": {"t0": 3.0, "t1": 4.5, "fps": 10, "edgeFade": 30},
+  "dash": {"t0": 6.25, "t1": 7.5, "fps": 12, "edgeFade": 30},
+  "guard": {"times": [17.5], "edgeFade": 30},
+  "jump": {"times": [23.5, 23.75, 23.85], "edgeFade": 30},
+  "a1": {"t0": 8.0, "t1": 8.8, "fps": 14, "edgeFade": 30},
+  "a2": {"t0": 8.9, "t1": 9.9, "fps": 14, "edgeFade": 30},
+  "a3": {"times": [10.75, 10.9, 11.05, 11.2, 11.35, 12.5, 12.65, 12.8], "edgeFade": 30},
+  "b": {"t0": 13.6, "t1": 14.6, "fps": 12, "edgeFade": 30},
+  "ex": {"t0": 15.75, "t1": 17.25, "fps": 12, "edgeFade": 30},
+  "hit": {"times": [19.0, 19.1], "edgeFade": 30},
+  "air": {"t0": 19.0, "t1": 19.45, "fps": 10, "edgeFade": 30},
+  "down": {"times": [21.0, 21.25], "edgeFade": 30},
+  "getup": {"t0": 21.5, "t1": 22.75, "fps": 10, "edgeFade": 30},
+  "winPose": {"t0": 27.75, "t1": 29.75, "fps": 12, "play": 12, "edgeFade": 30},
+  "ultCharge": {"times": [24.75, 24.9, 25.0, 25.1, 25.25], "fps": 10, "edgeFade": 30},
+  "ultFire": {"t0": 16.0, "t1": 17.0, "fps": 12, "edgeFade": 30},
+  "ultEnd": {"t0": 27.25, "t1": 28.25, "fps": 12, "edgeFade": 30}
+ }
+}

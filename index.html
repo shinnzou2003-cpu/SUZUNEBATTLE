@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1c1433">
-<title>CHRONO FIGHT — SUZUNE × AOI × ARCA-07 × SAKURA × MIO-07 × ARIA × ENJO × REI × KANNA × ICHIKA × ISANA</title>
+<title>CHRONO FIGHT — SUZUNE × AOI × ARCA-07 × SAKURA × MIO-07 × ARIA × ENJO × REI × KANNA × ICHIKA × ISANA × NOX×NIX</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Shippori+Mincho+B1:wght@600;800&display=swap" rel="stylesheet">
 <style>
@@ -59,12 +59,38 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 .trio .s10{left:86.3%;background:linear-gradient(#f2c14e,#fff,#00e5ff);box-shadow:0 0 26px 6px rgba(0,229,255,.6)}
 .trio .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,13,38,0) 0%,rgba(20,13,38,0) 46%,rgba(20,13,38,.72) 68%,rgba(20,13,38,.95) 100%),
   radial-gradient(120% 60% at 50% 0%,rgba(0,0,0,0) 60%,rgba(10,6,20,.35) 100%)}
+/* title collage: 12 slices since NOX×NIX (2026-10-07) */
+.trio .p1{left:0.0%;width:10.4%;right:auto}
+.trio .p2{left:7.8%;width:10.4%;right:auto}
+.trio .p4{left:15.6%;width:10.4%;right:auto}
+.trio .p3{left:23.4%;width:10.4%;right:auto}
+.trio .p5{left:31.2%;width:10.4%;right:auto}
+.trio .p6{left:39.0%;width:10.4%;right:auto}
+.trio .p7{left:46.8%;width:10.4%;right:auto}
+.trio .p8{left:54.6%;width:10.4%;right:auto}
+.trio .p9{left:62.4%;width:10.4%;right:auto}
+.trio .p10{left:70.2%;width:10.4%;right:auto}
+.trio .p11{left:78.0%;width:10.4%;right:auto}
+.trio .p12{right:0;width:14.0%;clip-path:polygon(22% 0,100% 0,100% 100%,0 100%);object-position:68% 55%}
+.trio .p11{clip-path:polygon(22% 0,100% 0,78% 100%,0 100%)}
+.trio .s1{left:9.0%}
+.trio .s2{left:16.8%}
+.trio .s3{left:24.6%}
+.trio .s4{left:32.4%}
+.trio .s5{left:40.2%}
+.trio .s6{left:48.0%}
+.trio .s7{left:55.8%}
+.trio .s8{left:63.6%}
+.trio .s9{left:71.4%}
+.trio .s10{left:79.2%}
+.trio .s11{left:87.0%}
+.trio .s11{background:linear-gradient(#00e5ff,#fff,#b06bff);box-shadow:0 0 26px 6px rgba(176,107,255,.6)}
 @media (orientation: portrait){
   #title{flex-direction:column;align-items:stretch;justify-content:flex-end;gap:14px}
-  .trio .p1,.trio .p2,.trio .p3,.trio .p4,.trio .p5,.trio .p6,.trio .p7,.trio .p8,.trio .p9,.trio .p10,.trio .p11{height:62%}
+  .trio .p1,.trio .p2,.trio .p3,.trio .p4,.trio .p5,.trio .p6,.trio .p7,.trio .p8,.trio .p9,.trio .p10,.trio .p11,.trio .p12{height:62%}
   .trio .p1{object-position:50% 18%}
   .trio .p5{top:-28%;height:90%;clip-path:polygon(22% 31%,100% 31%,78% 100%,0 100%)}
-  .trio .s1,.trio .s2,.trio .s3,.trio .s4,.trio .s5,.trio .s6,.trio .s7,.trio .s8,.trio .s9,.trio .s10{height:70%}
+  .trio .s1,.trio .s2,.trio .s3,.trio .s4,.trio .s5,.trio .s6,.trio .s7,.trio .s8,.trio .s9,.trio .s10,.trio .s11{height:70%}
   .trio .shade{background:linear-gradient(180deg,rgba(20,13,38,0) 0%,rgba(20,13,38,0) 42%,rgba(20,13,38,.9) 60%,#140d26 70%)}
   .brand{max-width:100%}
   .menu{min-width:0;width:100%}
@@ -98,7 +124,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 .card .info{position:absolute;left:8%;right:6%;bottom:9%;z-index:1;text-align:left;transform:skewX(6deg)}
 .card b{display:block;font-family:var(--serif);font-size:clamp(16px,2.7vw,34px);line-height:1;white-space:nowrap}
 .card span{display:block;font-size:clamp(9px,1.25vw,13px);color:var(--muted);margin-top:4px;line-height:1.45}
-.card[data-char="suzune"]{box-shadow:inset 0 0 0 3px var(--gold)} .card[data-char="aoi"]{box-shadow:inset 0 0 0 3px var(--cyan)} .card[data-char="arca"]{box-shadow:inset 0 0 0 3px #2ee6c8} .card[data-char="sakura"]{box-shadow:inset 0 0 0 3px #ff9ec4} .card[data-char="mio"]{box-shadow:inset 0 0 0 3px #9acfff} .card[data-char="aria"]{box-shadow:inset 0 0 0 3px #e8a85a} .card[data-char="enjo"]{box-shadow:inset 0 0 0 3px #5fd3bc} .card[data-char="rei"]{box-shadow:inset 0 0 0 3px #e8463c} .card[data-char="kanna"]{box-shadow:inset 0 0 0 3px #ff8c28} .card[data-char="ichika"]{box-shadow:inset 0 0 0 3px #f2c14e} .card[data-char="isana"]{box-shadow:inset 0 0 0 3px #00e5ff}
+.card[data-char="suzune"]{box-shadow:inset 0 0 0 3px var(--gold)} .card[data-char="aoi"]{box-shadow:inset 0 0 0 3px var(--cyan)} .card[data-char="arca"]{box-shadow:inset 0 0 0 3px #2ee6c8} .card[data-char="sakura"]{box-shadow:inset 0 0 0 3px #ff9ec4} .card[data-char="mio"]{box-shadow:inset 0 0 0 3px #9acfff} .card[data-char="aria"]{box-shadow:inset 0 0 0 3px #e8a85a} .card[data-char="enjo"]{box-shadow:inset 0 0 0 3px #5fd3bc} .card[data-char="rei"]{box-shadow:inset 0 0 0 3px #e8463c} .card[data-char="kanna"]{box-shadow:inset 0 0 0 3px #ff8c28} .card[data-char="ichika"]{box-shadow:inset 0 0 0 3px #f2c14e} .card[data-char="isana"]{box-shadow:inset 0 0 0 3px #00e5ff} .card[data-char="noxnix"]{box-shadow:inset 0 0 0 3px #b06bff}
 .card:hover,.card:focus-visible{transform:skewX(-6deg) translateY(-4px)}
 .card[data-tag]::before{content:attr(data-tag);position:absolute;top:8px;left:14px;z-index:2;background:var(--gold);color:#1c1433;font-weight:700;padding:2px 10px;transform:skewX(6deg)}
 .card.p1::before{content:"1P";position:absolute;top:8px;left:14px;z-index:2;background:var(--gold);color:#1c1433;font-weight:700;padding:2px 10px;transform:skewX(6deg)}
@@ -197,6 +223,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 .card[data-char="kanna"].confirm{box-shadow:inset 0 0 0 3px #ff8c28,0 0 40px 6px rgba(255,140,40,.6)}
 .card[data-char="ichika"].confirm{box-shadow:inset 0 0 0 3px #f2c14e,0 0 40px 6px rgba(242,193,78,.6)}
 .card[data-char="isana"].confirm{box-shadow:inset 0 0 0 3px #00e5ff,0 0 40px 6px rgba(0,229,255,.6)}
+.card[data-char="noxnix"].confirm{box-shadow:inset 0 0 0 3px #b06bff,0 0 40px 6px rgba(255,138,30,.6)}
 .card[data-char="aoi"].confirm{box-shadow:inset 0 0 0 3px var(--cyan),0 0 40px 6px rgba(92,200,255,.55)}
 
 /* EX movie (game pauses while it plays) */
@@ -208,7 +235,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 .ex-frame{position:relative;display:none;overflow:hidden}
 .ex-frame video{display:block;width:100%;height:100%;object-fit:cover}
 .ex-frame.on{display:block}
-.ex-frame[data-char="aoi"],.ex-frame[data-char="arca"],.ex-frame[data-char="sakura"],.ex-frame[data-char="mio"],.ex-frame[data-char="aria"],.ex-frame[data-char="enjo"],.ex-frame[data-char="rei"],.ex-frame[data-char="kanna"],.ex-frame[data-char="ichika"],.ex-frame[data-char="isana"]{width:100%;height:100%}
+.ex-frame[data-char="aoi"],.ex-frame[data-char="arca"],.ex-frame[data-char="sakura"],.ex-frame[data-char="mio"],.ex-frame[data-char="aria"],.ex-frame[data-char="enjo"],.ex-frame[data-char="rei"],.ex-frame[data-char="kanna"],.ex-frame[data-char="ichika"],.ex-frame[data-char="isana"],.ex-frame[data-char="noxnix"]{width:100%;height:100%}
 .ex-frame[data-char="suzune"]{height:auto;width:min(100vw,calc(100vh * 560 / 752));aspect-ratio:560/752;clip-path:polygon(12% 0,100% 0,88% 100%,0 100%);box-shadow:0 0 0 3px var(--gold)}
 .ex-frame.on{animation:exin .3s cubic-bezier(.2,1.3,.4,1)}
 @keyframes exin{from{transform:translateX(-30%) scale(1.15);opacity:0}}
@@ -221,8 +248,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 #exMovie[data-char="suzune"] .ex-name{left:max(24px,5vw);right:auto;text-align:left}
 /* portrait phones: show the whole wide clip (letterboxed) instead of cropping it */
 @media (orientation: portrait){
-  .ex-frame[data-char="aoi"],.ex-frame[data-char="arca"],.ex-frame[data-char="sakura"],.ex-frame[data-char="mio"],.ex-frame[data-char="aria"],.ex-frame[data-char="enjo"],.ex-frame[data-char="rei"],.ex-frame[data-char="kanna"],.ex-frame[data-char="ichika"],.ex-frame[data-char="isana"]{width:100%;height:auto;aspect-ratio:16/9;border-top:3px solid var(--cyan);border-bottom:3px solid var(--cyan)}
-  .ex-frame[data-char="aoi"] video,.ex-frame[data-char="arca"] video,.ex-frame[data-char="sakura"] video,.ex-frame[data-char="mio"] video,.ex-frame[data-char="aria"] video,.ex-frame[data-char="enjo"] video,.ex-frame[data-char="rei"] video,.ex-frame[data-char="kanna"] video,.ex-frame[data-char="ichika"] video,.ex-frame[data-char="isana"] video{object-fit:contain}
+  .ex-frame[data-char="aoi"],.ex-frame[data-char="arca"],.ex-frame[data-char="sakura"],.ex-frame[data-char="mio"],.ex-frame[data-char="aria"],.ex-frame[data-char="enjo"],.ex-frame[data-char="rei"],.ex-frame[data-char="kanna"],.ex-frame[data-char="ichika"],.ex-frame[data-char="isana"],.ex-frame[data-char="noxnix"]{width:100%;height:auto;aspect-ratio:16/9;border-top:3px solid var(--cyan);border-bottom:3px solid var(--cyan)}
+  .ex-frame[data-char="aoi"] video,.ex-frame[data-char="arca"] video,.ex-frame[data-char="sakura"] video,.ex-frame[data-char="mio"] video,.ex-frame[data-char="aria"] video,.ex-frame[data-char="enjo"] video,.ex-frame[data-char="rei"] video,.ex-frame[data-char="kanna"] video,.ex-frame[data-char="ichika"] video,.ex-frame[data-char="isana"] video,.ex-frame[data-char="noxnix"] video{object-fit:contain}
   .ex-frame[data-char="suzune"]{clip-path:none}
   .ex-name{bottom:max(28px,10vh)}
   .ex-name b{font-size:clamp(30px,9vw,60px)}
@@ -352,6 +379,7 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 <video id="stage-kanna" class="stage-vid" src="media/stage_kanna.mp4" muted loop playsinline preload="auto"></video>
 <video id="stage-ichika" class="stage-vid" src="media/stage_ichika.mp4" muted loop playsinline preload="auto"></video>
 <video id="stage-isana" class="stage-vid" src="media/stage_isana.mp4" muted loop playsinline preload="auto"></video>
+<video id="stage-noxnix" class="stage-vid" src="media/stage_noxnix.mp4" muted loop playsinline preload="auto"></video>
 <video id="stage-aoi" class="stage-vid" src="media/stage_aoi.mp4" muted loop playsinline preload="auto"></video>
 <canvas id="game" aria-label="対戦画面"></canvas>
 
@@ -361,18 +389,18 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
   <div class="op-logo" aria-hidden="true">
     <span class="op-kicker">SZOU ORIGINAL</span>
     <h1><span>CHRONO</span><span>FIGHT</span></h1>
-    <p>SUZUNE <i>×</i> AOI <i>×</i> ARCA-07 <i>×</i> SAKURA <i>×</i> MIO-07 <i>×</i> ARIA <i>×</i> ENJO <i>×</i> REI <i>×</i> KANNA <i>×</i> ICHIKA <i>×</i> ISANA</p>
+    <p>SUZUNE <i>×</i> AOI <i>×</i> ARCA-07 <i>×</i> SAKURA <i>×</i> MIO-07 <i>×</i> ARIA <i>×</i> ENJO <i>×</i> REI <i>×</i> KANNA <i>×</i> ICHIKA <i>×</i> ISANA <i>×</i> NOX×NIX</p>
   </div>
   <button class="op-start" id="opStart"><b>タップしてスタート</b><small>音が出ます</small></button>
   <button class="op-skip" id="opSkip" hidden>スキップ ▶▶</button>
 </section>
 
 <section class="screen" id="title" aria-label="タイトル">
-  <div class="trio"><img class="p1" data-src="tsu" alt=""><img class="p2" data-src="tao" alt=""><img class="p4" data-src="tar" alt=""><img class="p3" data-src="tsa" alt=""><img class="p5" data-src="tmi" alt=""><img class="p6" data-src="tari" alt=""><img class="p7" data-src="tenj" alt=""><img class="p8" data-src="trei" alt=""><img class="p9" data-src="tkan" alt=""><img class="p10" data-src="tich" alt=""><img class="p11" data-src="tisa" alt=""><i class="sm s1"></i><i class="sm s2"></i><i class="sm s3"></i><i class="sm s4"></i><i class="sm s5"></i><i class="sm s6"></i><i class="sm s7"></i><i class="sm s8"></i><i class="sm s9"></i><i class="sm s10"></i><div class="shade"></div></div>
+  <div class="trio"><img class="p1" data-src="tsu" alt=""><img class="p2" data-src="tao" alt=""><img class="p4" data-src="tar" alt=""><img class="p3" data-src="tsa" alt=""><img class="p5" data-src="tmi" alt=""><img class="p6" data-src="tari" alt=""><img class="p7" data-src="tenj" alt=""><img class="p8" data-src="trei" alt=""><img class="p9" data-src="tkan" alt=""><img class="p10" data-src="tich" alt=""><img class="p11" data-src="tisa" alt=""><img class="p12" data-src="tnx" alt=""><i class="sm s1"></i><i class="sm s2"></i><i class="sm s3"></i><i class="sm s4"></i><i class="sm s5"></i><i class="sm s6"></i><i class="sm s7"></i><i class="sm s8"></i><i class="sm s9"></i><i class="sm s10"></i><i class="sm s11"></i><div class="shade"></div></div>
   <div class="brand">
     <h1>CHRONO<br>FIGHT</h1>
-    <p>SUZUNE・AOI・ARCA-07・SAKURA・MIO-07・ARIA・ENJO・REI・KANNA・ICHIKA・ISANA、2029年の東京スカイデッキで。<br>攻撃と必殺、2つのボタンで戦う2ラウンド先取バトル。</p>
-    <div class="keys">ボタンは「攻撃」と「必殺」だけ。攻撃連打で自動コンボ、必殺はゲージで 強攻撃→EX→ULT に変化。<br>1P：A D 移動 / W ジャンプ / J 攻撃 / K 必殺　2P：矢印キー / , 攻撃 / . 必殺　相手と反対に押すとガード<br>ダッシュ（SUZUNE・ARCA-07・MIO-07・ARIA・ENJO・REI・KANNA・ICHIKA・ISANA　1P I・2P / ・左右2回押しでもOK）　基本は1VS1シングルバトル（2VS2タッグも選べます。タッグの交代 1P U・2P '）　ULTは体力50%以下で解放</div>
+    <p>SUZUNE・AOI・ARCA-07・SAKURA・MIO-07・ARIA・ENJO・REI・KANNA・ICHIKA・ISANA・NOX×NIX、2029年の東京スカイデッキで。<br>攻撃と必殺、2つのボタンで戦う2ラウンド先取バトル。</p>
+    <div class="keys">ボタンは「攻撃」と「必殺」だけ。攻撃連打で自動コンボ、必殺はゲージで 強攻撃→EX→ULT に変化。<br>1P：A D 移動 / W ジャンプ / J 攻撃 / K 必殺　2P：矢印キー / , 攻撃 / . 必殺　相手と反対に押すとガード<br>ダッシュ（SUZUNE・ARCA-07・MIO-07・ARIA・ENJO・REI・KANNA・ICHIKA・ISANA・NOX×NIX　1P I・2P / ・左右2回押しでもOK）　基本は1VS1シングルバトル（2VS2タッグも選べます。タッグの交代 1P U・2P '）　ULTは体力50%以下で解放</div>
   </div>
   <nav class="menu" aria-label="モード選択">
     <div class="seg fmt" role="group" aria-label="試合形式"><button data-solo="1" aria-pressed="true">1VS1 シングル</button><button data-solo="0" aria-pressed="false">2VS2 タッグ</button></div>
@@ -397,6 +425,7 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
     <button class="card" data-char="kanna"><img alt="KANNA"><video class="sv-intro" src="media/select_kanna_intro.mp4" poster="media/select_kanna_poster.jpg" muted playsinline preload="auto"></video><video class="sv-confirm" preload="metadata" src="media/select_kanna_confirm.mp4" muted playsinline></video><span class="sv-flash"></span><div class="info"><b>KANNA</b><span>花弁冠・巨大神機　EX 開花・花冠／ULT 開花 ― ORANGE</span></div></button>
     <button class="card" data-char="ichika"><img alt="ICHIKA"><video class="sv-intro" src="media/select_ichika_intro.mp4" poster="media/select_ichika_poster.jpg" muted playsinline preload="auto"></video><video class="sv-confirm" preload="metadata" src="media/select_ichika_confirm.mp4" muted playsinline></video><span class="sv-flash"></span><div class="info"><b>ICHIKA</b><span>時間操作・1秒スロー　EX ONE SECOND／ULT ZERO SECOND</span></div></button>
     <button class="card" data-char="isana"><img alt="ISANA"><video class="sv-intro" src="media/select_isana_intro.mp4" poster="media/select_isana_poster.jpg" muted playsinline preload="auto"></video><video class="sv-confirm" preload="metadata" src="media/select_isana_confirm.mp4" muted playsinline></video><span class="sv-flash"></span><div class="info"><b>ISANA</b><span>サルベージ海賊・錨　EX 舷側斉射／ULT 深淵錨・ダイブモード</span></div></button>
+    <button class="card" data-char="noxnix"><img alt="NOX×NIX"><video class="sv-intro" src="media/select_noxnix_intro.mp4" poster="media/select_noxnix_poster.jpg" muted playsinline preload="auto"></video><video class="sv-confirm" preload="metadata" src="media/select_noxnix_confirm.mp4" muted playsinline></video><span class="sv-flash"></span><div class="info"><b>NOX×NIX</b><span>ツインギター・魔女バンド　EX ツイン・リフ／ULT JACK-O' ARK</span></div></button>
   </div>
   <p id="selNote"></p>
   <div class="selrow">
@@ -430,6 +459,7 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
   <div class="ex-frame" data-char="kanna"><video src="media/ex_kanna.mp4" poster="media/ex_kanna_poster.jpg" muted playsinline preload="auto"></video></div>
   <div class="ex-frame" data-char="ichika"><video src="media/ex_ichika.mp4" poster="media/ex_ichika_poster.jpg" muted playsinline preload="auto"></video></div>
   <div class="ex-frame" data-char="isana"><video src="media/ex_isana.mp4" poster="media/ex_isana_poster.jpg" muted playsinline preload="auto"></video></div>
+  <div class="ex-frame" data-char="noxnix"><video src="media/ex_noxnix.mp4" poster="media/ex_noxnix_poster.jpg" muted playsinline preload="auto"></video></div>
   <div class="ex-frame" data-char="mio"><video src="media/ex_mio.mp4" poster="media/ex_mio_poster.jpg" muted playsinline preload="auto"></video></div>
   <div class="ex-name"><small>ULTIMATE</small><b></b></div>
 </div>
@@ -445,6 +475,7 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
   <video data-char="kanna" src="media/win_kanna.mp4" poster="media/win_kanna_poster.jpg" muted playsinline preload="auto"></video>
   <video data-char="ichika" src="media/win_ichika.mp4" poster="media/win_ichika_poster.jpg" muted playsinline preload="auto"></video>
   <video data-char="isana" src="media/win_isana.mp4?v=2" poster="media/win_isana_poster.jpg?v=2" muted playsinline preload="auto"></video>
+  <video data-char="noxnix" src="media/win_noxnix.mp4" poster="media/win_noxnix_poster.jpg" muted playsinline preload="auto"></video>
   <video data-char="mio" src="media/win_mio.mp4" poster="media/win_mio_poster.jpg" muted playsinline preload="auto"></video>
   <div class="wm-bar top"></div><div class="wm-bar bot"></div>
   <div class="wm-band"></div>
@@ -480,7 +511,7 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 <div id="matchLoad" hidden>出撃準備中… <span id="matchPct">0%</span></div>
 <div id="loading">読み込み中… <span id="loadPct">0%</span></div>
 
-<script>window.ASSETS={"su": "assets/suzune.webp", "ao": "assets/aoi.webp", "drone": "assets/drone.webp", "suci": "assets/suzune_cutin.webp", "aoci": "assets/aoi_cutin.webp", "ar": "assets/arca.webp", "arci": "assets/arca_cutin.webp", "arp": "assets/arca_pilot.webp", "arcard": "assets/arca_card.webp", "tsu": "assets/title_suzune.webp", "tao": "assets/title_aoi.webp", "tar": "assets/title_arca.webp", "tsa": "assets/title_sakura.webp", "sa": "assets/sakura.webp", "saci": "assets/sakura_cutin.webp", "sacard": "assets/sakura_card.webp", "mi": "assets/mio.webp", "mici": "assets/mio_cutin.webp", "micard": "assets/mio_card.webp", "ar2": "assets/aria.webp", "ar2ci": "assets/aria_cutin.webp", "ar2card": "assets/aria_card.webp", "tari": "assets/title_aria.webp", "en": "assets/enjo.webp", "enci": "assets/enjo_cutin.webp", "encard": "assets/enjo_card.webp", "enskull": "assets/enjo_skull.webp", "tenj": "assets/title_enjo.webp", "re": "assets/rei.webp", "reci": "assets/rei_cutin.webp", "recard": "assets/rei_card.webp", "trei": "assets/title_rei.webp", "ka": "assets/kanna.webp", "kaci": "assets/kanna_cutin.webp", "kacard": "assets/kanna_card.webp", "tkan": "assets/title_kanna.webp", "ic": "assets/ichika.webp", "icci": "assets/ichika_cutin.webp", "iccard": "assets/ichika_card.webp", "tich": "assets/title_ichika.webp", "is": "assets/isana.webp", "isci": "assets/isana_cutin.webp", "iscard": "assets/isana_card.webp", "tisa": "assets/title_isana.webp", "tmi": "assets/title_mio.webp"};</script>
-<script src="game.js?v=20261007b"></script>
+<script>window.ASSETS={"su": "assets/suzune.webp", "ao": "assets/aoi.webp", "drone": "assets/drone.webp", "suci": "assets/suzune_cutin.webp", "aoci": "assets/aoi_cutin.webp", "ar": "assets/arca.webp", "arci": "assets/arca_cutin.webp", "arp": "assets/arca_pilot.webp", "arcard": "assets/arca_card.webp", "tsu": "assets/title_suzune.webp", "tao": "assets/title_aoi.webp", "tar": "assets/title_arca.webp", "tsa": "assets/title_sakura.webp", "sa": "assets/sakura.webp", "saci": "assets/sakura_cutin.webp", "sacard": "assets/sakura_card.webp", "mi": "assets/mio.webp", "mici": "assets/mio_cutin.webp", "micard": "assets/mio_card.webp", "ar2": "assets/aria.webp", "ar2ci": "assets/aria_cutin.webp", "ar2card": "assets/aria_card.webp", "tari": "assets/title_aria.webp", "en": "assets/enjo.webp", "enci": "assets/enjo_cutin.webp", "encard": "assets/enjo_card.webp", "enskull": "assets/enjo_skull.webp", "tenj": "assets/title_enjo.webp", "re": "assets/rei.webp", "reci": "assets/rei_cutin.webp", "recard": "assets/rei_card.webp", "trei": "assets/title_rei.webp", "ka": "assets/kanna.webp", "kaci": "assets/kanna_cutin.webp", "kacard": "assets/kanna_card.webp", "tkan": "assets/title_kanna.webp", "ic": "assets/ichika.webp", "icci": "assets/ichika_cutin.webp", "iccard": "assets/ichika_card.webp", "tich": "assets/title_ichika.webp", "is": "assets/isana.webp", "isci": "assets/isana_cutin.webp", "iscard": "assets/isana_card.webp", "tisa": "assets/title_isana.webp", "tmi": "assets/title_mio.webp", "nx": "assets/noxnix.webp", "nxci": "assets/noxnix_cutin.webp", "nxcard": "assets/noxnix_card.webp", "tnx": "assets/title_noxnix.webp"};</script>
+<script src="game.js?v=20261007c"></script>
 </body>
 </html>
