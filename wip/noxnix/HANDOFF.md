@@ -54,7 +54,7 @@ noxnix: { id: 'noxnix', name: 'NOX×NIX', role: 'ツインギター・魔女バ�
 ```
 
 ## 未対応
-- ULT／勝利ムービーの BGM（`media/sfx/movie_ex_noxnix.mp3`・`movie_win_noxnix.mp3`）は未作成。無くても動く（他キャラは ElevenLabs video-to-music で作成）
+- ~~ULT／勝利ムービーの BGM~~ → 2026-10-07 に Topview Music で作成済み（`movie_ex_noxnix.mp3`・`movie_win_noxnix.mp3`、詳細は wip/shuten/HANDOFF.md）
 - ~~a1 の床の砂ぼこり~~ → 対応済み（下記）
 
 ## a1 の砂ぼこり除去（2026-10-07）

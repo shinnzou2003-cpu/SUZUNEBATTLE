@@ -184,7 +184,10 @@ const CHARS = {
   isana: { id: 'isana', name: 'ISANA', role: 'サルベージ海賊・錨', c1: '#00e5ff', c2: '#39ffb0', rgb: '0,229,255', rgb2: '57,255,176', speed: 4.8, jump: -23.5, anchor: .55, hurtW: 58, hurtH: 285, exName: '舷側斉射', ultName: '深淵錨・ダイブモード' },
   // NOX × NIX: a two-witch Halloween band from space — one slot, both on the field together with twin guitars (NIX in
   // front, NOX behind). They hop star to star in the pumpkin ship JACK-O' ARK, which is also their ULT. Black × purple × orange
-  noxnix: { id: 'noxnix', name: 'NOX×NIX', role: 'ツインギター・魔女バンド', c1: '#b06bff', c2: '#ff8a1e', rgb: '176,107,255', rgb2: '255,138,30', speed: 5.4, jump: -24.5, anchor: .5, hurtW: 220, hurtH: 285, exName: 'ツイン・リフ', ultName: 'ジャック・オー・アーク' }
+  noxnix: { id: 'noxnix', name: 'NOX×NIX', role: 'ツインギター・魔女バンド', c1: '#b06bff', c2: '#ff8a1e', rgb: '176,107,255', rgb2: '255,138,30', speed: 5.4, jump: -24.5, anchor: .5, hurtW: 220, hurtH: 285, exName: 'ツイン・リフ', ultName: 'ジャック・オー・アーク' },
+  // SHUTEN 鬼王: the BOSS BATTLE boss (not on the select grid). Colossal demon king, 5× health, 1.5× damage, ≈2.5× size,
+  // super armour. Black × gold × crimson
+  shuten: { id: 'shuten', name: 'SHUTEN', role: '鬼王・ボス', c1: '#ffc23a', c2: '#e8222c', rgb: '255,194,58', rgb2: '232,34,44', speed: 4.6, jump: -21.0, anchor: .5, hurtW: 150, hurtH: 720, boss: true, maxHp: 500, dmgMul: 1.5, exName: '鬼酒・覚醒', ultName: '酒呑大蛇斬' }
 };
 const ALT = {
   suzune: { c1: '#7fd8ff', c2: '#4f7bff', rgb: '130,215,255', rgb2: '90,120,255', test: (h, s, l) => (h > 33 && h < 64 && s > .3) || ((h < 12 || h > 340) && s > .55), shift: 175 },
@@ -198,16 +201,17 @@ const ALT = {
   kanna: { c1: '#7fd8ff', c2: '#b8c8e8', rgb: '130,215,255', rgb2: '184,200,232', test: (h, s, l) => h > 12 && h < 52 && s > .3, shift: 175 },
   ichika: { c1: '#ff7aa8', c2: '#ffd0e0', rgb: '255,122,168', rgb2: '255,208,224', test: (h, s, l) => h > 30 && h < 62 && s > .3, shift: 300 },
   isana: { c1: '#ff7a3c', c2: '#ffc070', rgb: '255,122,60', rgb2: '255,192,112', test: (h, s, l) => h > 150 && h < 200 && s > .25, shift: 190 },
-  noxnix: { c1: '#3fe0a0', c2: '#7fd8ff', rgb: '63,224,160', rgb2: '127,216,255', test: (h, s, l) => h > 250 && h < 310 && s > .25, shift: 200 }
+  noxnix: { c1: '#3fe0a0', c2: '#7fd8ff', rgb: '63,224,160', rgb2: '127,216,255', test: (h, s, l) => h > 250 && h < 310 && s > .25, shift: 200 },
+  shuten: { c1: '#7fd8ff', c2: '#b06bff', rgb: '127,216,255', rgb2: '176,107,255', test: (h, s, l) => (h < 60 || h > 340) && s > .3, shift: 190 }
 };
 const GFX = {};
 async function buildAssets() {
   const A = window.ASSETS;
-  const [su, ao, drone, suci, aoci, ar, arci, arp, sa, saci, mi, mici, ari, arici, en, enci, ensk, re, reci, ka, kaci, ic, icci, is, isci, nx, nxci] = await Promise.all([A.su, A.ao, A.drone, A.suci, A.aoci, A.ar, A.arci, A.arp, A.sa, A.saci, A.mi, A.mici, A.ar2, A.ar2ci, A.en, A.enci, A.enskull, A.re, A.reci, A.ka, A.kaci, A.ic, A.icci, A.is, A.isci, A.nx, A.nxci].map(p => track(loadImg(p))));
-  const base = { suzune: { img: su, ci: suci }, aoi: { img: ao, ci: aoci }, arca: { img: ar, ci: arci }, sakura: { img: sa, ci: saci }, mio: { img: mi, ci: mici }, aria: { img: ari, ci: arici }, enjo: { img: en, ci: enci }, rei: { img: re, ci: reci }, kanna: { img: ka, ci: kaci }, ichika: { img: ic, ci: icci }, isana: { img: is, ci: isci }, noxnix: { img: nx, ci: nxci } };
+  const [su, ao, drone, suci, aoci, ar, arci, arp, sa, saci, mi, mici, ari, arici, en, enci, ensk, re, reci, ka, kaci, ic, icci, is, isci, nx, nxci, sh, shci] = await Promise.all([A.su, A.ao, A.drone, A.suci, A.aoci, A.ar, A.arci, A.arp, A.sa, A.saci, A.mi, A.mici, A.ar2, A.ar2ci, A.en, A.enci, A.enskull, A.re, A.reci, A.ka, A.kaci, A.ic, A.icci, A.is, A.isci, A.nx, A.nxci, A.sh, A.shci].map(p => track(loadImg(p))));
+  const base = { suzune: { img: su, ci: suci }, aoi: { img: ao, ci: aoci }, arca: { img: ar, ci: arci }, sakura: { img: sa, ci: saci }, mio: { img: mi, ci: mici }, aria: { img: ari, ci: arici }, enjo: { img: en, ci: enci }, rei: { img: re, ci: reci }, kanna: { img: ka, ci: kaci }, ichika: { img: ic, ci: icci }, isana: { img: is, ci: isci }, noxnix: { img: nx, ci: nxci }, shuten: { img: sh, ci: shci } };
   GFX.arcaPilot = arp; GFX.skull = ensk; GFX.skullAlt = null;
   GFX.skullAltLazy = () => GFX.skullAlt || (GFX.skullAlt = recolor(ensk, ALT.enjo.test, ALT.enjo.shift));
-  for (const id of ['suzune', 'aoi', 'arca', 'sakura', 'mio', 'aria', 'enjo', 'rei', 'kanna', 'ichika', 'isana', 'noxnix']) {
+  for (const id of ['suzune', 'aoi', 'arca', 'sakura', 'mio', 'aria', 'enjo', 'rei', 'kanna', 'ichika', 'isana', 'noxnix', 'shuten']) {
     const ch = CHARS[id], al = ALT[id];
     const make = (img, ci, c1, rgb) => ({ img, ci, white: silhouette(img, '#fff'), tint: silhouette(img, c1), glow: glowOf(img, `rgb(${rgb})`) });
     GFX[id] = [make(base[id].img, base[id].ci, ch.c1, ch.rgb), null];
@@ -223,7 +227,7 @@ const frameCount = (id, n) => ANIMS[id] && ANIMS[id].a[n] ? ANIMS[id].a[n].lengt
 // visual size balance between characters (SUZUNE's source video was framed larger)
 const RESIZE = { suzune: .9, aoi: .9, sakura: .9, enjo: 1.15, rei: 1.15 };   // ENJO / REI enlarged 2026-10-05; their summoned beasts keep their size   // 2026-10-04: these three trimmed to sit with the rest of the roster (sprite + hit/hurt boxes + attach points)
 const RS = f => RESIZE[f.id] || 1;
-const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.2, mio: 1.22, aria: .95, enjo: 1.0, rei: 1.0, kanna: 2.1, ichika: 1.0, isana: 1.0, noxnix: 1.0 };   // AOI stands taller; SUZUNE fights from a low crouch; KANNA is a giant (≈2.5× SUZUNE)
+const CHAR_SCALE = { suzune: .92, aoi: 1.07, arca: 625 / 318, sakura: 1.2, mio: 1.22, aria: .95, enjo: 1.0, rei: 1.0, kanna: 2.1, ichika: 1.0, isana: 1.0, noxnix: 1.0, shuten: 2.5 };   // AOI stands taller; SUZUNE fights from a low crouch; KANNA is a giant (≈2.5× SUZUNE)
 const LOAD = { done: 0, total: 0 };
 function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = document.getElementById('loadPct'); if (el) el.textContent = Math.round(LOAD.done / Math.max(1, LOAD.total) * 100) + '%'; return v; }); }
 // Atlases are NOT decoded at boot any more: only the fighters in the current match are kept in memory,
@@ -246,7 +250,8 @@ async function hiMeta(id) {
   if (m && m.storeH && ANIM_META[id] && Math.abs(m.storeH - ANIM_META[id].storeH) > .5) m = null;   // different scale/anchor: unsafe, ignore
   return ANIM_HI[id] = m;
 }
-const wantHi = () => !!G.solo;
+const wantHi = () => !!G.solo && !G.boss;
+const WIN_N = () => G.boss ? 1 : 2;   // BOSS BATTLE is a single bout
 function loadAnim(id, onTick, hi) {
   if (hi === undefined) hi = wantHi();
   if (ANIMS[id] && (ANIMS[id].hiWanted === hi || ANIMS[id].hi === hi || (hi && !ANIMS[id].hi && ANIM_HI[id] === null))) { ANIMS[id].hiWanted = hi; return Promise.resolve(); }
@@ -401,6 +406,17 @@ function pickFrame(f) {
           return prog(a.ultEnd ? 'ultEnd' : 'a3', Math.min(1, (u - U.slam) / (U.end - U.slam)));
         }
       }
+      if (f.id === 'shuten') {
+        if (m.key === 'a') { const n = ['a1', 'a2', 'a3'][Math.min(2, f.chain)]; return prog(a[n] ? n : 'a', p); }
+        if (m.key === 'b') return prog('b', Math.min(1, t / (m.st + m.act)));
+        if (m.key === 'ex') return prog('ex', Math.min(1, t / (m.st + 6)));   // drinks from the gourd, then roars
+        if (m.key === 'ult') {   // the blade spins up → sweeps the hall → coils and crashes
+          const u = t - m.st, U = SHUTEN_ULT;
+          if (u < U.sweep) return prog(a.ultCharge ? 'ultCharge' : 'idle', u / U.sweep);
+          if (u < U.crash) return loop(a.ultFire ? 'ultFire' : 'a1', AN.fps.ultFire || 12);
+          return prog(a.ultEnd ? 'ultEnd' : 'a2', Math.min(1, (u - U.crash) / (U.end - U.crash)));
+        }
+      }
       if (f.id === 'noxnix') {
         if (m.key === 'a') { const n = ['a1', 'a2', 'a3'][Math.min(2, f.chain)]; return prog(a[n] ? n : 'a', p); }
         if (m.key === 'b') return prog('b', Math.min(1, t / (m.st + 10)));
@@ -477,7 +493,7 @@ function tone(dur, f0, f1, vol, type = 'sine', delay = 0) {
   o.connect(g); g.connect(SND.master); o.start(t); o.stop(t + dur + .05);
 }
 /* ---------- BGM (opening + title loop) ---------- */
-const BGM = { buf: null, bufBattle: null, cur: 'title', src: null, gain: null, on: true, loopStart: 6.1, vol: .8 };
+const BGM = { buf: null, bufBattle: null, bufBoss: null, cur: 'title', src: null, gain: null, on: true, loopStart: 6.1, vol: .8 };
 async function loadBGM() {
   try {
     const ab = await (await fetch('media/bgm.mp3')).arrayBuffer();
@@ -488,9 +504,13 @@ async function loadBGM() {
     const ab2 = await (await fetch('media/bgm_battle.mp3')).arrayBuffer();
     BGM.bufBattle = await new Promise((res, rej) => SND.ac.decodeAudioData(ab2, res, rej));
   } catch (e) { BGM.bufBattle = null; }
+  try {   // BOSS BATTLE theme (SHUTEN)
+    const ab3 = await (await fetch('media/bgm_boss.mp3')).arrayBuffer();
+    BGM.bufBoss = await new Promise((res, rej) => SND.ac.decodeAudioData(ab3, res, rej));
+  } catch (e) { BGM.bufBoss = null; }
 }
 function bgmPlay(offset = 0) {
-  const battle = BGM.cur === 'battle' && BGM.bufBattle, buf = battle ? BGM.bufBattle : BGM.buf;
+  const boss = BGM.cur === 'boss' && BGM.bufBoss, battle = boss || (BGM.cur !== 'title' && BGM.bufBattle), buf = boss ? BGM.bufBoss : battle ? BGM.bufBattle : BGM.buf;
   if (!buf || !SND.ac) return;
   bgmStop();
   const ac = SND.ac;
@@ -503,10 +523,10 @@ function bgmPlay(offset = 0) {
 function bgmTrack(name, vol) {
   if (BGM.cur === name && BGM.src) { bgmVolume(vol); return; }
   BGM.cur = name; BGM.vol = vol;
-  if (!SND.ac || !BGM.gain) { bgmPlay(name === 'battle' ? 0 : BGM.loopStart); return; }
+  if (!SND.ac || !BGM.gain) { bgmPlay(name !== 'title' ? 0 : BGM.loopStart); return; }
   const t = SND.ac.currentTime, old = BGM.src; BGM.src = null;
   BGM.gain.gain.cancelScheduledValues(t); BGM.gain.gain.setValueAtTime(BGM.gain.gain.value, t); BGM.gain.gain.linearRampToValueAtTime(0, t + .35);
-  setTimeout(() => { if (old) { try { old.stop(); } catch (e) { } } bgmPlay(name === 'battle' ? 0 : BGM.loopStart); }, 380);
+  setTimeout(() => { if (old) { try { old.stop(); } catch (e) { } } bgmPlay(name !== 'title' ? 0 : BGM.loopStart); }, 380);
 }
 function bgmStop() { if (BGM.src) { try { BGM.src.stop(); } catch (e) { } BGM.src = null; } }
 function bgmVolume(v, sec = .6) { BGM.vol = v; if (!BGM.gain || !SND.ac) return; const t = SND.ac.currentTime; BGM.gain.gain.cancelScheduledValues(t); BGM.gain.gain.setValueAtTime(BGM.gain.gain.value, t); BGM.gain.gain.linearRampToValueAtTime(BGM.on ? v : 0, t + sec); }
@@ -539,7 +559,9 @@ const VOICE_MAP = {
   isana: { a0: ['is_01', 'is_03'], a1: ['is_02'], a2: ['is_04'], b: ['is_05'], jump: ['is_06'], guard: ['is_07'], hit: ['is_08'], hitBig: ['is_09'],
     getup: ['is_10'], ko: ['is_11'], ex: ['is_12'], ult: ['is_13'], select: ['is_14'], round: ['is_15'], winMovie: ['is_16'], win: ['is_17'], lose: ['is_18'] },
   noxnix: { a0: ['nx_01', 'nx_03'], a1: ['nx_02'], a2: ['nx_04'], b: ['nx_05'], jump: ['nx_06'], guard: ['nx_07'], hit: ['nx_08'], hitBig: ['nx_09'],
-    getup: ['nx_10'], ko: ['nx_11'], ex: ['nx_12'], ult: ['nx_13'], select: ['nx_14'], round: ['nx_15'], winMovie: ['nx_16'], win: ['nx_17'], lose: ['nx_18'] }
+    getup: ['nx_10'], ko: ['nx_11'], ex: ['nx_12'], ult: ['nx_13'], select: ['nx_14'], round: ['nx_15'], winMovie: ['nx_16'], win: ['nx_17'], lose: ['nx_18'] },
+  shuten: { a0: ['sh_01', 'sh_03'], a1: ['sh_02'], a2: ['sh_04'], b: ['sh_05'], jump: ['sh_06'], guard: ['sh_07'], hit: ['sh_08'], hitBig: ['sh_09'],
+    getup: ['sh_10'], ko: ['sh_11'], ex: ['sh_12'], ult: ['sh_13'], select: ['sh_14'], round: ['sh_15'], winMovie: ['sh_16'], win: ['sh_17'], lose: ['sh_18'] }
 };
 const VOICE = { buf: {}, gain: null, last: {} };
 // BGM ducking bus: music dips while a character is speaking so lines cut through
@@ -649,7 +671,7 @@ function playS(name, vol = 1, rate = 1, delay = 0) {
 const MOVIE_AUDIO = { buf: {}, src: null, gain: null, bgmVol: null };
 async function loadMovieAudio() {
   if (!SND.ac) return;
-  const ids = Object.keys(CHARS).flatMap(id => ['ex_' + id, 'win_' + id]);
+  const ids = Object.keys(CHARS).flatMap(id => ['ex_' + id, 'win_' + id]).concat(['intro_shuten']);   // + the BOSS BATTLE entrance score
   await Promise.all(ids.map(async n => {
     try { const r = await fetch('media/sfx/movie_' + n + '.mp3'); if (!r.ok) return; const ab = await r.arrayBuffer(); MOVIE_AUDIO.buf[n] = await new Promise((res, rej) => SND.ac.decodeAudioData(ab, res, rej)); } catch (e) { }
   }));
@@ -786,7 +808,7 @@ function fxDust(x, y, n = 8, pw = 1) { for (let i = 0; i < n; i++) addFx({ k: 'd
 function fxText(x, y, txt, rgb, size = 40, life = 50) { addFx({ k: 'text', x, y, txt, rgb, size, life, t: 0 }); }
 function fxHex(x, y, rgb, face) { addFx({ k: 'hex', x, y, rgb, face, life: 18, t: 0 }); }
 /* SF-mecha energy colours: SUZUNE gold / AOI blue (mirror-match colour swaps keep their own palette) */
-const AURA = { suzune: { rgb: '255,196,64', hot: '255,244,200' }, aoi: { rgb: '64,168,255', hot: '205,240,255' }, arca: { rgb: '46,230,200', hot: '215,255,245' }, sakura: { rgb: '255,150,200', hot: '255,236,246' }, mio: { rgb: '110,180,255', hot: '232,246,255' }, aria: { rgb: '245,165,70', hot: '255,240,205' }, enjo: { rgb: '95,211,188', hot: '225,255,246' }, rei: { rgb: '232,70,60', hot: '255,214,200' }, kanna: { rgb: '255,140,40', hot: '255,228,176' }, ichika: { rgb: '242,193,78', hot: '255,240,200' }, isana: { rgb: '0,229,255', hot: '210,255,250' }, noxnix: { rgb: '176,107,255', hot: '255,232,210' } };
+const AURA = { suzune: { rgb: '255,196,64', hot: '255,244,200' }, aoi: { rgb: '64,168,255', hot: '205,240,255' }, arca: { rgb: '46,230,200', hot: '215,255,245' }, sakura: { rgb: '255,150,200', hot: '255,236,246' }, mio: { rgb: '110,180,255', hot: '232,246,255' }, aria: { rgb: '245,165,70', hot: '255,240,205' }, enjo: { rgb: '95,211,188', hot: '225,255,246' }, rei: { rgb: '232,70,60', hot: '255,214,200' }, kanna: { rgb: '255,140,40', hot: '255,228,176' }, ichika: { rgb: '242,193,78', hot: '255,240,200' }, isana: { rgb: '0,229,255', hot: '210,255,250' }, noxnix: { rgb: '176,107,255', hot: '255,232,210' }, shuten: { rgb: '232,34,44', hot: '255,236,200' } };
 const auraRgb = f => f.alt ? f.col.rgb : AURA[f.id].rgb;
 const auraHot = f => f.alt ? '255,255,255' : AURA[f.id].hot;
 function fxBolt(x0, y0, x1, y1, rgb, life = 9) {
@@ -983,7 +1005,7 @@ function makeFighter(id, side, alt) {
   return {
     id, ch, side, alt, col, gfx: alt ? GFX[id].altLazy() : GFX[id][0],
     x: side === 0 ? STAGE_W / 2 - 300 : STAGE_W / 2 + 300, y: GROUND, top: 0, bot: 0, wave: 0, land: 0, glitch: 0, flip: false, flipT: 0, holdBack: false, vx: 0, vy: 0, face: side === 0 ? 1 : -1,
-    hp: 100, dispHp: 100, gauge: 0, state: 'idle', t: 0, move: null, hitIds: new Set(), stun: 0, combo: 0, inv: 0,
+    hp: ch.maxHp || 100, dispHp: ch.maxHp || 100, maxHp: ch.maxHp || 100, gauge: 0, rage: 0, armorT: 0, state: 'idle', t: 0, move: null, hitIds: new Set(), stun: 0, combo: 0, inv: 0,
     sx: 1, sy: 1, rot: 0, ox: 0, oy: 0, whiteT: 0, ai: null, prev: {}, buf: {}, trail: [], rail: [], chain: 0, hidden: false, wins: 0,
     droneX: 0, droneY: 0, droneA: 0, charge: 0, ko: false, ghosts: [], _hits: 0, _lastHitT: 0
   };
@@ -1023,6 +1045,12 @@ const MOVES = {
     b: { st: 8, act: 16, rec: 14, cost: 0 },
     ex: { st: 6, act: 6, rec: 10, cost: 50 },
     ult: { st: 0, act: 190, rec: 30, cost: 100 }
+  },
+  shuten: {
+    a: { st: 9, act: 6, rec: 16, cost: 0 },
+    b: { st: 14, act: 18, rec: 20, cost: 0 },
+    ex: { st: 34, act: 10, rec: 20, cost: 50 },
+    ult: { st: 0, act: 220, rec: 30, cost: 100 }
   },
   noxnix: {
     a: { st: 5, act: 4, rec: 12, cost: 0 },
@@ -1071,7 +1099,7 @@ const MOVES = {
 function startMove(f, key) {
   const m = MOVES[f.id][key];
   if (f.gauge < m.cost) return false;
-  if (key === 'ult' && f.hp > 50) return false;
+  if (key === 'ult' && f.hp > f.maxHp * .5) return false;
   f.gauge -= m.cost;
   if (key === 'a' && f.state === 'atk' && f.move && f.move.key === 'a') f.chain++; else f.chain = 0;
   f.state = 'atk'; f.t = -1; f.move = { key, ...m, total: m.st + m.act + m.rec, id: Math.random() }; f.hitIds.clear();
@@ -1092,6 +1120,7 @@ function startUlt(f) {
 
 function hitTarget(att, tgt, o) {
   if (tgt.inv > 0 || tgt.ko || tgt.state === 'down' || G.phase !== 'fight') return false;
+  if (att.ch.dmgMul) o = { ...o, dmg: o.dmg * att.ch.dmgMul * (att.rage > 0 ? 1.2 : 1) };   // SHUTEN hits 1.5× as hard (more when enraged)
   const fromDir = Math.sign(tgt.x - att.x) || att.face;
   // guard works from either side: a grounded fighter holding guard blocks even a cross-up that lands before they turn round
   const guarding = (tgt.state === 'guard' || (tgt.holdBack && (tgt.state === 'walk' || tgt.state === 'idle'))) && onGround(tgt);
@@ -1104,12 +1133,13 @@ function hitTarget(att, tgt, o) {
     G.hitstop = Math.max(G.hitstop, 4); shake(4); sfx.guard(); pfxKick({ ca: o.ult ? 1.2 : .45 }); voice(tgt, 'guard', { p: .5, cd: 240 });
     return true;
   }
-  tgt.combo = (tgt.state === 'hit' || tgt.state === 'air') ? tgt.combo + 1 : 1;
+  tgt.combo = (tgt.state === 'hit' || tgt.state === 'air' || tgt.armorT > 0) ? tgt.combo + 1 : 1;
   const sc = o.noScale ? 1 : Math.max(.45, 1 - .08 * (tgt.combo - 1));
   const dmg = o.dmg * sc;
   tgt.hp = Math.max(0, tgt.hp - dmg);
   dmgPop(dmg, hx, hy, att, false);
-  att.gauge = Math.min(100, att.gauge + o.dmg * 2.1); tgt.gauge = Math.min(100, tgt.gauge + o.dmg * 1.2); if (tgt.id === 'aoi') tgt.glitch = 8;
+  att.gauge = Math.min(100, att.gauge + o.dmg * 2.1); tgt.gauge = Math.min(100, tgt.gauge + o.dmg * (tgt.ch.boss ? .25 : 1.2)); if (tgt.id === 'aoi') tgt.glitch = 8;
+  if (tgt.ch.boss && tgt.hp > 0) { bossArmorHit(att, tgt, o, hx, hy, fromDir, dmg); return true; }   // super armour
   tgt.face = -fromDir; tgt.flip = false; tgt.whiteT = 6; tgt.t = 0; tgt.move = null;
   tgt.vx = fromDir * (o.kb || 5);
   const launch = o.launch || (!onGround(tgt) ? -5 : 0);
@@ -1118,7 +1148,7 @@ function hitTarget(att, tgt, o) {
   const pw = o.power || 1;
   fxCore(hx, hy, att.col.rgb, 70 + 50 * pw, 12 + 4 * pw); fxSpark(hx, hy, att.col.rgb, 10 + 10 * pw, .8 + .5 * pw, fromDir);
   fxRing(hx, hy, att.col.rgb, 10, 60 + 60 * pw, 14 + 6 * pw, 5 + 3 * pw);
-  if (att.id === 'suzune') fxPetals(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'mio') fxPaint(hx, hy, 6 + 6 * pw, .8 + .3 * pw, fromDir); else if (att.id === 'aria') fxGears(hx, hy, 4 + 4 * pw, pw, fromDir); else if (att.id === 'enjo') fxSmoke(hx, hy, 3 + 3 * pw, pw, fromDir, att.col.rgb); else if (att.id === 'rei') { fxSmoke(hx, hy, 2 + 2 * pw, pw, fromDir, JADE.ink); fxPetals(hx, hy, 1 + 2 * pw, pw, !att.alt); } else if (att.id === 'kanna') fxBloom(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'ichika') { fxSpark(hx, hy, ICHI.hot, 6 + 6 * pw, .8 + .4 * pw, fromDir); fxRing(hx, hy, ICHI.rgb, 6, 50 + 40 * pw, 10, 3); } else if (att.id === 'isana') fxSalvage(hx, hy, 3 + 4 * pw, pw, fromDir); else if (att.id === 'noxnix') fxHalloween(hx, hy, 4 + 4 * pw, pw, fromDir, att.col.rgb); else fxHex(hx, hy, att.col.rgb, fromDir);
+  if (att.id === 'suzune') fxPetals(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'mio') fxPaint(hx, hy, 6 + 6 * pw, .8 + .3 * pw, fromDir); else if (att.id === 'aria') fxGears(hx, hy, 4 + 4 * pw, pw, fromDir); else if (att.id === 'enjo') fxSmoke(hx, hy, 3 + 3 * pw, pw, fromDir, att.col.rgb); else if (att.id === 'rei') { fxSmoke(hx, hy, 2 + 2 * pw, pw, fromDir, JADE.ink); fxPetals(hx, hy, 1 + 2 * pw, pw, !att.alt); } else if (att.id === 'kanna') fxBloom(hx, hy, 3 + 4 * pw, pw); else if (att.id === 'ichika') { fxSpark(hx, hy, ICHI.hot, 6 + 6 * pw, .8 + .4 * pw, fromDir); fxRing(hx, hy, ICHI.rgb, 6, 50 + 40 * pw, 10, 3); } else if (att.id === 'isana') fxSalvage(hx, hy, 3 + 4 * pw, pw, fromDir); else if (att.id === 'noxnix') fxHalloween(hx, hy, 4 + 4 * pw, pw, fromDir, att.col.rgb); else if (att.id === 'shuten') fxShuten(hx, hy, 4 + 4 * pw, pw, fromDir); else fxHex(hx, hy, att.col.rgb, fromDir);
   G.hitstop = Math.max(G.hitstop, o.hitstop || (4 + 4 * pw)); shake(4 + 7 * pw);
   if (pw >= 1.4 || o.launch) { quake(3 + 5 * pw, .28 + .12 * pw, pw >= 2 ? 60 : 25); fxBig(hx, hy, auraRgb(att), auraHot(att), Math.max(1.4, pw), fromDir); }
   if (pw >= 2) flash(.35 * pw / 2, '255,230,200');
@@ -1187,6 +1217,7 @@ function updateMove(f, o, dt) {
   else if (f.id === 'ichika') updateIchikaMove(f, o, m, t, k, act, at, dt, first);
   else if (f.id === 'isana') updateIsanaMove(f, o, m, t, k, act, at, dt, first);
   else if (f.id === 'noxnix') updateNoxnixMove(f, o, m, t, k, act, at, dt, first);
+  else if (f.id === 'shuten') updateShutenMove(f, o, m, t, k, act, at, dt, first);
   else {
     const dx = f.droneX, dy = f.droneY;
     if (k === 'a') {
@@ -2121,6 +2152,188 @@ function drawIsanaUlt(f, front) {   // behind her: the fins' cyan blades and jet
     drawAnchorHead(f.x + f.face * 50, f.y + 90 + 60 * q, Math.PI / 2, 1.6 + .5 * q, rgb, .6 + .4 * q);
   }
 }
+// SHUTEN 鬼王: the boss of the BOSS BATTLE (not on the select grid). A colossal demon king (≈2.5× a fighter) in black and
+// gold armour, half eaten by golden crystal, two giant spiral horns, a glowing crimson ring scar round the neck and crimson
+// scripture forever circling him. Five times a fighter's health, 1.5× damage, super armour (only heavy hits make him
+// flinch). His serpent long sword is a chain of golden blade segments that crawls and coils like a living snake.
+// a1/a2/a3: serpent sweep → overhead slam (shockwave) → rising spiral (launch). b 大蛇這い: the blade crawls far along the
+// floor. EX 鬼酒・覚醒: drinks from the gourd — scar, eyes, scripture and horns ignite in turn — then a scripture blast all
+// round him and he stays enraged (faster, harder) for a while. ULT 酒呑大蛇斬: the blade sweeps the whole hall, then coils
+// and crashes down on the foe.
+const ONI = { gold: '255,194,58', red: '232,34,44', hot: '255,236,200', ember: '255,120,40', ink: '22,12,10' };
+const shCol = f => f.alt ? f.col.rgb : ONI.gold;
+const SH_GLYPHS = '鬼酒呑経呪縛滅鎖業魔獄羅刹封焔';
+function shutenHand(f) { const r = RS(f); return { x: f.x + f.face * 170 * r, y: f.y - 400 * r }; }
+function fxShuten(x, y, n = 6, pw = 1, dir = 0) {   // gold crystal shards + crimson embers
+  for (let i = 0; i < n; i++) addFx({ k: 'shard', x: x + rnd(-14, 14), y: y + rnd(-14, 14), vx: dir * rnd(2, 8) * pw + rnd(-4, 4), vy: rnd(-9, -2) * pw, rot: rnd(0, TAU), vr: rnd(-.4, .4), s: rnd(5, 11), rgb: i % 3 ? ONI.gold : ONI.red, hot: ONI.hot, life: rnd(26, 44), t: 0 });
+  fxSpark(x, y, ONI.red, 4 + 3 * pw, .7 + .3 * pw, dir);
+}
+// the serpent long sword: golden rhombus blade segments strung along a path (pts = [[x,y],...]), heads point along the path
+function drawSerpent(pts, s = 1, rgb = ONI.gold, glow = .8) {
+  if (pts.length < 2) return;
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(${rgb},${.28 * glow})`; ctx.lineWidth = 34 * s;
+  ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+  ctx.strokeStyle = `rgba(${ONI.red},${.35 * glow})`; ctx.lineWidth = 8 * s; ctx.stroke();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.strokeStyle = '#141010'; ctx.lineWidth = 7 * s; ctx.stroke();   // the black spine joining the segments
+  for (let i = 1; i < pts.length; i++) {
+    const [ax, ay] = pts[i - 1], [bx, by] = pts[i], a = Math.atan2(by - ay, bx - ax), L = Math.hypot(bx - ax, by - ay);
+    ctx.save(); ctx.translate((ax + bx) / 2, (ay + by) / 2); ctx.rotate(a);
+    const w = (i === pts.length - 1 ? 22 : 15) * s, l = Math.max(10, L * .62);
+    const g = ctx.createLinearGradient(0, -w, 0, w); g.addColorStop(0, '#fff3c0'); g.addColorStop(.35, `rgb(${rgb})`); g.addColorStop(1, '#7a4a10');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(l, 0); ctx.lineTo(0, -w); ctx.lineTo(-l * .7, 0); ctx.lineTo(0, w); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(40,20,0,.8)'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(${ONI.hot},${.5 * glow})`; ctx.fillRect(-l * .3, -1.2 * s, l * .9, 2.4 * s);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+// crimson scripture: strips of glowing glyphs orbiting the body (back half drawn behind him, front half in front)
+function drawScripture(f, front) {
+  if (f.id !== 'shuten' || f.hidden || f.ko) return;
+  const r = RS(f), heat = clamp((f.rage > 0 ? 1 : .55) + (f.state === 'atk' && f.move && (f.move.key === 'ex' || f.move.key === 'ult') ? .4 : 0), 0, 1.3);
+  ctx.save(); ctx.font = `bold ${Math.round(22 * r)}px 'Shippori Mincho B1', serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.globalCompositeOperation = 'lighter';
+  for (let k = 0; k < 3; k++) {
+    const cy = f.y - (220 + k * 170) * r, rx = (230 + k * 30) * r, ry = 46 * r, tilt = (k - 1) * .22, sp = (k % 2 ? -1 : 1) * (.012 + k * .004), n = 18;
+    for (let i = 0; i < n; i++) {
+      const a = G.frame * sp + i * TAU / n + k, z = Math.sin(a);
+      if ((z > 0) !== front) continue;
+      const x = f.x + Math.cos(a) * rx, y = cy + z * ry + Math.cos(a) * rx * Math.sin(tilt);
+      const al = (.35 + .45 * Math.abs(z)) * heat * (.8 + .2 * Math.sin(G.frame * .2 + i));
+      ctx.fillStyle = `rgba(${ONI.red},${al * .35})`; ctx.fillRect(x - 13 * r, y - 15 * r, 26 * r, 30 * r);
+      ctx.fillStyle = `rgba(255,${120 + 60 * Math.abs(z) | 0},90,${al})`; ctx.fillText(SH_GLYPHS[(i + k * 5) % SH_GLYPHS.length], x, y);
+    }
+  }
+  // the ring scar round the neck and the eyes flare with him
+  const sc = .5 + .5 * Math.sin(G.frame * .15), nx = f.x + f.face * 18 * r, ny = f.y - 560 * r;
+  const g = ctx.createRadialGradient(nx, ny, 0, nx, ny, 60 * r); g.addColorStop(0, `rgba(${ONI.red},${(.25 + .35 * heat) * (.7 + .3 * sc)})`); g.addColorStop(1, `rgba(${ONI.red},0)`);
+  if (front) { ctx.fillStyle = g; ctx.beginPath(); ctx.arc(nx, ny, 60 * r, 0, TAU); ctx.fill(); }
+  ctx.restore();
+}
+// serpent path from the hand: crawling along the floor to `reach` (b), with a living wave
+function serpentFloor(f, reach, t) {
+  const h = shutenHand(f), pts = [], n = Math.max(3, Math.round(reach / 46));
+  for (let i = 0; i <= n; i++) {
+    const q = i / n, x = h.x + f.face * reach * q, ground = GROUND - 26;
+    const y = lerp(h.y, ground, Math.min(1, q * 3.2)) + (q > .3 ? Math.sin(q * 14 - t * .5) * 22 * (1 - q * .5) : 0);
+    pts.push([x, y]);
+  }
+  return pts;
+}
+function updateShutenMove(f, o, m, t, k, act, at, dt, first) {
+  const r = RS(f), rgb = shCol(f), fast = f.rage > 0;
+  if (k === 'a') {   // serpent sweep → overhead slam → rising spiral
+    const c = Math.min(2, f.chain);
+    if (t < m.st) f.vx *= .6;
+    if (first(0)) {
+      f.vx = f.face * [9, 6, 7][c] * (fast ? 1.3 : 1);
+      if (c === 0) { fxArc(f.x + f.face * 120 * r, f.y - 330 * r, 470 * r, -1.2, 1.1, rgb, f.face, 18, 70); fxArc(f.x + f.face * 120 * r, f.y - 330 * r, 440 * r, -1.0, .9, ONI.red, f.face, 14, 12); sfx.heavySwing(); playS('whoosh_kick_heavy', .9, .7); }
+      else if (c === 1) { fxArc(f.x + f.face * 160 * r, f.y - 440 * r, 420 * r, -2.6, .5, rgb, f.face, 18, 64); sfx.heavySwing(); }
+      else { fxArc(f.x + f.face * 120 * r, f.y - 420 * r, 480 * r, 1.4, -2.0, rgb, f.face, 20, 76); sfx.heavySwing(); playS('whoosh_kick_heavy', 1, .6); }
+    }
+    if (c === 1 && first(3)) {   // the blade crashes into the floor: shockwave
+      const X = f.x + f.face * 420 * r; fxDust(X, GROUND, 18, 2); fxRing(X, GROUND - 6, rgb, 30, 420, 24, 12, .22); fxShuten(X, GROUND - 30, 14, 1.6, 0);
+      shake(16); quake(14, .5, 70); playS('hit_heavy', .7, .6);
+    }
+    if (act) {
+      const hb = c === 0 ? box(f, -40, 620, -560, -40) : c === 1 ? box(f, 120, 640, -700, 0) : box(f, -60, 560, -800, 0);
+      tryHit(f, o, hb, { dmg: [5, 6, 9][c], kb: [9, 6, 8][c], stun: [18, 22, 24][c], power: [1.1, 1.4, 1.9][c], launch: c === 2 ? -14 : 0, hy: 200 });
+    }
+  } else if (k === 'b') {   // 大蛇這い: the blade crawls far along the floor and bites
+    if (t < m.st) { f.vx *= .5; f.charge = t / m.st; }
+    if (first(0)) { f.charge = 0; m.reach = 0; sfx.heavySwing(); playS('arca_saw', .6, .6); fxDust(f.x + f.face * 160, GROUND, 10, 1.4); }
+    if (act) {
+      m.reach = Math.min(1050, (m.reach || 0) + 70 * dt);
+      const tip = f.x + f.face * (170 * r + m.reach);
+      if ((at | 0) % 2 === 0) { fxDust(tip, GROUND, 2, 1); fxSpark(tip, GROUND - 20, rgb, 2, .5, f.face); }
+      tryHit(f, o, { x0: Math.min(tip, tip - f.face * 220), x1: Math.max(tip, tip - f.face * 220), y0: GROUND - 170, y1: GROUND }, { dmg: 7, kb: 12, launch: -9, power: 1.5, stun: 24, hy: 80 });
+    } else if (t >= m.st + m.act) m.reach = Math.max(0, (m.reach || 0) - 90 * dt);   // the snake coils back to his arm
+  } else if (k === 'ex') {   // 鬼酒・覚醒: drinks — then a scripture blast all round him, and he stays enraged
+    if (t < m.st) {
+      f.vx *= .5;
+      if ((t | 0) % 4 === 0) { const h = shutenHand(f); addFx({ k: 'ember', x: h.x + rnd(-20, 20), y: h.y + rnd(-20, 20), vx: rnd(-1, 1), vy: rnd(-3, -1), life: 30, t: 0, rgb: ONI.red }); }
+    }
+    if (first(0)) {
+      f.rage = 600;
+      fxRing(f.x, f.y - 380 * r, ONI.red, 60, 620, 30, 16); fxRing(f.x, GROUND - 6, rgb, 40, 560, 28, 12, .22); fxBig(f.x, f.y - 380 * r, ONI.red, ONI.hot, 2.8, f.face);
+      flash(.6, ONI.red); quake(22, .8, 120); zoomKick(.1); sfx.boom(); playLoud('impact_big', .8, .6); G.speedlines = 30;
+    }
+    if (act && at < 8) tryHit(f, o, { x0: f.x - 480, x1: f.x + 480, y0: f.y - 820, y1: f.y }, { dmg: 6, kb: 16, launch: -12, power: 2, stun: 26, hy: 220 });
+  } else if (k === 'ult') updateShutenUlt(f, o, at, dt, first);
+}
+// ULT 酒呑大蛇斬 (after the movie): scripture flares → the serpent blade sweeps the whole hall four times → it coils into
+// the sky and crashes down on the foe. Guardable (chip only)
+const SHUTEN_ULT = { sweep: 30, every: 24, sweeps: 4, coil: 130, crash: 160, end: 210 };
+function updateShutenUlt(f, o, at, dt, first) {
+  const m = f.move, U = SHUTEN_ULT, rgb = shCol(f);
+  if (first(0)) { f.vx = 0; f.rage = Math.max(f.rage || 0, 300); m.sw = -1; }
+  if (at < U.sweep && (at | 0) % 3 === 0) fxRing(f.x, f.y - 400, ONI.red, 300, 40, 12, 4, .6);
+  for (let i = 0; i < U.sweeps; i++) if (first(U.sweep + i * U.every)) {
+    m.sw = i; G.speedlines = 30; shake(10); playS('whoosh_kick_heavy', 1, .55 + i * .05); sfx.heavySwing();
+    if (G.phase === 'fight' && o && o.y > GROUND - 260) { f.hitIds.clear(); hitTarget(f, o, { dmg: 3, kb: 3, stun: 30, power: 1.2, ult: true, noScale: true, hy: 120 }); }
+    for (let j = 0; j < 8; j++) addFx({ k: 'streak', x: rnd(G.cam.x - 700, G.cam.x + 700), y: GROUND - rnd(40, 260), vx: (i % 2 ? -1 : 1) * rnd(30, 50), vy: 0, life: 10, t: 0, rgb: j % 2 ? ONI.red : rgb, w: 4 });
+  }
+  if (first(U.coil)) { m.sw = -1; flash(.4, ONI.red); playS('ult_start', .5, .6); G.speedlines = 44; }
+  if (at >= U.coil && at < U.crash && o) m.tx = o.x;
+  if (first(U.crash)) {
+    const X = m.tx != null ? m.tx : f.x + f.face * 500;
+    if (G.phase === 'fight' && o && Math.abs(o.x - X) < 300) { f.hitIds.clear(); hitTarget(f, o, { dmg: 16, kb: 15, launch: -18, power: 3, hitstop: 14, ult: true, noScale: true, hy: 160 }); }
+    for (let i = 0; i < 4; i++) fxRing(X, GROUND - 6, i % 2 ? ONI.red : rgb, 40, 380 + i * 180, 28 + i * 6, 16 - i * 3, .22);
+    fxBig(X, GROUND - 200, rgb, ONI.hot, 3.2, f.face); fxShuten(X, GROUND - 60, 30, 2.2, 0); fxDust(X, GROUND, 30, 2.6);
+    addFx({ k: 'pillar', x: X, y: GROUND, rgb: ONI.red, hot: ONI.hot, life: 50, t: 0, w: 360 });
+    flash(.9, ONI.hot); quake(30, 1.1, 150); zoomKick(.14); sfx.boom(); playLoud('impact_big', 1, .55); G.speedlines = 60;
+  }
+  if (first(U.end)) { G.tintA = 0; f.t = Math.max(f.t, m.st + m.act - 1); }
+  if (at < U.crash + 20) { G.tintA = Math.max(G.tintA, .35); G.tintC = '40,0,0'; }
+}
+function drawShutenMove(f, front) {   // the serpent blade itself for b and the ULT
+  if (f.id !== 'shuten' || f.state !== 'atk' || !f.move) return;
+  const m = f.move, at = f.t - m.st, rgb = shCol(f), r = RS(f);
+  if (m.key === 'b' && front && (m.reach || 0) > 10) drawSerpent(serpentFloor(f, m.reach, f.t), 1.3 * r, rgb);
+  if (m.key !== 'ult') return;
+  const U = SHUTEN_ULT;
+  if (front && m.sw >= 0) {   // a sweep: the serpent crosses the whole hall low over the floor
+    const q = clamp(((at - U.sweep) % U.every) / 14, 0, 1), dir = m.sw % 2 ? -1 : 1, half = 900, h = shutenHand(f), pts = [];
+    const head = G.cam.x - dir * half + dir * 2 * half * q;
+    for (let i = 0; i <= 26; i++) { const s = i / 26, x = lerp(h.x, head, s), y = lerp(h.y, GROUND - 120 - 60 * Math.sin(s * Math.PI), Math.min(1, s * 2.5)) + Math.sin(s * 12 + f.t * .6) * 26 * s; pts.push([x, y]); }
+    drawSerpent(pts, 1.5 * r, rgb, 1);
+  }
+  if (front && at >= U.coil && at < U.crash + 12) {   // coiling up into the sky, then the strike
+    const q = clamp((at - U.coil) / (U.crash - U.coil), 0, 1), X = m.tx != null ? m.tx : f.x + f.face * 500, pts = [];
+    for (let i = 0; i <= 30; i++) {
+      const s = i / 30, ang = s * 7 + f.t * .2, rad = 160 * (1 - s) * (1 - q * .7);
+      const cx = lerp(f.x, X, s), cy = lerp(f.y - 500, -260 + q * (GROUND + 200), s * s);
+      pts.push([cx + Math.cos(ang) * rad, Math.min(GROUND - 10, cy + Math.sin(ang) * rad * .4)]);
+    }
+    drawSerpent(pts, 1.7 * r, rgb, 1);
+  }
+}
+// boss super armour: normal hits only chip at him and flash him; heavy hits and ULT finishers make him stagger briefly
+function bossArmorHit(att, tgt, o, hx, hy, fromDir, dmg) {
+  const pw = o.power || 1, heavy = o.launch || pw >= 1.6 || o.ult;
+  tgt.combo = tgt.armorT > 0 ? tgt.combo + 1 : 1; tgt.armorT = 40; tgt.whiteT = 5;
+  if (heavy && tgt.state !== 'atk') { tgt.state = 'hit'; tgt.stun = o.ult ? 22 : 12; tgt.t = 0; tgt.move = null; tgt.vx = fromDir * 2; }
+  fxCore(hx, hy, att.col.rgb, 60 + 40 * pw, 12); fxSpark(hx, hy, att.col.rgb, 8 + 8 * pw, .8 + .4 * pw, fromDir); fxShuten(hx, hy, 2 + 2 * pw, pw, fromDir);
+  G.hitstop = Math.max(G.hitstop, o.hitstop || (3 + 3 * pw)); shake(3 + 5 * pw); sfx.hit(pw); playS('arca_armor', .3, .7);
+  if (pw >= 1.4) { quake(3 + 4 * pw, .25, 30); fxBig(hx, hy, auraRgb(att), auraHot(att), Math.max(1.2, pw * .8), fromDir); }
+  if (o.ult) playLoud('impact_big', .5, .9);
+  if (tgt.combo >= 2) comboHit(att, tgt);
+  if (heavy) voice(tgt, 'hit', { p: .5, cd: 90 });
+}
+// BOSS BATTLE entrance: the boss's own movie plays full screen before ROUND 1 (tap to skip)
+function bossIntro(id) {
+  return new Promise(res => {
+    const box = document.getElementById('bossIntro'), v = box && box.querySelector('video');
+    if (!v || v.readyState < 2) return res();
+    let done = false; const end = () => { if (done) return; done = true; box.classList.remove('on'); try { v.pause(); } catch (e) { } stopMovieAudio(.3); box.removeEventListener('click', end); res(); };
+    box.classList.add('on'); box.addEventListener('click', end);
+    try { v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(end); } catch (e) { end(); }
+    movieAudio('intro_' + id); voice(id, 'select', { delay: (v.duration || 8) - 3 });
+    v.onended = end; setTimeout(end, ((v.duration || 10) + 1) * 1000);
+  });
+}
 // NOX × NIX: a two-witch Halloween band from space (one fighter slot, both on the field together — NIX in front, NOX
 // behind her) with twin guitars. Black / silver / purple with pumpkin orange. a1/a2/a3: NIX swings her guitar → NOX
 // thrusts hers → both slam a power chord (shockwave, launches). b 記憶の音弾: NIX strums three purple notes made of
@@ -2791,7 +3004,7 @@ function drawHook(p) {
 }
 
 function onKO(att, tgt) {
-  tgt.state = 'air'; tgt.vy = Math.min(tgt.vy, -15); tgt.vx = Math.sign(tgt.x - att.x) * 11; tgt.ko = true;
+  tgt.state = 'air'; tgt.vy = Math.min(tgt.vy, tgt.ch.boss ? -7 : -15); tgt.vx = Math.sign(tgt.x - att.x) * (tgt.ch.boss ? 3 : 11); tgt.ko = true;
   const pt = partnerOf(tgt);
   if (pt && pt.hp > 0) {   // one member down: partner jumps in, the round continues
     fxBig(tgt.x, tgt.y - 170, auraRgb(att), auraHot(att), 2.4, Math.sign(tgt.x - att.x) || 1);
@@ -2845,7 +3058,7 @@ function updateTeams(dt) {
   if (!G.teams) return;
   for (let side = 0; side < 2; side++) {
     if (G.tagCd[side] > 0) G.tagCd[side] -= dt;
-    for (const f of G.teams[side]) if (f !== G.fighters[side] && f.hp > 0 && f.hp < 100 && G.phase === 'fight') f.hp = Math.min(100, f.hp + .012 * dt);   // resting partner recovers slowly
+    for (const f of G.teams[side]) if (f !== G.fighters[side] && f.hp > 0 && f.hp < f.maxHp && G.phase === 'fight') f.hp = Math.min(f.maxHp, f.hp + .012 * dt);   // resting partner recovers slowly
   }
   if (G.benched) {
     for (const b of G.benched) {
@@ -2871,9 +3084,11 @@ function startDash(f, d) {
   fxArc(f.x + d * 30, f.y - 150, 120, fwd ? -.6 : 2.5, fwd ? .6 : 3.7, rgb, f.face, 12, 12);
   for (let i = 0; i < 6; i++) addFx({ k: 'streak', x: f.x + rnd(-30, 30), y: f.y - rnd(20, 260), vx: -d * rnd(14, 26), vy: 0, life: rnd(8, 14), t: 0, rgb, w: rnd(1.5, 3) });
 }
-const canUlt = f => f.gauge >= 100 && f.hp <= 50;   // ULT unlocks only at half health or below
+const canUlt = f => f.gauge >= 100 && f.hp <= f.maxHp * .5;   // ULT unlocks only at half health or below
 const spPick = f => canUlt(f) ? 'ult' : f.gauge >= 50 ? 'ex' : 'b';
 function stepFighter(f, o, inp, dt) {
+  if (f.armorT > 0) f.armorT -= dt;
+  if (f.rage > 0) { f.rage -= dt; if ((G.frame | 0) % 3 === 0) addFx({ k: 'ember', x: f.x + rnd(-120, 120), y: f.y - rnd(100, 700), vx: rnd(-1, 1), vy: rnd(-3, -1), life: 40, t: 0, rgb: ONI.red }); }
   const pr = k => inp[k] && !f.prev[k];
   for (const k of ['a', 'b', 'ex', 'ult', 'u', 's', 'dh']) if (pr(k)) f.buf[k] = 9; else if (f.buf[k] > 0) f.buf[k] -= dt;
   if (pr('tg') && G.phase === 'fight' && ['idle', 'walk', 'guard', 'jump', 'dash'].includes(f.state) && G.fighters[f.side] === f) { f.prev = { ...inp }; if (doTag(f.side, false)) return; }
@@ -3099,7 +3314,7 @@ function poseOf(f) {
     P.top *= .22; P.bot *= .22; P.wave *= .3;
   }
   if (f.id === 'aria' && f.state === 'atk' && f.move && f.move.zip && f.move.zip.phase === 'zip' && f.move.key === 'ex') { P.rot = f.move.zip.rot || 0; P.sx = 1; P.sy = 1; }   // flies nose-first along the diagonal
-  if ((f.id === 'arca' && ANIMS.arca) || f.id === 'kanna') { P.rot = f.state === 'hit' ? P.rot * .3 : 0; P.sx = 1 + (P.sx - 1) * .35; P.sy = 1 + (P.sy - 1) * .35; P.top *= .3; P.bot *= .3; }
+  if ((f.id === 'arca' && ANIMS.arca) || f.id === 'kanna' || f.id === 'shuten') { P.rot = f.state === 'hit' ? P.rot * .3 : 0; P.sx = 1 + (P.sx - 1) * .35; P.sy = 1 + (P.sy - 1) * .35; P.top *= .3; P.bot *= .3; }
   return P;
 }
 
@@ -3107,7 +3322,7 @@ function pushApart(a, b) {
   if (a.hidden || b.hidden) return;
   const passing = x => x.state === 'atk' && x.move && (((x.move.key === 'ex' || x.move.key === 'ult') && x.id === 'suzune') || (x.id === 'aria' && x.move.zip));
   if (passing(a) || passing(b)) return;
-  const dx = b.x - a.x, d = Math.abs(dx), min = a.id === 'kanna' || b.id === 'kanna' ? 170 : 100;
+  const dx = b.x - a.x, d = Math.abs(dx), min = a.id === 'shuten' || b.id === 'shuten' ? 230 : a.id === 'kanna' || b.id === 'kanna' ? 170 : 100;
   if (d < min && Math.abs(a.y - b.y) < 200) { const push = (min - d) / 2, s = Math.sign(dx) || 1; a.x -= s * push; b.x += s * push; }
 }
 
@@ -3155,6 +3370,11 @@ function aiInput(f, o) {
     if (ad > 260) { if (ad < 560 && Math.random() < D.agg * .5) ai.press = 'b'; else set({ [toward]: true }, 10 + (Math.random() * 10 | 0)); }
     else if (Math.random() < D.agg) ai.press = Math.random() < .2 ? 'b' : 'a';
     else set({ [away]: true }, 8);
+  } else if (f.id === 'shuten') {   // the boss: relentless. Crawls the serpent at range, mauls up close, drinks when it can
+    if (f.gauge >= 50 && !(f.rage > 0) && Math.random() < .35) { ai.press = 'ex'; return out; }
+    if (ad > 640) { if (Math.random() < .55 + D.agg * .3) ai.press = 'b'; else set({ [toward]: true }, 10 + (Math.random() * 10 | 0)); }
+    else if (ad < 560) { if (Math.random() < .6 + D.agg * .35) ai.press = Math.random() < .15 ? 'b' : 'a'; else set({ [toward]: true }, 6); }
+    else if (Math.random() < .5) ai.press = 'b'; else set({ [toward]: true }, 10);
   } else if (f.id === 'noxnix') {   // the band: notes from mid range, the twin riff when lined up, guitars up close
     if (f.gauge >= 50 && ad > 250 && ad < 800 && Math.random() < .3) { ai.press = 'ex'; return out; }
     if (ad > 300) { if (ad < 720 && Math.random() < D.agg * .6) ai.press = 'b'; else set({ [toward]: true }, 10 + (Math.random() * 10 | 0)); }
@@ -3200,10 +3420,11 @@ async function startMatch() {
   G.wins = [0, 0];
   G.round = 1; G.matchOver = false; G.winMovie = false; G.rwMovie = false;
   makeTeams();
-  setStage({ arca: 'aoi' }[G.picks[0][0]] || G.picks[0][0]);
+  setStage(G.boss ? 'shuten' : ({ arca: 'aoi' }[G.picks[0][0]] || G.picks[0][0]));
+  if (G.boss && G.round === 1) { bgmVolume(.15, .3); await bossIntro('shuten'); }
   G.teams.flat().forEach(f => { if (f.alt) prepareAlt(f.id); });
   startRound();
-  G.scene = 'game'; showScreen(null); setTouch(true); bgmTrack('battle', .5);
+  G.scene = 'game'; showScreen(null); setTouch(true); bgmTrack(G.boss ? 'boss' : 'battle', .5);
   const tp = document.getElementById('touch'); if (tp) tp.dataset.solo = G.picks[0].length === 1 ? '1' : '0';
 }
 function startRound() {
@@ -3212,6 +3433,7 @@ function startRound() {
   G.cam.x = STAGE_W / 2; G.cam.z = 1; G.comboHud = [null, null]; TEL.list = []; DMG.list = []; G.cam.tilt = 0; G.cam.push = 0; G.koCam = null;
   for (const f of G.fighters) {
     if (f.id === 'arca') { f.boarding = G.round === 1; f._boardFx = f._boardFx2 = f._bootSnd = false; f.state = 'idle'; continue; }
+    if (f.ch.boss) { f.x = STAGE_W / 2 + 380; f.state = 'idle'; continue; }   // the boss is already standing in his hall
     f.x -= f.face * 400; f.vx = f.face * 28; f.state = 'dashin';
   }
   G.banner = null;
@@ -3227,20 +3449,20 @@ function updateFlow(dt) {
   G.phaseT += dt;
   if (G.phase === 'intro') {
     if (G.phaseT > G.introA && !G.introDone) {
-      G.introDone = true; G.banner = { txt: G.fighters.every(f => f.wins === 1) ? 'FINAL ROUND' : `ROUND ${G.round}`, t: 0 }; sfx.announce();
+      G.introDone = true; G.banner = { txt: G.boss ? 'BOSS BATTLE' : G.fighters.every(f => f.wins === 1) ? 'FINAL ROUND' : `ROUND ${G.round}`, t: 0, rgb: G.boss ? '232,34,44' : undefined }; sfx.announce();
       voice('sys', G.fighters.every(f => f.wins === 1) || G.round >= 3 ? 'final' : G.round === 2 ? 'r2' : 'r1');
     }
     if (G.phaseT > G.introF && !G.fightCalled) { G.fightCalled = true; voice('sys', 'fight'); G.banner = { txt: 'FIGHT!', t: 0, big: true }; flash(.7); shake(10); quake(6, .35); sfx.boom(); for (const f of G.fighters) fxRing(f.x, f.y - 4, f.col.rgb, 20, 220, 26, 8, .25); }
     if (G.phaseT > G.introF + 35) { G.phase = 'fight'; }
   } else if (G.phase === 'fight') {
-    G.timerF += dt; if (G.timerF >= 60) { G.timerF -= 60; G.timer--; if (G.timer <= 0) { G.timer = 0; timeUp(); } }
+    if (!G.boss) { G.timerF += dt; if (G.timerF >= 60) { G.timerF -= 60; G.timer--; if (G.timer <= 0) { G.timer = 0; timeUp(); } } }   // no clock against the boss
   } else if (G.phase === 'ko' || G.phase === 'timeup') {
     if (G.phaseT > 130 && !G.resultShown) {
       G.resultShown = true;
-      const [a, b] = G.fighters, th = side => G.teams[side].reduce((s, f) => s + Math.max(0, f.hp), 0), winner = th(0) > th(1) ? a : th(1) > th(0) ? b : null;
-      if (winner && winner.wins >= 2 && winMovieStart(winner)) { G.winMovie = true; }
-      else if (winner && winner.wins < 2 && ANIMS[winner.id] && ANIMS[winner.id].a.cutin) { const AN = ANIMS[winner.id], t0 = -Math.round((AN.a.winPose ? AN.a.winPose.length / (AN.fps.winPose || 24) * 60 : 105) + 6); G.rwCut = { f: winner, t: t0, t0, len: 100 }; }
-      else if (winner && winner.wins >= 2 && VICT[winner.id]) { const V = VICT[winner.id]; G.victory = { f: winner, t: 0, len: V.frames.length / V.fps * 60 }; sfx.cutin(); }
+      const [a, b] = G.fighters, th = side => G.teams[side].reduce((s, f) => s + Math.max(0, f.hp) / f.maxHp, 0), winner = th(0) > th(1) ? a : th(1) > th(0) ? b : null;
+      if (winner && winner.wins >= WIN_N() && winMovieStart(winner)) { G.winMovie = true; }
+      else if (winner && winner.wins < WIN_N() && ANIMS[winner.id] && ANIMS[winner.id].a.cutin) { const AN = ANIMS[winner.id], t0 = -Math.round((AN.a.winPose ? AN.a.winPose.length / (AN.fps.winPose || 24) * 60 : 105) + 6); G.rwCut = { f: winner, t: t0, t0, len: 100 }; }
+      else if (winner && winner.wins >= WIN_N() && VICT[winner.id]) { const V = VICT[winner.id]; G.victory = { f: winner, t: 0, len: V.frames.length / V.fps * 60 }; sfx.cutin(); }
       if (winner && !G.winMovie) voice(winner, 'win', { delay: .2 });
       if (winner) { winner.state = 'win'; winner.t = 0; winner.move = null; winner.hidden = false; G.banner = { txt: `${winner.ch.name} WINS`, t: 0, rgb: winner.col.rgb }; }
       else G.banner = { txt: 'DRAW', t: 0 };
@@ -3250,14 +3472,14 @@ function updateFlow(dt) {
     if (G.phaseT > (G.victory ? 130 + G.victory.len + 70 : G.rwCut ? (G.rwCut.t >= G.rwCut.len + 10 ? 0 : 1e9) : 250)) {
       G.resultShown = false; G.victory = null; G.rwCut = null;
       const [a, b] = G.fighters;
-      if (a.wins >= 2 || b.wins >= 2) endMatch(a.wins >= 2 ? a : b);
+      if (a.wins >= WIN_N() || b.wins >= WIN_N()) endMatch(a.wins >= WIN_N() ? a : b);
       else { G.round++; startRound(); }
     }
   }
 }
 function timeUp() {
   G.phase = 'timeup'; G.phaseT = 0; G.banner = { txt: 'TIME UP', t: 0, big: true }; sfx.boom(); voice('sys', 'timeup');
-  const hpOf = side => G.teams[side].reduce((s, f) => s + Math.max(0, f.hp), 0), ha = hpOf(0), hb = hpOf(1);
+  const hpOf = side => G.teams[side].reduce((s, f) => s + Math.max(0, f.hp) / f.maxHp, 0), ha = hpOf(0), hb = hpOf(1);
   const ws = ha > hb ? 0 : hb > ha ? 1 : -1; if (ws >= 0) { G.wins[ws]++; for (const f of G.teams[ws]) f.wins = G.wins[ws]; }
 }
 function endMatch(w) {
@@ -3776,7 +3998,7 @@ function drawDmgPops() {
 const TEL = { list: [] };
 const TEL_EN = {
   suzune: ['SAKURA FLASH RAIL', 'SAKURA COMET'], aoi: ['HOMING BIT', 'ORBITAL RAY'], arca: ['RUNE MISSILE', 'ARSENAL NOVA'], sakura: ['IDEA DRAGON', 'DRAFT NOVA'],
-  mio: ['BLUE STROKE', 'CANVAS HOUND'], aria: ['GRAVITY SLING', 'LUNA SATELLITE RAY'], enjo: ['GASHIRA', 'UKIYO-GIRI : RINDO'], rei: ['AGITO HOWL', 'SUMI-RYU : HIGAN'], kanna: ['FLOWER CROWN', 'FULL BLOOM : ORANGE'], ichika: ['1-SECOND TIME SLOW', 'TIME STOP'], isana: ['BROADSIDE', 'ABYSSAL ANCHOR : DIVE MODE'], noxnix: ['TWIN RIFF', "JACK-O' ARK : FUTURE HALLOWEEN"] };
+  mio: ['BLUE STROKE', 'CANVAS HOUND'], aria: ['GRAVITY SLING', 'LUNA SATELLITE RAY'], enjo: ['GASHIRA', 'UKIYO-GIRI : RINDO'], rei: ['AGITO HOWL', 'SUMI-RYU : HIGAN'], kanna: ['FLOWER CROWN', 'FULL BLOOM : ORANGE'], ichika: ['1-SECOND TIME SLOW', 'TIME STOP'], isana: ['BROADSIDE', 'ABYSSAL ANCHOR : DIVE MODE'], noxnix: ['TWIN RIFF', "JACK-O' ARK : FUTURE HALLOWEEN"], shuten: ['ONI-SAKE AWAKENING', 'SHUTEN : SERPENT SLAYER'] };
 const TEL_DUR = { ult: 1750, ex: 1150, awake: 1500 };
 function telop(kind, f) {
   if (!f || !f.ch) return;
@@ -3971,15 +4193,15 @@ function drawHUD2() {
   // each team shows BOTH members' health in fixed order; the one on the field is highlighted
   const memberBar = (m, f, dir, y, h) => {
     const active = m === f, x0 = dir < 0 ? W / 2 - 66 - barW : W / 2 + 66;
-    m.dispHp = m.dispHp > m.hp ? Math.max(m.hp, m.dispHp - .35) : m.hp;
-    const ko = m.hp <= 0, wd = barW * Math.max(0, m.dispHp) / 100, wh = barW * Math.max(0, m.hp) / 100;
+    m.dispHp = m.dispHp > m.hp ? Math.max(m.hp, m.dispHp - .35 * m.maxHp / 100) : m.hp;
+    const ko = m.hp <= 0, wd = barW * Math.max(0, m.dispHp) / m.maxHp, wh = barW * Math.max(0, m.hp) / m.maxHp;
     ctx.globalAlpha = active ? 1 : .82;
     ctx.fillStyle = 'rgba(10,6,20,.78)'; ctx.fillRect(x0, y, barW, h);
     if (!ko) {
       ctx.fillStyle = '#ff4a5e'; ctx.fillRect(dir < 0 ? x0 + barW - wd : x0, y, wd, h);
       const g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, '#fff'); g.addColorStop(.35, m.col.c1); g.addColorStop(1, m.col.c2);
       ctx.fillStyle = g; ctx.fillRect(dir < 0 ? x0 + barW - wh : x0, y, wh, h);
-      if (active && m.hp < 30) { ctx.fillStyle = `rgba(255,255,255,${.25 + .25 * Math.sin(G.frame * .3)})`; ctx.fillRect(dir < 0 ? x0 + barW - wh : x0, y, wh, h); }
+      if (active && m.hp < m.maxHp * .3) { ctx.fillStyle = `rgba(255,255,255,${.25 + .25 * Math.sin(G.frame * .3)})`; ctx.fillRect(dir < 0 ? x0 + barW - wh : x0, y, wh, h); }
     }
     ctx.strokeStyle = active ? '#fff' : 'rgba(255,255,255,.45)'; ctx.lineWidth = active ? 2.5 : 1.5; ctx.strokeRect(x0, y, barW, h);
     // name tag inside the bar, at the outer end
@@ -4008,7 +4230,7 @@ function drawHUD2() {
     ctx.fillRect(dir < 0 ? gx0 : gx0 + gw - gv, gy, gv, 12);
     ctx.fillStyle = '#fff'; ctx.fillRect(gx0 + gw / 2 - 1, gy - 3, 2, 18);
     ctx.font = `700 15px 'Chakra Petch', sans-serif`; ctx.textAlign = dir < 0 ? 'left' : 'right';
-    ctx.fillStyle = full ? '#fff' : 'rgba(255,255,255,.8)'; ctx.fillText(full ? (f.hp <= 50 ? 'ULT READY' : 'ULT LOCK (HP≤50%)') : f.gauge >= 50 ? 'EX READY' : `DRIVE ${f.gauge | 0}%`, dir < 0 ? gx0 + gw + 10 : gx0 - 10, gy + 11);
+    ctx.fillStyle = full ? '#fff' : 'rgba(255,255,255,.8)'; ctx.fillText(full ? (f.hp <= f.maxHp * .5 ? 'ULT READY' : 'ULT LOCK (HP≤50%)') : f.gauge >= 50 ? 'EX READY' : `DRIVE ${f.gauge | 0}%`, dir < 0 ? gx0 + gw + 10 : gx0 - 10, gy + 11);
   };
   bar(a, -1); bar(b, 1);
   // timer
@@ -4016,7 +4238,7 @@ function drawHUD2() {
   ctx.fillStyle = 'rgba(10,6,20,.8)'; ctx.beginPath(); for (let i = 0; i < 6; i++) { const an = i * TAU / 6; ctx.lineTo(Math.cos(an) * 46, Math.sin(an) * 40); } ctx.closePath(); ctx.fill();
   ctx.strokeStyle = 'rgba(255,220,180,.8)'; ctx.lineWidth = 2; ctx.stroke();
   ctx.font = `700 40px 'Chakra Petch', sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = G.timer <= 10 ? '#ff6a7a' : '#fff'; ctx.fillText(String(G.timer).padStart(2, '0'), 0, 2);
+  ctx.fillStyle = G.timer <= 10 ? '#ff6a7a' : '#fff'; ctx.fillText(G.boss ? '∞' : String(G.timer).padStart(2, '0'), 0, 2);
   ctx.restore();
   ctx.font = `600 13px 'Chakra Petch', sans-serif`; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillText(`ROUND ${G.round}`, W / 2, top + 74);
 }
@@ -4048,10 +4270,10 @@ function renderWorld() {
   ctx.globalCompositeOperation = 'lighter'; for (const f of G.fighters) drawRail(f); ctx.globalCompositeOperation = 'source-over';
   const order = [...G.fighters].sort((p, q) => (p.state === 'atk') - (q.state === 'atk'));
   drawPaintFloor(); drawInk(); drawBloomFloor();
-  for (const f of G.fighters) { drawDragon(f, false); drawDog(f, false); drawShishi(f, false); drawKannaUlt(f, false); drawIsanaUlt(f, false); drawNoxnixUlt(f, false); }
+  for (const f of G.fighters) { drawDragon(f, false); drawDog(f, false); drawShishi(f, false); drawKannaUlt(f, false); drawIsanaUlt(f, false); drawNoxnixUlt(f, false); drawScripture(f, false); }
   for (const b of G.benched || []) drawFighter(b.f, false);
   for (const f of order) drawFighter(f, false);
-  for (const f of G.fighters) { drawDrone(f); drawSkull(f); drawDragon(f, true); drawDog(f, true); drawShishi(f, true); drawRindo(f); drawKannaUlt(f, true); drawIsanaUlt(f, true); drawNoxnixUlt(f, true); }
+  for (const f of G.fighters) { drawDrone(f); drawSkull(f); drawDragon(f, true); drawDog(f, true); drawShishi(f, true); drawRindo(f); drawKannaUlt(f, true); drawIsanaUlt(f, true); drawNoxnixUlt(f, true); drawScripture(f, true); drawShutenMove(f, true); }
   drawFx('norm');
   ctx.globalCompositeOperation = 'lighter'; drawProj(); drawFx('add'); ctx.globalCompositeOperation = 'source-over';
   drawLunaBeam();
@@ -4135,7 +4357,7 @@ function simStep(dt) {
   stepFighter(a, b, ia, sdt * chronoK(a)); stepFighter(b, a, ib, sdt * chronoK(b)); pushApart(a, b);   // ICHIKA's ONE SECOND: the other side runs slow
   updateProj(sdt); updateFx(sdt); updateFlow(sdt); updateTeams(sdt); updateChrono(sdt);
 }
-const CAM = { zGiant: .84, zMax: 1.3, zMin: .76, zWin: 1.22, near: 360, far: 1250, in: .035, out: .09 };
+const CAM = { zBoss: .74, zGiant: .84, zMax: 1.3, zMin: .76, zWin: 1.22, near: 360, far: 1250, in: .035, out: .09 };
 function smooth01(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
 function updateCamera() {
   const c = G.cam, [a, b] = G.fighters;
@@ -4149,6 +4371,7 @@ function updateCamera() {
     let zt = CAM.zMax - (CAM.zMax - CAM.zMin) * smooth01((d - CAM.near) / (CAM.far - CAM.near));
     if (big) zt = Math.min(zt, 1);                                   // big moves and entrances need the wide shot
     if (vis.some(f => f.id === 'kanna')) zt = Math.min(zt, CAM.zGiant);
+    if (vis.some(f => f.id === 'shuten')) zt = Math.min(zt, CAM.zBoss);   // SHUTEN's horns tower ~800px: stay wide
     if (G.fighters.some(f => f.id === 'noxnix' && f.move && f.move.ship)) zt = Math.min(zt, CAM.zGiant);   // JACK-O' ARK hovers high over the foe   // KANNA stands ~700px tall: stay wide enough to keep her halo in frame
     if (wf) zt = CAM.zWin;                                           // victory pose: push in on the winner
     const kc = G.koCam; if (kc) { kc.t++; if (G.phase === 'ko' && kc.t < 90) { zt = 1.45; mid = kc.f.x; } else G.koCam = null; }   // final KO: crash in on the loser
@@ -4269,7 +4492,7 @@ function exMovieEnd() {
   }, 320);
 }
 /* ---------- match victory movie + telop ---------- */
-const WINQ = { suzune: 'まだまだ、こんなもんじゃないッス！', aoi: '解析完了。――この勝負、わたしの勝ち。', arca: '観測、完了です。……え、もう終わりですか？', sakura: 'わたしの設計に、狂いはないの。', mio: 'ほら、世界がちょっとキレイになった！', aria: 'へへっ、空はあたしの整備場っす！', enjo: '浮世は煙。掴めたと思った？', rei: 'この涙は、私が人間だった最後の証。', kanna: 'She was never built to win. She was built to bloom.', ichika: 'あなたの一秒、もらったから。', isana: '沈んだ勝ちでも、引き揚げりゃあたしの宝さ。', noxnix: '夜明けまでが、私たちの時間。――ねえ、次はどこで鳴らす？' };
+const WINQ = { suzune: 'まだまだ、こんなもんじゃないッス！', aoi: '解析完了。――この勝負、わたしの勝ち。', arca: '観測、完了です。……え、もう終わりですか？', sakura: 'わたしの設計に、狂いはないの。', mio: 'ほら、世界がちょっとキレイになった！', aria: 'へへっ、空はあたしの整備場っす！', enjo: '浮世は煙。掴めたと思った？', rei: 'この涙は、私が人間だった最後の証。', kanna: 'She was never built to win. She was built to bloom.', ichika: 'あなたの一秒、もらったから。', isana: '沈んだ勝ちでも、引き揚げりゃあたしの宝さ。', noxnix: '夜明けまでが、私たちの時間。――ねえ、次はどこで鳴らす？', shuten: '足りぬ……まるで足りぬわ。' };
 const WM = { w: null, timers: [], typing: null, ready: false };
 function winMovieStart(w) {
   const box = $('#winMovie'), v = box.querySelector(`video[data-char="${w.id}"]`);
@@ -4365,7 +4588,11 @@ function setupUI() {
   let pickStep = 0;
   const title = $('#title');
   document.querySelectorAll('.mbtn[data-mode]').forEach(b => b.addEventListener('click', () => {
-    goFull(); audioInit(); G.mode = b.dataset.mode; pickStep = 0; G.sel = []; updateSelect(); showScreen('select'); selReset(); bgmVolume(.6);
+    goFull(); audioInit(); G.mode = b.dataset.mode; if (G.boss) { G.boss = false; G.solo = G.bossPrevSolo !== undefined ? G.bossPrevSolo : true; } pickStep = 0; G.sel = []; updateSelect(); showScreen('select'); selReset(); bgmVolume(.6);
+  }));
+  document.querySelectorAll('.mbtn[data-boss]').forEach(b => b.addEventListener('click', () => {   // BOSS BATTLE: a tag team of two against SHUTEN
+    goFull(); audioInit(); G.mode = 'cpu'; if (!G.boss) G.bossPrevSolo = G.solo; G.boss = true; G.solo = false; pickStep = 0; G.sel = []; updateSelect(); showScreen('select'); selReset(); bgmVolume(.6);
+    preloadAnim('shuten');
   }));
   try { const v = localStorage.getItem('cf_fmt'); if (!/[?&]solo=/.test(location.search) && v) G.solo = v !== '2v2'; } catch (e) { }
   const syncFmt = () => document.querySelectorAll('button[data-solo]').forEach(x => x.setAttribute('aria-pressed', (x.dataset.solo === '1') === !!G.solo));
@@ -4387,7 +4614,8 @@ function setupUI() {
   };
   function updateSelect() {
     const sl = SLOT();
-    $('#selPrompt').textContent = G.solo ? `${sl.who}：キャラを選んでください` : `${sl.who}：${sl.n}人目を選んでください`;
+    $('#selPrompt').textContent = G.boss ? `BOSS BATTLE ― 鬼王に挑む${sl.n}人目を選んでください` : G.solo ? `${sl.who}：キャラを選んでください` : `${sl.who}：${sl.n}人目を選んでください`;
+    $('#soloRow').hidden = !!G.boss;
     syncFmt();
     $('#diffRow').hidden = G.mode === 'pvp';
     document.querySelectorAll('.card').forEach(c => {
@@ -4395,7 +4623,7 @@ function setupUI() {
       if (tags.length) c.dataset.tag = tags.join(' '); else delete c.dataset.tag;
       c.classList.remove('p1');
     });
-    $('#selNote').textContent = G.solo ? '1VS1 シングルバトル。キャラのアニメーションが2倍なめらか（2VS2 タッグは下で切り替え）' : sl.n === 2 ? '同じチームに同じキャラは選べません。試合中は「交代」でいつでも入れ替え！' : '2人1組のチームバトル。1人目が先鋒で出撃します';
+    $('#selNote').textContent = G.boss ? '鬼王 SHUTEN：体力5倍・攻撃力1.5倍・巨体。2人タッグで交代しながら挑め（時間無制限・1本勝負）' : G.solo ? '1VS1 シングルバトル。キャラのアニメーションが2倍なめらか（2VS2 タッグは下で切り替え）' : sl.n === 2 ? '同じチームに同じキャラは選べません。試合中は「交代」でいつでも入れ替え！' : '2人1組のチームバトル。1人目が先鋒で出撃します';
   }
   // --- select-screen video: intro plays when the screen opens, confirm plays on pick ---
   let selBusy = false, selTimer = null, selNext = null;
@@ -4433,8 +4661,8 @@ function setupUI() {
       setTimeout(() => sfx.hit(1.2), 1150);
       selNext = () => {
         pickStep++;
-        if (pickStep < PER() * 2) { updateSelect(); selReset(); }
-        else { G.picks = G.solo ? [[G.sel[0]], [G.sel[1]]] : [[G.sel[0], G.sel[1]], [G.sel[2], G.sel[3]]]; startMatch(); }
+        if (pickStep < (G.boss ? 2 : PER() * 2)) { updateSelect(); selReset(); }
+        else { G.picks = G.boss ? [[G.sel[0], G.sel[1]], ['shuten']] : G.solo ? [[G.sel[0]], [G.sel[1]]] : [[G.sel[0], G.sel[1]], [G.sel[2], G.sel[3]]]; startMatch(); }
       };
       selTimer = setTimeout(selProceed, c.querySelector('.sv-confirm') ? 3600 : 1500);             // safety if 'ended' never fires
     });
@@ -4471,7 +4699,7 @@ async function boot() {
   buildBg();
   await Promise.all([buildAssets(), buildAnims(), loadBGM().then(() => Promise.all([loadVoices(), loadSfx()]))]);
   document.querySelectorAll('[data-src]').forEach(i => i.src = window.ASSETS[i.dataset.src]);
-  document.querySelectorAll('.card img').forEach(i => { const id = i.closest('.card').dataset.char; i.src = window.ASSETS[{ suzune: 'suci', aoi: 'aoci', arca: 'arcard', sakura: 'sacard', mio: 'micard', aria: 'ar2card', enjo: 'encard', rei: 'recard', kanna: 'kacard', ichika: 'iccard', isana: 'iscard', noxnix: 'nxcard' }[id]]; });
+  document.querySelectorAll('.card img').forEach(i => { const id = i.closest('.card').dataset.char; i.src = window.ASSETS[{ suzune: 'suci', aoi: 'aoci', arca: 'arcard', sakura: 'sacard', mio: 'micard', aria: 'ar2card', enjo: 'encard', rei: 'recard', kanna: 'kacard', ichika: 'iccard', isana: 'iscard', noxnix: 'nxcard', shuten: 'shcard' }[id]]; });
   {   // more cards than fit: fade the right edge so it reads as a swipeable row
     const cs = $('.cards'), upd = () => cs.classList.toggle('more', cs.scrollWidth - cs.clientWidth - cs.scrollLeft > 24);
     cs.addEventListener('scroll', upd, { passive: true }); addEventListener('resize', upd); new ResizeObserver(upd).observe(cs); upd();
