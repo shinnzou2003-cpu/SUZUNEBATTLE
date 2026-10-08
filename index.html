@@ -355,7 +355,20 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 #rotate{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--dusk);text-align:center;padding:24px}
 body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 #rotate p{font-family:var(--serif);font-size:22px;margin:0;line-height:1.5}
-#matchLoad{position:fixed;inset:0;z-index:29;display:grid;place-items:center;background:rgba(6,8,18,.92);color:#fff;font-family:var(--serif);font-size:22px;letter-spacing:.1em}
+#matchLoad{position:fixed;inset:0;z-index:29;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(10px,3vh,28px);background:radial-gradient(ellipse at 50% 40%,#22122e,#06040c 75%);color:#fff;overflow:hidden}
+.ml-row{display:flex;align-items:center;justify-content:center;gap:clamp(10px,3vw,40px);width:min(1100px,94vw)}
+.ml-side{flex:1;display:flex;gap:10px;justify-content:flex-end}.ml-side.r{justify-content:flex-start}
+.ml-f{position:relative;flex:0 1 auto;width:clamp(110px,24vw,340px);aspect-ratio:16/11;overflow:hidden;transform:skewX(-6deg);border-bottom:4px solid #ffc96a;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+.ml-side.r .ml-f{border-bottom-color:#ff5a6a}
+.ml-side:has(.ml-f + .ml-f) .ml-f{width:clamp(80px,14vw,200px)}
+.ml-f img{width:100%;height:100%;object-fit:cover;transform:skewX(6deg) scale(1.1)}
+.ml-f b{position:absolute;left:0;right:0;bottom:0;padding:4px 10px;background:linear-gradient(transparent,rgba(6,4,12,.9));font:800 clamp(14px,2.2vw,26px) var(--serif);transform:skewX(6deg)}
+.ml-vs{font:800 clamp(36px,7vw,90px) var(--serif);color:#fff;text-shadow:0 0 24px rgba(255,90,106,.9),0 0 4px #000}
+#matchLoad.go .ml-side{animation:mlL .5s cubic-bezier(.2,.9,.2,1)}#matchLoad.go .ml-side.r{animation-name:mlR}#matchLoad.go .ml-vs{animation:mlV .6s ease-out}
+@keyframes mlL{from{opacity:0;transform:translateX(-60px)}}@keyframes mlR{from{opacity:0;transform:translateX(60px)}}@keyframes mlV{from{opacity:0;transform:scale(2)}}
+.ml-foot{text-align:center;width:min(560px,86vw)}.ml-foot p{margin:0 0 8px;font:700 clamp(15px,2vw,20px) var(--serif);letter-spacing:.1em}
+.ml-track{height:6px;background:rgba(255,255,255,.15);overflow:hidden}.ml-track i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffc96a,#ff5a6a);transition:width .25s}
+.ml-foot small{display:block;margin-top:8px;color:rgba(255,255,255,.55);font-size:12px}
 #matchLoad[hidden]{display:none}
 #loading{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:var(--dusk);font-family:var(--serif);font-size:20px}
 @media (prefers-reduced-motion: reduce){.mbtn,.card{transition:none}}
@@ -565,10 +578,13 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 
 <div id="rotate"><p>スマホを横向きにすると<br>大きな画面で遊べます</p><button class="pbtn" id="rotateOk">このまま遊ぶ</button></div>
 <div id="bossIntro" aria-hidden="true"><video src="media/boss_intro_shuten.mp4" poster="media/boss_intro_shuten_poster.jpg" muted playsinline preload="auto"></video><div class="bi-name"><small>BOSS BATTLE</small><b>鬼王 SHUTEN</b></div><span class="bi-skip">タップでスキップ</span></div>
-<div id="matchLoad" hidden>出撃準備中… <span id="matchPct">0%</span></div>
+<div id="matchLoad" hidden>
+  <div class="ml-row"><div class="ml-side" id="mlL"></div><div class="ml-vs">VS</div><div class="ml-side r" id="mlR"></div></div>
+  <div class="ml-foot"><p>出撃準備中… <span id="matchPct">0%</span></p><div class="ml-track"><i id="mlBar"></i></div><small>初回だけキャラの素材をダウンロードしています（2回目からはすぐ始まります）</small></div>
+</div>
 <div id="loading">読み込み中… <span id="loadPct">0%</span></div>
 
 <script>window.ASSETS={"su": "assets/suzune.webp", "ao": "assets/aoi.webp", "drone": "assets/drone.webp", "suci": "assets/suzune_cutin.webp", "aoci": "assets/aoi_cutin.webp", "ar": "assets/arca.webp", "arci": "assets/arca_cutin.webp", "arp": "assets/arca_pilot.webp", "arcard": "assets/arca_card.webp", "tsu": "assets/title_suzune.webp", "tao": "assets/title_aoi.webp", "tar": "assets/title_arca.webp", "tsa": "assets/title_sakura.webp", "sa": "assets/sakura.webp", "saci": "assets/sakura_cutin.webp", "sacard": "assets/sakura_card.webp", "mi": "assets/mio.webp", "mici": "assets/mio_cutin.webp", "micard": "assets/mio_card.webp", "ar2": "assets/aria.webp", "ar2ci": "assets/aria_cutin.webp", "ar2card": "assets/aria_card.webp", "tari": "assets/title_aria.webp", "en": "assets/enjo.webp", "enci": "assets/enjo_cutin.webp", "encard": "assets/enjo_card.webp", "enskull": "assets/enjo_skull.webp", "tenj": "assets/title_enjo.webp", "re": "assets/rei.webp", "reci": "assets/rei_cutin.webp", "recard": "assets/rei_card.webp", "trei": "assets/title_rei.webp", "ka": "assets/kanna.webp", "kaci": "assets/kanna_cutin.webp", "kacard": "assets/kanna_card.webp", "tkan": "assets/title_kanna.webp", "ic": "assets/ichika.webp", "icci": "assets/ichika_cutin.webp", "iccard": "assets/ichika_card.webp", "tich": "assets/title_ichika.webp", "is": "assets/isana.webp", "isci": "assets/isana_cutin.webp", "iscard": "assets/isana_card.webp", "tisa": "assets/title_isana.webp", "tmi": "assets/title_mio.webp", "nx": "assets/noxnix.webp", "nxci": "assets/noxnix_cutin.webp", "nxcard": "assets/noxnix_card.webp", "tnx": "assets/title_noxnix.webp", "sh": "assets/shuten.webp", "shci": "assets/shuten_cutin.webp", "shcard": "assets/shuten_card.webp"};</script>
-<script src="game.js?v=20261008d"></script>
+<script src="game.js?v=20261008f"></script>
 </body>
 </html>

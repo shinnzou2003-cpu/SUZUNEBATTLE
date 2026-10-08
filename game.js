@@ -256,20 +256,23 @@ async function hiMeta(id) {
 }
 const wantHi = () => !!G.solo && !G.boss && !PERF.low;
 const WIN_N = () => G.boss ? 1 : 2;   // BOSS BATTLE is a single bout
+// Fighters are always loaded at the normal frame rate first (fast first match); in 1VS1 the double-rate set is then
+// built in the background (re-using the atlases it shares with the normal set) and swapped in at the next round.
+const ANIM_STAGE = {};   // id -> { AN, ready } background hi build
 function loadAnim(id, onTick, hi) {
-  if (hi === undefined) hi = wantHi();
-  if (ANIMS[id] && (ANIMS[id].hiWanted === hi || ANIMS[id].hi === hi || (hi && !ANIMS[id].hi && ANIM_HI[id] === null))) { ANIMS[id].hiWanted = hi; return Promise.resolve(); }
+  hi = !!hi;
+  if (ANIMS[id] && (ANIMS[id].hi === hi || (hi && ANIM_HI[id] === null))) return Promise.resolve();
   if (ANIM_LOAD[id] && ANIM_LOAD[id].hi === hi) return ANIM_LOAD[id];
   if (ANIMS[id] || ANIM_LOAD[id]) unloadAnim(id);
   const meta = ANIM_META[id]; if (!meta) return Promise.resolve();
-  const pr0 = (hi ? hiMeta(id) : Promise.resolve(null)).then(hm => loadAnimWith(id, meta, hm, hi, onTick));
+  const pr0 = (hi ? hiMeta(id) : Promise.resolve(null)).then(hm => loadAnimWith(id, meta, hm, hi, onTick).then(AN => { if (ANIM_LOAD[id] === pr0) { ANIMS[id] = AN; delete ANIM_LOAD[id]; } }));
   pr0.hi = hi; pr0.count = atlasCount(id);
   ANIM_LOAD[id] = pr0;
   return pr0;
 }
-function loadAnimWith(id, meta, hm, hi, onTick) {
-  const AN = { k: DH / meta.storeH * (CHAR_SCALE[id] || 1) * (RESIZE[id] || 1), a: {}, fps: {}, mul: {}, atlases: [], alt: [], altBusy: false, cutBox: meta.cutinBox || [564, 420], dragonK: meta.dragonK || 1, hiWanted: hi, hi: !!hm };
-  const idx = {}, paths = [];
+function loadAnimWith(id, meta, hm, hi, onTick, reuse) {
+  const AN = { k: DH / meta.storeH * (CHAR_SCALE[id] || 1) * (RESIZE[id] || 1), a: {}, fps: {}, mul: {}, atlases: [], paths: [], alt: [], altBusy: false, cutBox: meta.cutinBox || [564, 420], dragonK: meta.dragonK || 1, hiWanted: hi, hi: !!hm };
+  const idx = {}, paths = AN.paths;
   for (const k in meta.anims) {
     const hk = hm && hm.anims && hm.anims[k], an = hk || meta.anims[k];
     AN.fps[k] = an.fps || 24; AN.mul[k] = hk ? (hk.fps || 24) / (meta.anims[k].fps || 24) : 1;
@@ -277,33 +280,57 @@ function loadAnimWith(id, meta, hm, hi, onTick) {
     AN.a[k] = an.frames.map(r => ({ ai: ais[r.a], sx: r.x, sy: r.y, sw: r.sw || r.w, sh: r.sh || r.h, w: r.w, h: r.h, ox: r.ox, oy: r.oy }));   // sw/sh: rect in the (possibly down-scaled) atlas; w/h: logical size
   }
   const dec = im => (im.decode ? im.decode().catch(() => { }) : Promise.resolve()).then(() => im);
-  return Promise.all(paths.map((p, i) => loadImg(p).then(dec).then(im => { AN.atlases[i] = im; onTick && onTick(); })))
-    .then(() => { if (ANIM_LOAD[id] && ANIM_LOAD[id].hi === hi) { ANIMS[id] = AN; delete ANIM_LOAD[id]; } });
+  return Promise.all(paths.map((p, i) => (reuse && reuse.get(p) ? Promise.resolve(reuse.get(p)) : loadImg(p).then(dec)).then(im => { AN.atlases[i] = im; onTick && onTick(); }))).then(() => AN);
 }
+function freeImgs(list, keep) { list.forEach(im => { if (im && 'src' in im && !(keep && keep.has(im))) im.src = ''; }); }
+function freeAlt(AN) { AN.alt.forEach(b => { if (b && b.close) b.close(); else if (b) b.width = b.height = 0; }); AN.alt.length = 0; AN.altBusy = false; }
+function dropStage(id, keep) { const st = ANIM_STAGE[id]; delete ANIM_STAGE[id]; if (st) { st.dead = true; if (st.AN) { freeImgs(st.AN.atlases, keep); freeAlt(st.AN); } } }
 function unloadAnim(id) {
   const AN = ANIMS[id]; delete ANIMS[id]; delete ANIM_LOAD[id];
+  dropStage(id, null);
   if (!AN) return;
-  AN.atlases.forEach(im => { if (im && 'src' in im) im.src = ''; });
-  AN.alt.forEach(b => { if (b && b.close) b.close(); else if (b) b.width = b.height = 0; });
-  AN.atlases.length = AN.alt.length = 0; AN.altBusy = false;
+  freeImgs(AN.atlases); freeAlt(AN); AN.atlases.length = 0;
 }
 const atlasCount = id => { const m = ANIM_META[id]; if (!m) return 0; const s = new Set(); for (const k in m.anims) m.anims[k].atlases.forEach(p => s.add(p)); return s.size; };
-// keep exactly `ids` in memory; free everyone else. onPct(0..100) reports progress.
+// keep exactly `ids` in memory (normal frame rate unless the hi set is already in); free everyone else.
 async function ensureAnims(ids, onPct) {
   const keep = new Set(ids), hi = wantHi();
-  Object.keys(ANIMS).concat(Object.keys(ANIM_LOAD)).forEach(id => { if (!keep.has(id)) unloadAnim(id); });
-  if (hi) await Promise.all([...keep].map(hiMeta));
-  // a fighter loaded at the other frame rate is reloaded (only if a hi set actually exists for it)
-  const need = [...keep].filter(id => !ANIMS[id] || (ANIMS[id].hiWanted !== hi && (!hi ? ANIMS[id].hi : ANIM_HI[id])));
-  [...keep].forEach(id => { if (ANIMS[id] && !need.includes(id)) ANIMS[id].hiWanted = hi; });
+  Object.keys(ANIMS).concat(Object.keys(ANIM_LOAD), Object.keys(ANIM_STAGE)).forEach(id => { if (!keep.has(id)) unloadAnim(id); });
+  const need = [...keep].filter(id => !ANIMS[id] || (!hi && ANIMS[id].hi));
   let total = need.reduce((a, id) => a + atlasCount(id), 0), done = 0;
   const tick = () => { done++; onPct && onPct(Math.min(99, Math.round(done / Math.max(1, total) * 100))); };
   need.forEach(id => { if (ANIMS[id]) unloadAnim(id); });
-  await Promise.all(need.map(id => loadAnim(id, tick, hi)));
+  if (!hi) [...keep].forEach(id => dropStage(id, ANIMS[id] && new Set(ANIMS[id].atlases)));
+  await Promise.all(need.map(id => loadAnim(id, tick, false)));
   onPct && onPct(100);
 }
+// 1VS1: build the double-rate set in the background
+function upgradeHi(ids) {
+  if (!wantHi()) return;
+  for (const id of ids) {
+    const cur = ANIMS[id]; if (!cur || cur.hi || ANIM_STAGE[id]) continue;
+    const st = ANIM_STAGE[id] = { ready: false };
+    hiMeta(id).then(hm => {
+      if (st.dead || !hm || ANIMS[id] !== cur) { if (ANIM_STAGE[id] === st) delete ANIM_STAGE[id]; return; }
+      const reuse = new Map(cur.paths.map((p, i) => [p, cur.atlases[i]]));
+      return loadAnimWith(id, ANIM_META[id], hm, true, null, reuse).then(AN => {
+        if (st.dead || ANIMS[id] !== cur) { freeImgs(AN.atlases, new Set(cur.atlases)); return; }
+        st.AN = AN; st.ready = true;
+      });
+    });
+  }
+}
+// swap finished background builds in (called between rounds / at match start)
+function swapStaged() {
+  for (const id of Object.keys(ANIM_STAGE)) {
+    const st = ANIM_STAGE[id]; if (!st.ready || !ANIMS[id]) continue;
+    const old = ANIMS[id]; delete ANIM_STAGE[id];
+    ANIMS[id] = st.AN; freeImgs(old.atlases, new Set(st.AN.atlases)); freeAlt(old);
+    if (G.teams && G.teams.flat().some(f => f.id === id && f.alt)) prepareAlt(id);
+  }
+}
 // warm up a character while the player is still on the select screen (nothing is freed here)
-function preloadAnim(id) { if (ANIM_META[id]) loadAnim(id, null, wantHi()); }
+function preloadAnim(id) { if (ANIM_META[id] && !ANIMS[id] && !ANIM_LOAD[id]) loadAnim(id, null, false); }
 // colour-variant atlases for mirror matches, built a few at a time so the game never stalls
 function prepareAlt(id) {
   const AN = ANIMS[id]; if (!AN || AN.altBusy || AN.alt.length === AN.atlases.length) return;
@@ -3481,12 +3508,13 @@ const partnerOf = f => G.teams && G.teams[f.side].find(x => x !== f);
 async function startMatch() {
   if (!Array.isArray(G.picks[0])) G.picks = [[G.picks[0], G.picks[0] === 'suzune' ? 'aoi' : 'suzune'], [G.picks[1], G.picks[1] === 'arca' ? 'suzune' : 'arca']];
   const need = [...new Set(G.picks.flat())];
-  const hiNow = wantHi(), stale = id => !ANIMS[id] || (ANIMS[id].hiWanted !== hiNow && (hiNow ? ANIM_HI[id] !== null : ANIMS[id].hi));   // missing, or loaded at the other frame rate
+  const hiNow = wantHi(), stale = id => !ANIMS[id] || (!hiNow && ANIMS[id].hi);   // missing, or a hi set we no longer want
   if (need.some(stale)) {
-    const ov = $('#matchLoad'), pc = $('#matchPct'); ov.hidden = false; pc.textContent = '0%';
-    await ensureAnims(need, v => pc.textContent = v + '%');
-    ov.hidden = true;
+    vsLoadShow(G.picks); const pc = $('#matchPct'), bar = $('#mlBar');
+    await ensureAnims(need, v => { pc.textContent = v + '%'; if (bar) bar.style.width = v + '%'; });
+    $('#matchLoad').hidden = true;
   } else ensureAnims(need);
+  swapStaged(); upgradeHi(need);
   G.wins = [0, 0];
   G.round = 1; G.matchOver = false; G.winMovie = false; G.rwMovie = false;
   makeTeams();
@@ -3497,7 +3525,15 @@ async function startMatch() {
   G.scene = 'game'; showScreen(null); setTouch(true); bgmTrack(G.boss ? 'boss' : 'battle', .5);
   const tp = document.getElementById('touch'); if (tp) tp.dataset.solo = G.picks[0].length === 1 ? '1' : '0';
 }
+function vsLoadShow(picks) {
+  const ov = $('#matchLoad'); ov.hidden = false;
+  const side = ids => ids.map(id => `<div class="ml-f"><img src="${id === 'shuten' ? 'assets/shuten_card.webp' : 'assets/title_' + id + '.webp'}" alt=""><b>${CHARS[id] ? CHARS[id].name : id}</b></div>`).join('');
+  $('#mlL').innerHTML = side(picks[0]); $('#mlR').innerHTML = side(picks[1]);
+  $('#matchPct').textContent = '0%'; const bar = $('#mlBar'); if (bar) bar.style.width = '0%';
+  ov.classList.remove('go'); void ov.offsetWidth; ov.classList.add('go');
+}
 function startRound() {
+  swapStaged();
   makeTeams(); G.tagCd = [0, 0]; G.pendingTag = null; G.benched = [];
   G.resultShown = false; G.victory = null; G.fx = []; G.proj = []; G.paintFloor = []; G.bloomFloor = []; G.orange = null; G.chrono = null; G.oneSec = null; G.luna = null; G.ink = null; G.inkWash = null; G.timer = 99; G.timerF = 0; G.phase = 'intro'; G.phaseT = 0; G.cutin = null; G.rwCut = null; G.freeze = 0; G.tintA = 0; G.slow = 1;
   G.cam.x = STAGE_W / 2; G.cam.z = 1; G.comboHud = [null, null]; TEL.list = []; DMG.list = []; G.cam.tilt = 0; G.cam.push = 0; G.koCam = null;
@@ -4656,7 +4692,30 @@ function storySave() { try { localStorage.setItem('cf_story', JSON.stringify(STO
 const storyIsBoss = () => STORY.d && STORY.d.stage >= STORY.d.order.length;
 const portrait = id => id === 'shuten' ? 'assets/shuten_card.webp' : `assets/title_${id}.webp`;
 const bgPoster = id => id === 'shuten' ? 'media/boss_intro_shuten_poster.jpg' : id === 'arca' ? 'media/select_arca_intro_poster.jpg' : `media/select_${id}_poster.jpg`;
-function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); }
+// background prefetch: while the player is on the title / select / story screens, download (not decode) the normal
+// sprite atlases of the fighters they're likely to pick, so the first match starts much sooner. Skipped on Data Saver.
+const PREF = { q: [], busy: 0, done: new Set(), on: false };
+function prefetchFighters(ids, front) {
+  if (navigator.connection && navigator.connection.saveData) return;
+  const urls = [];
+  for (const id of ids) { const m = ANIM_META[id]; if (!m || ANIMS[id] || ANIM_LOAD[id]) continue; const set = new Set(); for (const k in m.anims) m.anims[k].atlases.forEach(u => set.add(u)); urls.push(...set); }
+  const fresh = urls.filter(u => !PREF.done.has(u));
+  PREF.q = front ? fresh.concat(PREF.q.filter(u => !fresh.includes(u))) : PREF.q.concat(fresh.filter(u => !PREF.q.includes(u)));
+  PREF.on = true; prefetchPump();
+}
+function prefetchPump() {
+  while (PREF.on && PREF.busy < 2 && PREF.q.length) {
+    const u = PREF.q.shift(); if (PREF.done.has(u)) continue; PREF.done.add(u); PREF.busy++;
+    fetch(u, { priority: 'low' }).then(r => r.blob()).catch(() => { PREF.done.delete(u); }).finally(() => { PREF.busy--; prefetchPump(); });
+  }
+}
+function prefetchStop() { PREF.on = false; PREF.q.length = 0; }
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+  if (id === null) prefetchStop();
+  else if (id === 'title') prefetchFighters(['suzune']);
+  else if (id === 'select') prefetchFighters([...document.querySelectorAll('.card:not(.locked)')].map(c => c.dataset.char).filter(Boolean).concat(G.boss ? ['shuten'] : []), true);
+}
 function togglePause(force) {
   if (G.scene !== 'game' || G.matchOver) return;
   G.paused = force !== undefined ? force : !G.paused;
@@ -4802,12 +4861,14 @@ function setupUI() {
   function storyCard() {
     G.scene = 'title'; const d = STORY.d, n = STORY_N();
     if (storyIsBoss()) {
+      prefetchFighters(['shuten'].concat(d.unlocked), true);
       storyScreen({ kicker: `FINAL STAGE  ${n} / ${n}`, title: '鬼王 SHUTEN', img: portrait('shuten'), bg: bgPoster('shuten'),
         text: `11人の戦士を退けたその先で、血の海から鬼王が目を覚ます——。<br><b>仲間から2人を選び、タッグで挑め！</b><br><span class="st-stat">体力 ×5　攻撃力 ×1.5　巨体・スーパーアーマー</span>`,
         buttons: [['2人を選んで挑む', () => storyPick(true)], ['タイトルへ', storyToTitle, 1]] });
       return;
     }
     const opp = d.order[d.stage], m = storyMul(d.stage);
+    prefetchFighters([opp].concat(d.unlocked.slice().reverse()), true);
     storyScreen({ kicker: `STAGE ${d.stage + 1} / ${n}`, title: `VS ${CHARS[opp].name}`, img: portrait(opp), bg: bgPoster(opp),
       text: (d.stage === 0 ? '2029年、東京スカイデッキ。時空の歪みに呼ばれた戦士たちが集う——。<br>SUZUNEの戦いが、ここから始まるッス。<br>' : '') +
         `<b>${CHARS[opp].name}</b>（${CHARS[opp].role || ''}）が立ちはだかる！<br><span class="st-stat">敵 体力 ×${m.hp.toFixed(2)}　攻撃力 ×${m.atk.toFixed(1)}</span>`,
