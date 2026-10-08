@@ -1170,7 +1170,8 @@ function hitTarget(att, tgt, o) {
   if (att.dmgMul) o = { ...o, dmg: o.dmg * att.dmgMul };   // STORY: later rivals hit harder   // SHUTEN hits 1.5× as hard (more when enraged)
   const fromDir = Math.sign(tgt.x - att.x) || att.face;
   // guard works from either side: a grounded fighter holding guard blocks even a cross-up that lands before they turn round
-  const guarding = (tgt.state === 'guard' || (tgt.holdBack && (tgt.state === 'walk' || tgt.state === 'idle'))) && onGround(tgt);
+  const slowRec = chronoGrey(tgt) && tgt.holdBack && tgt.state === 'atk' && tgt.move && tgt.t >= tgt.move.st + tgt.move.act;   // caught in ONE SECOND during their own recovery
+  const guarding = (tgt.state === 'guard' || slowRec || (tgt.holdBack && (tgt.state === 'walk' || tgt.state === 'idle' || (chronoGrey(tgt) && tgt.state === 'dash')))) && onGround(tgt);
   const hx = (att.x + tgt.x) / 2 + fromDir * 20, hy = tgt.y - (o.hy || 160);
   if (guarding) {   // every attack is guardable (no unblockables)
     tgt.face = -fromDir;
@@ -1182,10 +1183,11 @@ function hitTarget(att, tgt, o) {
   }
   tgt.combo = (tgt.state === 'hit' || tgt.state === 'air' || tgt.armorT > 0) ? tgt.combo + 1 : 1;
   const sc = o.noScale ? 1 : Math.max(.45, 1 - .08 * (tgt.combo - 1));
-  const dmg = o.dmg * sc;
+  const dmg = o.dmg * sc * (G.chrono && G.chrono.owner === att && !o.ult ? .7 : 1);   // ICHIKA's blows during her own ONE SECOND are 30% lighter
   tgt.hp = Math.max(0, tgt.hp - dmg);
   dmgPop(dmg, hx, hy, att, false);
-  att.gauge = Math.min(100, att.gauge + o.dmg * 2.1); tgt.gauge = Math.min(100, tgt.gauge + o.dmg * (tgt.ch.boss ? .25 : 1.2)); if (tgt.id === 'aoi') tgt.glitch = 8;
+  const oneSecOwn = G.chrono && G.chrono.owner === att && !o.ult;   // ICHIKA hitting during her own ONE SECOND: lighter blows, less gauge (no EX chains)
+  att.gauge = Math.min(100, att.gauge + o.dmg * (oneSecOwn ? 1.0 : 2.1)); tgt.gauge = Math.min(100, tgt.gauge + o.dmg * (tgt.ch.boss ? .25 : 1.2)); if (tgt.id === 'aoi') tgt.glitch = 8;
   if (tgt.ch.boss && tgt.hp > 0) { bossArmorHit(att, tgt, o, hx, hy, fromDir, dmg); return true; }   // super armour
   tgt.face = -fromDir; tgt.flip = false; tgt.whiteT = 6; tgt.t = 0; tgt.move = null;
   tgt.vx = fromDir * (o.kb || 5);
@@ -1917,6 +1919,7 @@ function drawInkWash() {   // screen space: the dragon's swallow floods the scre
 // monochrome and slow → only ICHIKA keeps her colour. Rough, momentum-driven kicks; the ULT stops time completely.
 const ICHI = { rgb: '242,193,78', hot: '255,240,200' };
 // G.chrono = { owner, k, t, life }: every fighter on the other side (with their projectiles and summons) runs at k× speed
+const RECOVERING = { hit: 1, air: 1, down: 1, getup: 1 };
 function chronoK(f) { const c = G.chrono; return c && f && c.owner.side !== f.side ? c.k : 1; }
 const chronoGrey = f => !!(G.chrono && f.side !== G.chrono.owner.side);
 function startChrono(f, k, life, caption) {
@@ -1987,11 +1990,11 @@ function updateIchikaUlt(f, o, at, dt, first) {
     f.x = clamp(o.x + s * (last ? 170 : 140), 60, STAGE_W - 60); f.face = Math.sign(o.x - f.x) || 1; f.vx = 0;
     const hx = o.x - f.face * 30, hy = o.y - rnd(120, 230);
     fxArc(hx, hy, 120, -2.2 + i * .4, 1.0 + i * .2, ICHI.rgb, f.face, 26, 30); fxCore(hx, hy, ICHI.hot, 90, 20); fxSpark(hx, hy, ICHI.rgb, 10, .5, f.face);
-    fxRing(hx, hy, ICHI.rgb, 10, 90, 22, 5); m.store += last ? 6 : 4.5; sfx.kick(); shake(5);
+    fxRing(hx, hy, ICHI.rgb, 10, 90, 22, 5); m.store += last ? 4.5 : 3.4; sfx.kick(); shake(5);   // 2026-10-08: toned down (was 4.5 / 6)
   }
   if (first(U.resume)) {   // time flows again: every stored blow lands at once
     G.chrono = null; f.inv = 30;
-    if (G.phase === 'fight') { f.hitIds.clear(); hitTarget(f, o, { dmg: m.store + 6, kb: 14, launch: -16, power: 2.8, ult: true, noScale: true, hy: 160 }); }
+    if (G.phase === 'fight') { f.hitIds.clear(); hitTarget(f, o, { dmg: m.store + 4, kb: 14, launch: -16, power: 2.8, ult: true, noScale: true, hy: 160 }); }
     fxBig(o.x, o.y - 160, ICHI.rgb, ICHI.hot, 2.6, f.face); fxRing(o.x, GROUND - 4, ICHI.rgb, 30, 640, 30, 14, .22);
     flash(.8, ICHI.hot); quake(22, .8, 120); zoomKick(.12); G.speedlines = 40;
   }
@@ -4461,7 +4464,8 @@ function simStep(dt) {
   const [a, b] = G.fighters;
   const ia = G.mode === 'watch' ? aiInput(a, b) : readHuman(0);
   const ib = G.mode === 'pvp' ? readHuman(1) : aiInput(b, a);
-  stepFighter(a, b, ia, sdt * chronoK(a)); stepFighter(b, a, ib, sdt * chronoK(b)); pushApart(a, b);   // ICHIKA's ONE SECOND: the other side runs slow
+  const ck = f => RECOVERING[f.state] ? 1 : chronoK(f);   // ICHIKA's ONE SECOND slows the other side's actions, not their recovery (so they can get back to guarding)
+  stepFighter(a, b, ia, sdt * ck(a)); stepFighter(b, a, ib, sdt * ck(b)); pushApart(a, b);
   updateProj(sdt); updateFx(sdt); updateFlow(sdt); updateTeams(sdt); updateChrono(sdt);
 }
 const CAM = { zBoss: .74, zGiant: .84, zMax: 1.3, zMin: .76, zWin: 1.22, near: 360, far: 1250, in: .035, out: .09 };
