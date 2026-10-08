@@ -3095,14 +3095,14 @@ function updateTeams(dt) {
   const pt = G.pendingTag;
   if (pt) { pt.t += dt; const down = G.fighters[pt.side]; if (pt.t > 75 && (down.state === 'down' || pt.t > 140)) { G.pendingTag = null; doTag(pt.side, true); } }
 }
-const DASH = { len: 30, speed: 52, inv: 30, cd: 62, cancel: 16 };
+const DASH = { len: 36, speed: 60, inv: 44, cd: 62, cancel: 18 };   // 2026-10-08: longer (~640px) and invulnerable for the whole dash + a little after
 // cornered against the wall (stage end or screen edge) and dashing at the foe: slip right through them to the other side
 function cornered(f, o) {
   const back = -(Math.sign(o.x - f.x) || f.face), half = W / 2 / (G.cam.z || 1);
   const wall = back > 0 ? Math.min(STAGE_W - 70, G.cam.x + half - 40) : Math.max(70, G.cam.x - half + 40);
   return Math.abs(wall - f.x) < 240 && Math.abs(o.x - f.x) < 520;
 }
-const AIRDASH = { len: 18, speed: 40, inv: 10, cancel: 7 };
+const AIRDASH = { len: 22, speed: 48, inv: 18, cancel: 8 };
 function startAirDash(f, d) {
   f.state = 'adash'; f.t = 0; f.move = null; f.dashDir = d; f.face = d; f.vx = d * AIRDASH.speed; f.vy = 0; f.inv = Math.max(f.inv || 0, AIRDASH.inv);
   f.airDashUsed = true; f.dashCd = DASH.cd * .6; f.flip = false; f.rot = 0; f.sx = 1.16; f.sy = .88;
@@ -3114,7 +3114,10 @@ function startAirDash(f, d) {
 }
 function startDash(f, d) {
   const o = G.fighters[1 - f.side];
-  f.passThru = !!(o && !o.hidden && d === (Math.sign(o.x - f.x) || f.face) && cornered(f, o) && Math.abs(f.y - o.y) < 260);
+  // dashing at the foe slips through them to the other side — anywhere on the stage, as long as there is room behind them
+  const clearOf = o && (o.id === 'shuten' ? 260 : o.id === 'kanna' ? 200 : 140), wallFar = d > 0 ? STAGE_W - 70 : 70;
+  f.passThru = !!(o && !o.hidden && d === (Math.sign(o.x - f.x) || f.face) && Math.abs(o.x - f.x) < 620 && Math.abs(f.y - o.y) < 260 && Math.abs(wallFar - o.x) > clearOf + 40);
+  f.passExtra = 0;
   f.passFoe = f.passThru ? o : null;
   f.state = 'dash'; f.t = 0; f.move = null; f.dashDir = d; f.vx = d * DASH.speed * (f.passThru ? 1.12 : 1); f.inv = DASH.inv + (f.passThru ? 8 : 0); f.dashCd = DASH.cd;
   if (f.passThru) { G.speedlines = Math.max(G.speedlines || 0, 14); playS('whoosh_kick_heavy', .6, 1.3); }
@@ -3214,7 +3217,7 @@ function stepFighter(f, o, inp, dt) {
     }
     if (f.passThru && f.passFoe) {   // carry on until we're properly on the far side, then turn round
       const o2 = f.passFoe, past = (f.x - o2.x) * f.dashDir, clear = o2.id === 'shuten' ? 260 : o2.id === 'kanna' ? 200 : 140;
-      if (past < clear && f.t >= DASH.len - 4) { f.t = DASH.len - 4; f.vx = f.dashDir * Math.max(Math.abs(f.vx), 18); f.inv = Math.max(f.inv, 6); }
+      if (past < clear && f.t >= DASH.len - 4 && (f.passExtra = (f.passExtra || 0) + dt) < 40) { f.t = DASH.len - 4; f.vx = f.dashDir * Math.max(Math.abs(f.vx), 18); f.inv = Math.max(f.inv, 6); }
       if (past >= clear && f.t >= DASH.len) { f.passThru = false; f.passFoe = null; f.face = Math.sign(o2.x - f.x) || f.face; }
     }
     if (f.state === 'dash' && f.t >= DASH.len) { f.state = 'idle'; f.passThru = false; f.passFoe = null; f.land = 6; f.vx *= .3; if (f.id === 'enjo') fxSmoke(f.x, f.y - 160, 10, 1.4, 0, f.col.rgb); else fxDust(f.x, f.y, 4, .7); }
@@ -3405,7 +3408,7 @@ function aiInput(f, o) {
   if (CAN_DASH[f.id] && !(f.dashCd > 0) && onGround(f)) {   // slip through AOI's shots / close the gap
     const shot = G.proj.some(p => p.owner === o && Math.abs(p.x - f.x) < 300 && Math.sign(p.vx) === -dir);
     if ((shot && Math.random() < .35 + D.guard * .5) || (ad > 520 && Math.random() < .22)) { set({ [toward]: true }, 6); ai.press = 'dh'; return out; }
-    if (cornered(f, o) && ad < 380 && o.state !== 'atk' && Math.random() < .18 + D.guard * .3) { set({ [toward]: true }, 6); ai.press = 'dh'; return out; }   // escape the corner
+    if (((cornered(f, o) && ad < 380 && Math.random() < .18 + D.guard * .3) || (ad < 260 && Math.random() < .06 + D.guard * .1)) && o.state !== 'atk') { set({ [toward]: true }, 6); ai.press = 'dh'; return out; }   // escape the corner
   }
   if (threatened && Math.random() < D.guard) { set({ d: true }, 14 + (Math.random() * 10 | 0)); return out; }
   if (canUlt(f) && Math.random() < .5 && (f.id !== 'suzune' || ad < 700)) { ai.press = 'ult'; return out; }
