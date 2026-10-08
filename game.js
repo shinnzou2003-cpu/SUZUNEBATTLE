@@ -9,10 +9,14 @@ const TAU = Math.PI * 2;
 
 const cv = $('#game'); let ctx = cv.getContext('2d');
 let scale = 1, dpr = 1;
+// performance governor: a phone that can't keep up first loses the GL post-fx (see pfxDraw), then renders at a lower
+// resolution, and finally stops loading the 1VS1 double-frame-rate sprites (remembered for next time)
+const PERF = { dprCap: 2, ms: [], skip: 90, low: false };
+try { PERF.low = localStorage.getItem('cf_lowspec') === '1'; if (PERF.low) PERF.dprCap = 1.25; } catch (e) { }
 function resize() {
   const vw = innerWidth, vh = innerHeight;
   scale = Math.min(vw / W, vh / H);
-  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  dpr = Math.min(window.devicePixelRatio || 1, PERF.dprCap);
   cv.width = Math.round(W * scale * dpr); cv.height = Math.round(H * scale * dpr);
   cv.style.width = (W * scale) + 'px'; cv.style.height = (H * scale) + 'px';
   const portrait = vh > vw * 1.05;
@@ -233,7 +237,7 @@ function track(p) { LOAD.total++; return p.then(v => { LOAD.done++; const el = d
 // Atlases are NOT decoded at boot any more: only the fighters in the current match are kept in memory,
 // so the roster can grow (10+ characters) without phones running out of RAM.
 const ANIM_META = {};
-const ANIM_REV = '20261007b';   // bump when an anim/*.json changes so browsers drop the cached one (ISANA edges smoothed 2026-10-06)
+const ANIM_REV = '20261008s';   // bump when an anim/*.json changes so browsers drop the cached one (ISANA edges smoothed 2026-10-06)
 const ANIM_LOAD = {};          // id -> Promise while loading
 async function buildAnims() {
   await Promise.all(Object.keys(CHARS).map(async id => {
@@ -250,7 +254,7 @@ async function hiMeta(id) {
   if (m && m.storeH && ANIM_META[id] && Math.abs(m.storeH - ANIM_META[id].storeH) > .5) m = null;   // different scale/anchor: unsafe, ignore
   return ANIM_HI[id] = m;
 }
-const wantHi = () => !!G.solo && !G.boss;
+const wantHi = () => !!G.solo && !G.boss && !PERF.low;
 const WIN_N = () => G.boss ? 1 : 2;   // BOSS BATTLE is a single bout
 function loadAnim(id, onTick, hi) {
   if (hi === undefined) hi = wantHi();
@@ -270,7 +274,7 @@ function loadAnimWith(id, meta, hm, hi, onTick) {
     const hk = hm && hm.anims && hm.anims[k], an = hk || meta.anims[k];
     AN.fps[k] = an.fps || 24; AN.mul[k] = hk ? (hk.fps || 24) / (meta.anims[k].fps || 24) : 1;
     const ais = an.atlases.map(p => { if (!(p in idx)) { idx[p] = paths.length; paths.push(p); } return idx[p]; });
-    AN.a[k] = an.frames.map(r => ({ ai: ais[r.a], sx: r.x, sy: r.y, w: r.w, h: r.h, ox: r.ox, oy: r.oy }));
+    AN.a[k] = an.frames.map(r => ({ ai: ais[r.a], sx: r.x, sy: r.y, sw: r.sw || r.w, sh: r.sh || r.h, w: r.w, h: r.h, ox: r.ox, oy: r.oy }));   // sw/sh: rect in the (possibly down-scaled) atlas; w/h: logical size
   }
   const dec = im => (im.decode ? im.decode().catch(() => { }) : Promise.resolve()).then(() => im);
   return Promise.all(paths.map((p, i) => loadImg(p).then(dec).then(im => { AN.atlases[i] = im; onTick && onTick(); })))
@@ -1368,7 +1372,7 @@ function drawDragon(f, front) {
   const fr = dragonFrame(f), AN = ANIMS[f.id];
   ctx.save(); ctx.translate(d.x, d.y); ctx.scale(d.face, 1); if (d.rot) ctx.rotate(d.rot);
   if (d.mode === 'leave') ctx.globalAlpha = Math.max(0, 1 - d.t / 50);
-  if (fr) { const K = dragonScale(f), src = frameSrc(fr, f); ctx.drawImage(src, fr.sx, fr.sy, fr.w, fr.h, fr.ox * K, fr.oy * K, fr.w * K, fr.h * K); }
+  if (fr) { const K = dragonScale(f), src = frameSrc(fr, f); ctx.drawImage(src, fr.sx, fr.sy, fr.sw, fr.sh, fr.ox * K, fr.oy * K, fr.w * K, fr.h * K); }
   else {   // atlas not loaded: a glowing blueprint silhouette so the move still reads
     ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(${f.col.rgb},.9)`; ctx.lineWidth = 6;
     ctx.beginPath(); ctx.ellipse(0, 0, 200, 60, 0, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-60, -20); ctx.lineTo(-180, -220); ctx.lineTo(60, -40); ctx.stroke();
@@ -1724,7 +1728,7 @@ function drawShishi(f, front) {
   if ((d.mode !== 'win') !== front) return;   // the victory lion sits behind her; the charging lion runs in front
   const fr = shishiFrame(f), AN = ANIMS[f.id];
   ctx.save(); ctx.translate(d.x, d.y); ctx.scale(d.face, 1); ctx.globalAlpha = d.a;
-  if (fr) { const K = AN.k * SHISHI_K / RS(f), ref = AN.a.gRun[0], foot = (ref.oy + ref.h) * K; ctx.drawImage(frameSrc(fr, f), fr.sx, fr.sy, fr.w, fr.h, fr.ox * K, fr.oy * K - foot, fr.w * K, fr.h * K); }
+  if (fr) { const K = AN.k * SHISHI_K / RS(f), ref = AN.a.gRun[0], foot = (ref.oy + ref.h) * K; ctx.drawImage(frameSrc(fr, f), fr.sx, fr.sy, fr.sw, fr.sh, fr.ox * K, fr.oy * K - foot, fr.w * K, fr.h * K); }
   else { ctx.fillStyle = `rgba(${JADE.gold},.9)`; ctx.beginPath(); ctx.ellipse(0, -150, 230, 100, 0, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.ellipse(210, -230, 80, 70, 0, 0, TAU); ctx.fill(); }
   ctx.restore(); ctx.globalAlpha = 1;
 }
@@ -1804,7 +1808,7 @@ function drawRindo(f) {
   ctx.translate(R.x, GROUND); ctx.scale(R.face, 1);
   if (R.mode === 'dive') { const q = Math.min(1, u / 10); ctx.translate(140 * q, 60 * q); ctx.rotate(.3 * q); }
   ctx.globalAlpha = R.mode === 'rise' ? Math.min(1, u / 6) : R.mode === 'sink' ? Math.max(0, 1 - u / 28) : 1;
-  if (fr) { const K = AN.k * RINDO_K / RS(f); ctx.drawImage(frameSrc(fr, f), fr.sx, fr.sy, fr.w, fr.h, fr.ox * K, fr.oy * K, fr.w * K, fr.h * K); }
+  if (fr) { const K = AN.k * RINDO_K / RS(f); ctx.drawImage(frameSrc(fr, f), fr.sx, fr.sy, fr.sw, fr.sh, fr.ox * K, fr.oy * K, fr.w * K, fr.h * K); }
   else { ctx.strokeStyle = 'rgba(20,16,16,.95)'; ctx.lineWidth = 70; ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(-200, -300, 200, -500, 60, -760); ctx.stroke(); }
   ctx.restore(); ctx.globalAlpha = 1;
 }
@@ -2790,7 +2794,7 @@ function drawDog(f, front) {
   if (d.mode === 'melt') al = Math.max(0, 1 - d.t / 30);
   if (d.mode === 'win') al = d.a;
   ctx.globalAlpha = al;
-  if (fr) { const K = dogScale(f), src = frameSrc(fr, f), AN = ANIMS[f.id], ref = AN.a.dRun && AN.a.dRun[0], foot = ref ? (ref.oy + ref.h) * K : 0; if (d.mode === 'melt') ctx.scale(1, 1 - d.t / 60); ctx.drawImage(src, fr.sx, fr.sy, fr.w, fr.h, fr.ox * K, fr.oy * K - foot, fr.w * K, fr.h * K); }
+  if (fr) { const K = dogScale(f), src = frameSrc(fr, f), AN = ANIMS[f.id], ref = AN.a.dRun && AN.a.dRun[0], foot = ref ? (ref.oy + ref.h) * K : 0; if (d.mode === 'melt') ctx.scale(1, 1 - d.t / 60); ctx.drawImage(src, fr.sx, fr.sy, fr.sw, fr.sh, fr.ox * K, fr.oy * K - foot, fr.w * K, fr.h * K); }
   else {   // atlas not loaded: a paint silhouette so the move still reads
     ctx.fillStyle = `rgba(${PAINT.blue},.9)`; ctx.beginPath(); ctx.ellipse(0, -170, 260, 110, 0, 0, TAU); ctx.fill();
     ctx.beginPath(); ctx.ellipse(230, -260, 90, 70, 0, 0, TAU); ctx.fill();
@@ -3474,7 +3478,8 @@ const partnerOf = f => G.teams && G.teams[f.side].find(x => x !== f);
 async function startMatch() {
   if (!Array.isArray(G.picks[0])) G.picks = [[G.picks[0], G.picks[0] === 'suzune' ? 'aoi' : 'suzune'], [G.picks[1], G.picks[1] === 'arca' ? 'suzune' : 'arca']];
   const need = [...new Set(G.picks.flat())];
-  if (need.some(id => !ANIMS[id])) {
+  const hiNow = wantHi(), stale = id => !ANIMS[id] || (ANIMS[id].hiWanted !== hiNow && (hiNow ? ANIM_HI[id] !== null : ANIMS[id].hi));   // missing, or loaded at the other frame rate
+  if (need.some(stale)) {
     const ov = $('#matchLoad'), pc = $('#matchPct'); ov.hidden = false; pc.textContent = '0%';
     await ensureAnims(need, v => pc.textContent = v + '%');
     ov.hidden = true;
@@ -3666,16 +3671,16 @@ function drawDeformBox(img, x, y, w, h, top, bot, wave, glitch, side) {
 const GS = mk(220, 220), GSX = GS.getContext('2d');   // small buffer for the rim-glow
 const WS = mk(640, 640), WSX = WS.getContext('2d');   // half-res buffer for white flash / tinted after-images
 function drawFrame(src, fr, x, y, w, h, glitch) {
-  if (!glitch) { ctx.drawImage(src, fr.sx, fr.sy, fr.w, fr.h, x, y, w, h); return; }
-  const N = 12, sh = fr.h / N, dh = h / N;
-  for (let i = 0; i < N; i++) ctx.drawImage(src, fr.sx, fr.sy + i * sh, fr.w, sh, x + (Math.random() < .3 ? rnd(-18, 18) : 0), y + i * dh, w, dh + .5);
+  if (!glitch) { ctx.drawImage(src, fr.sx, fr.sy, fr.sw, fr.sh, x, y, w, h); return; }
+  const N = 12, sh = fr.sh / N, dh = h / N;
+  for (let i = 0; i < N; i++) ctx.drawImage(src, fr.sx, fr.sy + i * sh, fr.sw, sh, x + (Math.random() < .3 ? rnd(-18, 18) : 0), y + i * dh, w, dh + .5);
 }
 function drawGlow(src, fr, x, y, w, h, rgb) {
   const q = 1 / 8, m = 8, sw = Math.max(2, Math.ceil(fr.w * q)), shh = Math.max(2, Math.ceil(fr.h * q));
   if (sw + m * 2 > GS.width || shh + m * 2 > GS.height) return;
   GSX.clearRect(0, 0, sw + m * 2, shh + m * 2);
   GSX.shadowColor = `rgb(${rgb})`; GSX.shadowBlur = 5; GSX.shadowOffsetX = 2000;
-  GSX.drawImage(src, fr.sx, fr.sy, fr.w, fr.h, m - 2000, m, sw, shh);
+  GSX.drawImage(src, fr.sx, fr.sy, fr.sw, fr.sh, m - 2000, m, sw, shh);
   GSX.shadowBlur = 0; GSX.shadowOffsetX = 0; GSX.shadowColor = 'transparent';
   const kx = w / sw, ky = h / shh;
   ctx.drawImage(GS, 0, 0, sw + m * 2, shh + m * 2, x - m * kx, y - m * ky, w + m * 2 * kx, h + m * 2 * ky);
@@ -3684,7 +3689,7 @@ function drawSolid(src, fr, x, y, w, h, color) {
   const hw = Math.max(1, Math.ceil(fr.w / 2)), hh = Math.max(1, Math.ceil(fr.h / 2));
   if (hw > WS.width || hh > WS.height) return;
   WSX.globalCompositeOperation = 'source-over'; WSX.clearRect(0, 0, hw + 2, hh + 2);
-  WSX.drawImage(src, fr.sx, fr.sy, fr.w, fr.h, 0, 0, hw, hh);
+  WSX.drawImage(src, fr.sx, fr.sy, fr.sw, fr.sh, 0, 0, hw, hh);
   WSX.globalCompositeOperation = 'source-in'; WSX.fillStyle = color; WSX.fillRect(0, 0, hw, hh);
   WSX.globalCompositeOperation = 'source-over';
   ctx.drawImage(WS, 0, 0, hw, hh, x, y, w, h);
@@ -3942,7 +3947,7 @@ function drawRwCut() {
   const sc = (bandH + 60) / box[1], bw = box[0] * sc, bh = box[1] * sc, drift = t * .5 * dir;
   // wide close-ups sit further from the name plate on the 2P side so the text never lands on the eyes
   const bx = (dir > 0 ? 170 : -170 - Math.max(0, bw - 640) * .55) - bw / 2 + drift, by = -bh / 2 + 20;
-  ctx.drawImage(frameSrc(q, f), q.sx, q.sy, q.w, q.h, bx + q.ox * sc, by + q.oy * sc, q.w * sc, q.h * sc);
+  ctx.drawImage(frameSrc(q, f), q.sx, q.sy, q.sw, q.sh, bx + q.ox * sc, by + q.oy * sc, q.w * sc, q.h * sc);
   const lg = ctx.createLinearGradient(-W / 2, 0, W / 2, 0);
   if (dir > 0) { lg.addColorStop(0, 'rgba(10,6,22,.92)'); lg.addColorStop(.38, 'rgba(10,6,22,0)'); } else { lg.addColorStop(.62, 'rgba(10,6,22,0)'); lg.addColorStop(1, 'rgba(10,6,22,.92)'); }
   ctx.fillStyle = lg; ctx.fillRect(-W, -bandH / 2, W * 2, bandH);
@@ -4469,6 +4474,16 @@ function updateTouchLabels() {
     const r = f.dashCd > 0 ? 1 - f.dashCd / DASH.cd : 1; b.style.setProperty('--g', (r * 100 | 0) + '%'); b.classList.toggle('cool', r < 1);
   });
 }
+function perfWatch(dt) {
+  if (PERF.skip > 0) { PERF.skip--; return; }   // ignore the first frames after a load / scene change
+  if (G.winMovie || G.rwMovie || document.hidden || /[?&]fx=1/.test(location.search)) return;
+  PERF.ms.push(dt); if (PERF.ms.length < 150) return;
+  const avg = PERF.ms.reduce((a, b) => a + b, 0) / PERF.ms.length; PERF.ms.length = 0;
+  if (avg <= 30 || PFX.on) return;   // fine, or the post-fx stage of the ladder is still being tried
+  if (PERF.dprCap > 1.25) { PERF.dprCap = 1.25; resize(); PERF.skip = 60; return; }
+  if (PERF.dprCap > 1) { PERF.dprCap = 1; resize(); PERF.skip = 60; }
+  if (!PERF.low) { PERF.low = true; try { localStorage.setItem('cf_lowspec', '1'); } catch (e) { } }   // next match: normal frame-rate sprites
+}
 function loop(ts) {
   applyQuake();
   const dt = Math.min(100, ts - (last || ts)); last = ts; PFX.dt = dt || 16.67;
@@ -4477,7 +4492,8 @@ function loop(ts) {
     while (acc >= 1000 / 60 && n < 4) { simStep(1); acc -= 1000 / 60; n++; }
     if (n === 4) acc = 0;
     updateCamera(); if (G.frame % 4 === 0) updateTouchLabels();
-  } else if (G.scene !== 'game') { G.frame++; }
+    perfWatch(dt);
+  } else if (G.scene !== 'game') { G.frame++; PERF.skip = 90; PERF.ms.length = 0; }
   render();
   requestAnimationFrame(loop);
 }

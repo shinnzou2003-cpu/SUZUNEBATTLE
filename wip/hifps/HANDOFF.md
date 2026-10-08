@@ -37,3 +37,7 @@
 - 他4キャラは通常素材に後付けの修正コミットが無い（cut-in 追加のみ）ので後処理なし
 - 目視チェック: 5キャラの idle / walk / a1（先頭・中間コマ）を足元基準で通常版と重ねて比較。足元の高さ・大きさ一致、先頭コマの原点ずれは数px以内。抜け・緑フチなし
 - 通常の `anim/<id>.json` / `anim/<id>_*.webp` は作業前後で sha1 一致（無変更）
+
+## 2026-10-08 追記：アトラス縮小（スマホのメモリ対策）
+- 全キャラの通常・hi アトラスを 75% に縮小済み（`tools/shrink_atlas.py`）。フレームは論理サイズ w/h/ox/oy を保ったまま、アトラス上の矩形を x/y/sw/sh で持つ。cutin は等倍のまま
+- **新しく sprite_tool / hifps / interp_hi で書き出したら、最後に必ず** `python3 tools/shrink_atlas.py 0.75 anim/<id>.json anim/hi/<id>.json` を実行（既に縮小済みのクリップは自動でスキップ）
