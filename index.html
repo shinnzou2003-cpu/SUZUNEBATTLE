@@ -422,6 +422,12 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 .se-cast img{width:clamp(80px,12vw,140px);aspect-ratio:16/10;object-fit:cover;border-left:3px solid #ffc96a}
 .se-cast b{font:800 clamp(18px,2.6vw,28px) var(--serif)}.se-cast small{margin-left:auto;color:#aaa;font-size:.85em}
 .se-skip{position:absolute;right:16px;bottom:10px;margin:0;font:600 12px 'Chakra Petch',sans-serif;color:rgba(255,255,255,.5)}
+
+#smap{padding:0;background:#05030a}
+#smCv{position:absolute;inset:0;width:100%;height:100%;display:block}
+#smBtns{position:absolute;left:6vw;top:63vh;display:flex;gap:10px;flex-wrap:wrap;opacity:0;transform:translateY(20px);transition:opacity .4s,transform .4s;pointer-events:none}
+#smBtns.on{opacity:1;transform:none;pointer-events:auto}
+@media (max-height:500px){#smBtns{top:62vh}#smBtns .pbtn{padding:9px 16px;font-size:13px}}
 </style>
 </head>
 <body>
@@ -499,6 +505,7 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
   <div class="row"><button class="pbtn" id="resume">対戦に戻る</button><button class="pbtn alt" id="quit">タイトルへ</button></div>
 </section>
 
+<section class="screen" id="smap" aria-label="ストーリーマップ"><canvas id="smCv"></canvas><div class="row" id="smBtns"></div></section>
 <section class="screen" id="story" aria-label="ストーリー">
   <div class="st-card">
     <img id="stImg" alt="">
@@ -585,6 +592,6 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 <div id="loading">読み込み中… <span id="loadPct">0%</span></div>
 
 <script>window.ASSETS={"su": "assets/suzune.webp", "ao": "assets/aoi.webp", "drone": "assets/drone.webp", "suci": "assets/suzune_cutin.webp", "aoci": "assets/aoi_cutin.webp", "ar": "assets/arca.webp", "arci": "assets/arca_cutin.webp", "arp": "assets/arca_pilot.webp", "arcard": "assets/arca_card.webp", "tsu": "assets/title_suzune.webp", "tao": "assets/title_aoi.webp", "tar": "assets/title_arca.webp", "tsa": "assets/title_sakura.webp", "sa": "assets/sakura.webp", "saci": "assets/sakura_cutin.webp", "sacard": "assets/sakura_card.webp", "mi": "assets/mio.webp", "mici": "assets/mio_cutin.webp", "micard": "assets/mio_card.webp", "ar2": "assets/aria.webp", "ar2ci": "assets/aria_cutin.webp", "ar2card": "assets/aria_card.webp", "tari": "assets/title_aria.webp", "en": "assets/enjo.webp", "enci": "assets/enjo_cutin.webp", "encard": "assets/enjo_card.webp", "enskull": "assets/enjo_skull.webp", "tenj": "assets/title_enjo.webp", "re": "assets/rei.webp", "reci": "assets/rei_cutin.webp", "recard": "assets/rei_card.webp", "trei": "assets/title_rei.webp", "ka": "assets/kanna.webp", "kaci": "assets/kanna_cutin.webp", "kacard": "assets/kanna_card.webp", "tkan": "assets/title_kanna.webp", "ic": "assets/ichika.webp", "icci": "assets/ichika_cutin.webp", "iccard": "assets/ichika_card.webp", "tich": "assets/title_ichika.webp", "is": "assets/isana.webp", "isci": "assets/isana_cutin.webp", "iscard": "assets/isana_card.webp", "tisa": "assets/title_isana.webp", "tmi": "assets/title_mio.webp", "nx": "assets/noxnix.webp", "nxci": "assets/noxnix_cutin.webp", "nxcard": "assets/noxnix_card.webp", "tnx": "assets/title_noxnix.webp", "sh": "assets/shuten.webp", "shci": "assets/shuten_cutin.webp", "shcard": "assets/shuten_card.webp"};</script>
-<script src="game.js?v=20261008i"></script>
+<script src="game.js?v=20261008n"></script>
 </body>
 </html>

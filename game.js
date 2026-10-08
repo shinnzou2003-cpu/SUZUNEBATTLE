@@ -4673,6 +4673,196 @@ function rwEnd() {
   G.rwMovie = false; G.phaseT = Math.max(G.phaseT, 225); setTouch(true);
 }
 function stopStage() { document.querySelectorAll('.stage-vid').forEach(x => { try { x.pause(); } catch (e) { } }); }
+/* ---------- STORY MAP: 2029 IF TOKYO ----------
+   The story's stage select. The city map (GPT image) gets motion graphics drawn over it: drifting fog, twinkling lights,
+   light running along the routes, beacons on the stages, embers over the demon castle. Chibi SUZUNE walks from the last
+   stage to the next one; on arrival the camera pushes in and the rival's close-up plays with text motion and their line. */
+const SMAP_W = 1916, SMAP_H = 821;
+const SMAP_NODES = { suzune: [960, 500], aria: [205, 95], aoi: [625, 210], mio: [250, 322], enjo: [650, 345], ichika: [415, 615], arca: [1165, 268], rei: [1450, 352], kanna: [1690, 462], isana: [1395, 652], sakura: [868, 568], noxnix: [140, 560], shuten: [1720, 140] };
+const SMAP_PLACE = { suzune: 'スカイデッキ・タワー', aria: '浮遊プラットフォーム', aoi: 'ホロ研究区', mio: 'アート地区', enjo: '提灯の歓楽街', ichika: 'スクランブル交差点', arca: '魔導大聖堂', rei: '月夜の寺院', kanna: '花の古代遺跡', isana: 'サルベージ港', sakura: '桜の庭', noxnix: 'ネオン劇場街', shuten: '鬼王の城' };
+const SMAP_TW = [112,194,581,645,1383,399,505,582,1392,755,379,650,328,619,653,193,222,502,268,686,1163,525,1171,465,595,660,968,487,55,592,346,110,129,104,862,575,1433,661,478,196,591,631,486,639,227,499,1343,617,191,314,273,299,473,638,209,307,896,41,960,704,721,802,701,820,521,239,1630,459,193,314,284,601,121,657,224,368,361,81,641,800,775,669,0,449,266,66,672,690,890,185,759,667,555,639,1480,333,331,402,1106,455,45,170,1163,255,206,98,670,593,1354,653,512,550,675,678,579,630,754,611,516,509,318,126,466,645,993,530,1118,498,932,244,580,161,328,587,496,641,1027,412,653,677,372,675,367,651,286,596,109,733,382,459,900,409,1126,511,105,515,938,290,554,589,578,155,1430,199,415,294,808,324,582,704,1011,384,673,688,511,546,718,706,911,522,590,663,456,655,970,701,345,110,266,302,1014,413,405,515,304,636,350,721,997,527,1052,350,583,635,674,685,557,200,44,171,625,182,491,543,1471,332,682,459,1388,673,318,633,223,489,299,391,207,90,1086,514,346,104,949,88,1465,336,686,707,1107,531,101,40,1064,445,698,444,621,241,43,105,675,661,850,260,264,70,75,164,192,580,1046,490,329,615,293,303,291,613,314,631,253,175,1171,549,1226,676,494,537,388,503,679,678,203,164,730,513,545,165,1111,338,1613,615,72,649,1171,461,1150,113,350,284,676,687,1656,576,185,752,288,640,727,169,585,657,578,562,841,736,1463,332,485,639,1081,503,327,250,467,495,422,530,65,185,887,488,651,169,678,722,517,551,1347,395,235,604,1261,740,673,568,351,121,467,212,468,506,406,681,1055,369,875,578,393,213,520,635,641,168,673,693,268,149,394,493,757,660,791,85,1150,284,1072,343,243,597,374,655,1126,502,656,207,1293,726,859,292,314,633,245,653,961,144,1078,491,789,641,588,659,506,543,321,753,465,562,872,490,426,535,454,511,670,690,239,594,546,264,382,488,374,336,159,78,414,664,680,603,59,658,824,266,152,535,1431,365,199,73,673,748,213,175,717,680,1377,407,742,640,956,473,931,489,185,116,94,339,693,154,414,662,541,741,6,162,305,517,543,134,467,498,183,673,3,633,29,128,320,601,828,565,591,650,407,205,318,491,408,693,1431,206,1658,460,208,169,975,272,220,177,265,70,833,268,348,576,1151,113,987,398,276,437,447,544,1711,591,347,579,873,429]
+const SM = { on: false, cv: null, cx: null, img: null, t: 0, last: 0, cam: { x: 960, y: 410, z: 1 }, phase: 'idle', walk: null, target: null, from: null, card: null, fog: [], parts: [], embers: [], chibi: null, lines: null, ci: {} };
+function smLoad() {
+  if (!SM.img) { SM.img = new Image(); SM.img.src = 'assets/story_map.webp'; }
+  if (!SM.lines) { SM.lines = {}; fetch('media/voice/lines.json').then(r => r.ok ? r.json() : {}).then(j => { SM.lines = j || {}; }).catch(() => { }); }
+  if (!SM.chibi) {   // chibi SUZUNE sprite (anim/chibi.json) — until it exists a portrait token walks instead
+    SM.chibi = { ok: false };
+    fetch('anim/chibi.json?v=' + ANIM_REV).then(r => r.ok ? r.json() : null).then(m => {
+      if (!m) return; const imgs = {}, a = {};
+      for (const k in m.anims) { const an = m.anims[k]; a[k] = { fps: an.fps || 12, fr: an.frames.map(f => ({ ...f, sw: f.sw || f.w, sh: f.sh || f.h, src: an.atlases[f.a] })) }; an.atlases.forEach(p => { if (!imgs[p]) { const im = new Image(); im.src = p; imgs[p] = im; } }); }
+      SM.chibi = { ok: true, a, imgs, k: 150 / m.storeH };
+    }).catch(() => { });
+  }
+}
+const SM_LINE_FALLBACK = { enjo: '煙女、エンジョ。胴元のお相手、してくださる？', isana: 'イサナだ。お宝の匂いがするねぇ……引き揚げさせてもらうよ。', noxnix: 'ねえ、今夜いちばん楽しいのはどこ？ ……ここ、みたいだね！', shuten: '我は鬼王、酒呑。' };
+const smLine = id => (SM.lines && SM.lines[id] && SM.lines[id].select) || SM_LINE_FALLBACK[id] || '';
+function smCutin(id) {   // the rival's close-up (the round-win cut-in clip)
+  if (SM.ci[id]) return SM.ci[id];
+  const m = ANIM_META[id], an = m && m.anims.cutin; if (!an) return SM.ci[id] = null;
+  const c = { fps: an.fps || 24, box: m.cutinBox || [564, 420], imgs: an.atlases.map(p => { const im = new Image(); im.src = p; return im; }), fr: an.frames };
+  return SM.ci[id] = c;
+}
+function smResize() {
+  const cv = SM.cv, d = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(innerWidth * d); cv.height = Math.round(innerHeight * d); SM.dpr = d;
+}
+function smView() {   // map px -> canvas px transform for the current camera
+  const cv = SM.cv, s = cv.height / SMAP_H * SM.cam.z, vw = cv.width / s, vh = cv.height / s;
+  const x = clamp(SM.cam.x, vw / 2, SMAP_W - vw / 2), y = clamp(SM.cam.y, vh / 2, SMAP_H - vh / 2);
+  return { s, x0: x - vw / 2, y0: y - vh / 2, vw, vh };
+}
+function smBez(a, b, t) {   // routes bow up a little (towards the camera's horizon) so walks read as arcs
+  const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2 - Math.min(160, Math.hypot(b[0] - a[0], b[1] - a[1]) * .22);
+  const u = 1 - t; return [u * u * a[0] + 2 * u * t * mx + t * t * b[0], u * u * a[1] + 2 * u * t * my + t * t * b[1]];
+}
+function smOpen(opts) {   // opts: { from, to, boss, onFight, onTitle, onReset }
+  smLoad(); SM.opts = opts; SM.on = true; SM.t = 0;
+  if (!SM.cv) { SM.cv = document.getElementById('smCv'); SM.cx = SM.cv.getContext('2d'); addEventListener('resize', () => SM.on && smResize()); }
+  smResize(); showScreen('smap');
+  const a = SMAP_NODES[opts.from] || SMAP_NODES.suzune, b = SMAP_NODES[opts.to];
+  SM.from = a; SM.target = b; SM.cam = { x: a[0], y: a[1], z: 1.05 };
+  SM.walk = { t: 0, dur: clamp(Math.hypot(b[0] - a[0], b[1] - a[1]) / 260, 1.6, 3.6), pos: a.slice(), dir: Math.sign(b[0] - a[0]) || 1 };
+  SM.phase = 'intro'; SM.pt = 0; SM.card = null; SM.btns = false;
+  if (!SM.fog.length) for (let i = 0; i < 9; i++) SM.fog.push({ x: Math.random() * SMAP_W, y: 80 + Math.random() * 700, r: 160 + Math.random() * 220, v: 6 + Math.random() * 10, a: .05 + Math.random() * .06 });
+  document.getElementById('smBtns').innerHTML = ''; document.getElementById('smBtns').classList.remove('on');
+  cancelAnimationFrame(SM.raf); SM.last = performance.now(); SM.raf = requestAnimationFrame(smFrame);
+}
+function smClose() { SM.on = false; cancelAnimationFrame(SM.raf); }
+function smButtons() {
+  const o = SM.opts, row = document.getElementById('smBtns'); row.innerHTML = '';
+  const add = (label, fn, alt) => { const b = document.createElement('button'); b.className = 'pbtn' + (alt ? ' alt' : ''); b.textContent = label; b.addEventListener('click', () => { audioInit(); fn(); }); row.appendChild(b); };
+  add(o.boss ? '2人を選んで挑む' : o.single ? 'SUZUNEで挑む' : 'キャラを選んで挑む', () => { smClose(); o.onFight(); });
+  add('タイトルへ', () => { smClose(); o.onTitle(); }, 1);
+  if (o.onReset) add('最初から', () => o.onReset(), 1);
+  row.classList.add('on');
+}
+function smFrame(now) {
+  if (!SM.on) return;
+  const dt = Math.min(.05, (now - SM.last) / 1000); SM.last = now; SM.t += dt; SM.pt += dt;
+  const o = SM.opts, W2 = SM.walk;
+  // ---- sequence ----
+  if (SM.phase === 'intro' && SM.pt > .7) { SM.phase = 'walk'; SM.pt = 0; }
+  if (SM.phase === 'walk') {
+    W2.t = Math.min(1, SM.pt / W2.dur); const e = W2.t < .5 ? 2 * W2.t * W2.t : 1 - Math.pow(-2 * W2.t + 2, 2) / 2;
+    W2.pos = smBez(SM.from, SM.target, e);
+    if (Math.floor(SM.pt * 5) !== Math.floor((SM.pt - dt) * 5)) tone(.03, 520 + Math.random() * 80, 400, .025, 'triangle');   // little footsteps
+    if (W2.t >= 1) { SM.phase = 'arrive'; SM.pt = 0; sfx.cutin(); if (o.boss) quake && quake(8, .5); }
+  }
+  if (SM.phase === 'arrive' && SM.pt > .7) { SM.phase = 'card'; SM.pt = 0; SM.card = { id: o.to, ci: smCutin(o.to) }; voice(o.to === 'shuten' ? 'shuten' : o.to, 'select', { delay: .5 }); if (o.boss) playS('impact_big', .7, .8); }
+  if (SM.phase === 'card' && SM.pt > 1.2 && !SM.btns) { SM.btns = true; smButtons(); }
+  // ---- camera ----
+  const tgtZ = SM.phase === 'intro' ? 1.05 : SM.phase === 'walk' ? 1.35 : 2.1, follow = SM.phase === 'card' || SM.phase === 'arrive' ? SM.target : W2.pos;
+  const k = 1 - Math.pow(.02, dt);
+  SM.cam.z += (tgtZ - SM.cam.z) * k; SM.cam.x += (follow[0] + (SM.phase === 'card' ? 140 / SM.cam.z : 0) - SM.cam.x) * k; SM.cam.y += (follow[1] - SM.cam.y) * k;
+  smDraw(dt);
+  SM.raf = requestAnimationFrame(smFrame);
+}
+function smDraw(dt) {
+  const cv = SM.cv, c = SM.cx, V = smView(), t = SM.t, CW = cv.width, CH = cv.height, d = SM.dpr;
+  const P = (x, y) => [(x - V.x0) * V.s, (y - V.y0) * V.s];
+  c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#05030a'; c.fillRect(0, 0, CW, CH);
+  if (SM.img && SM.img.complete && SM.img.naturalWidth) c.drawImage(SM.img, V.x0, V.y0, V.vw, V.vh, 0, 0, CW, CH);
+  c.globalCompositeOperation = 'lighter';
+  // twinkling city lights
+  for (let i = 0; i < SMAP_TW.length; i += 2) { const a = .5 + .5 * Math.sin(t * (1.3 + (i % 7) * .4) + i); if (a < .75) continue; const [x, y] = P(SMAP_TW[i], SMAP_TW[i + 1]); const r = (2 + (a - .75) * 10) * V.s; const g = c.createRadialGradient(x, y, 0, x, y, r * 3); g.addColorStop(0, 'rgba(255,240,200,' + ((a - .75) * 2.4) + ')'); g.addColorStop(1, 'rgba(255,200,120,0)'); c.fillStyle = g; c.fillRect(x - r * 3, y - r * 3, r * 6, r * 6); }
+  // light running along the routes from the tower to every stage
+  const home = SMAP_NODES.suzune;
+  for (const id in SMAP_NODES) { if (id === 'suzune') continue; const n = SMAP_NODES[id], boss = id === 'shuten';
+    for (let j = 0; j < 2; j++) { const u = ((t * .18 + j * .5 + id.length * .13) % 1); const [px, py] = smBez(home, n, u); const [x, y] = P(px, py); const r = 7 * V.s; const g = c.createRadialGradient(x, y, 0, x, y, r * 3); g.addColorStop(0, boss ? 'rgba(255,80,60,.9)' : 'rgba(255,214,120,.9)'); g.addColorStop(1, 'rgba(255,160,60,0)'); c.fillStyle = g; c.fillRect(x - r * 3, y - r * 3, r * 6, r * 6); } }
+  // embers over the demon castle
+  if (Math.random() < .5) SM.embers.push({ x: 1600 + Math.random() * 300, y: 260 + Math.random() * 60, vy: -20 - Math.random() * 30, vx: Math.random() * 10 - 5, l: 0, L: 2 + Math.random() * 2 });
+  SM.embers = SM.embers.filter(e => (e.l += dt) < e.L); for (const e of SM.embers) { e.x += e.vx * dt; e.y += e.vy * dt; const [x, y] = P(e.x, e.y); c.fillStyle = 'rgba(255,90,60,' + (1 - e.l / e.L) * .8 + ')'; c.fillRect(x, y, 2.4 * V.s, 2.4 * V.s); }
+  c.globalCompositeOperation = 'source-over';
+  // drifting fog
+  for (const f of SM.fog) { f.x += f.v * dt; if (f.x - f.r > SMAP_W) f.x = -f.r; const [x, y] = P(f.x, f.y), r = f.r * V.s; const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, 'rgba(210,200,255,' + f.a + ')'); g.addColorStop(1, 'rgba(210,200,255,0)'); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); }
+  // stages
+  const st = STORY.d, cleared = new Set(st ? st.order.slice(0, st.stage) : []);
+  for (const id in SMAP_NODES) {
+    const [x, y] = P(...SMAP_NODES[id]), isT = SM.opts && id === SM.opts.to, done = cleared.has(id) || id === 'suzune', boss = id === 'shuten';
+    const pul = .5 + .5 * Math.sin(t * 3 + x * .01), R = (isT ? 46 : 30) * V.s;
+    c.save(); c.translate(x, y); c.scale(1, .42);   // rings lie on the ground plane
+    c.lineWidth = (isT ? 5 : 3) * V.s; c.strokeStyle = boss ? 'rgba(255,60,60,' + (.5 + .5 * pul) + ')' : isT ? 'rgba(255,214,110,' + (.6 + .4 * pul) + ')' : done ? 'rgba(120,230,200,.8)' : 'rgba(255,255,255,.35)';
+    c.beginPath(); c.arc(0, 0, R * (1 + .15 * pul), 0, TAU); c.stroke();
+    if (isT) { c.setLineDash([10 * V.s, 8 * V.s]); c.rotate(t * .8); c.beginPath(); c.arc(0, 0, R * 1.6, 0, TAU); c.stroke(); c.setLineDash([]); }
+    c.restore();
+    if (isT) {   // beacon of light on the target
+      const g = c.createLinearGradient(0, y - 260 * V.s, 0, y); g.addColorStop(0, 'rgba(255,214,110,0)'); g.addColorStop(1, boss ? 'rgba(255,60,60,.55)' : 'rgba(255,214,110,.5)');
+      c.globalCompositeOperation = 'lighter'; c.fillStyle = g; c.fillRect(x - 14 * V.s, y - 260 * V.s, 28 * V.s, 260 * V.s); c.globalCompositeOperation = 'source-over';
+    }
+    // portrait token floating over each stage
+    if (id !== 'suzune') {
+      const im = smPortrait(id), r = (isT ? 30 : 21) * V.s, ty = y - (isT ? 80 : 58) * V.s + Math.sin(t * 2 + x) * 4 * V.s;
+      c.save(); c.beginPath(); c.arc(x, ty, r, 0, TAU); c.closePath(); c.fillStyle = '#0c0814'; c.fill(); c.clip();
+      if (im && im.complete && im.naturalWidth) { const s = r * 2 / Math.min(im.width, im.height) * 1.25; c.filter = done || isT || boss ? 'none' : 'grayscale(1) brightness(.55)'; c.drawImage(im, x - im.width * s / 2, ty - im.height * s * .38, im.width * s, im.height * s); c.filter = 'none'; }
+      c.restore(); c.lineWidth = 2.5 * V.s; c.strokeStyle = boss ? '#ff4a4a' : done ? '#78e6c8' : isT ? '#ffd66e' : 'rgba(255,255,255,.5)'; c.beginPath(); c.arc(x, ty, r, 0, TAU); c.stroke();
+      if (done) { c.font = '800 ' + (11 * V.s) + 'px "Chakra Petch",sans-serif'; c.textAlign = 'center'; c.fillStyle = '#78e6c8'; c.fillText('CLEAR', x, ty + r + 12 * V.s); }
+    }
+  }
+  // chibi SUZUNE
+  smChibi(c, P, V);
+  // vignette + HUD
+  const vg = c.createRadialGradient(CW / 2, CH / 2, CH * .35, CW / 2, CH / 2, CW * .7); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(5,2,10,.65)'); c.fillStyle = vg; c.fillRect(0, 0, CW, CH);
+  const u = d * Math.min(1, CH / 720 / d * 1.4);
+  if (SM.phase === 'arrive' || SM.phase === 'card') smCard(c, CW, CH, u);
+  else if (SM.opts && SM.opts.caption) {   // prologue caption while she walks
+    c.textAlign = 'center'; c.font = '700 ' + (19 * u) + 'px "Shippori Mincho B1",serif'; c.lineWidth = 5 * u; c.strokeStyle = 'rgba(6,3,10,.9)'; c.fillStyle = '#fff';
+    c.globalAlpha = Math.min(1, SM.t / .8); SM.opts.caption.split('\n').forEach((l, i) => { c.strokeText(l, CW / 2, CH - 70 * u + i * 28 * u); c.fillText(l, CW / 2, CH - 70 * u + i * 28 * u); }); c.globalAlpha = 1;
+  }
+  c.save(); c.textAlign = 'left';  c.textAlign = 'left'; c.font = '800 ' + (30 * u) + 'px "Shippori Mincho B1",serif'; c.fillStyle = '#fff'; c.shadowColor = 'rgba(255,200,120,.8)'; c.shadowBlur = 14 * u; c.fillText('2029 IF TOKYO', 22 * u, 44 * u); c.shadowBlur = 0;   if (st) { c.font = '700 ' + (14 * u) + 'px "Chakra Petch",sans-serif'; c.fillStyle = '#ffc96a'; c.fillText('STORY  STAGE ' + Math.min(st.stage + 1, STORY_N()) + ' / ' + STORY_N() + '　　仲間 ' + st.unlocked.length + ' / ' + STORY_N(), 24 * u, 68 * u); } c.restore();
+}
+function smPortrait(id) { SM.pi = SM.pi || {}; if (!SM.pi[id]) { const im = new Image(); im.src = id === 'shuten' ? 'assets/shuten_card.webp' : 'assets/title_' + id + '.webp'; SM.pi[id] = im; } return SM.pi[id]; }
+function smChibi(c, P, V) {
+  const W2 = SM.walk; if (!W2) return; const [x, y] = P(W2.pos[0], W2.pos[1]), moving = SM.phase === 'walk', ch = SM.chibi;
+  c.save(); c.fillStyle = 'rgba(0,0,0,.45)'; c.beginPath(); c.ellipse(x, y, 22 * V.s, 7 * V.s, 0, 0, TAU); c.fill(); c.restore();
+  if (ch && ch.ok) {
+    const an = ch.a[moving ? 'walk' : (SM.phase === 'card' ? 'idle' : 'idle')] || ch.a.walk, fr = an.fr[Math.floor(SM.t * an.fps) % an.fr.length], im = ch.imgs[fr.src];
+    if (im && im.complete && im.naturalWidth) { const k = ch.k * V.s; c.save(); c.translate(x, y); c.scale(W2.dir, 1); c.drawImage(im, fr.x, fr.y, fr.sw, fr.sh, fr.ox * k, fr.oy * k, fr.w * k, fr.h * k); c.restore(); }
+    return;
+  }
+  // placeholder token until the sprite arrives: a bouncing SUZUNE portrait
+  const hop = moving ? Math.abs(Math.sin(SM.t * 11)) * 12 * V.s : Math.sin(SM.t * 3) * 2 * V.s, r = 24 * V.s, im = smPortrait('suzune');
+  c.save(); c.translate(x, y - 34 * V.s - hop); c.rotate(moving ? Math.sin(SM.t * 11) * .12 : 0);
+  c.beginPath(); c.arc(0, 0, r, 0, TAU); c.fillStyle = '#0c0814'; c.fill(); c.save(); c.clip();
+  if (im.complete && im.naturalWidth) { const s = r * 2 / Math.min(im.width, im.height) * 1.25; c.drawImage(im, -im.width * s / 2, -im.height * s * .38, im.width * s, im.height * s); }
+  c.restore(); c.lineWidth = 3 * V.s; c.strokeStyle = '#ffd66e'; c.stroke(); c.restore();
+}
+function smCard(c, CW, CH, u) {   // arrival: letterbox, the rival's close-up in a slanted band, text motion, their line
+  const o = SM.opts, id = o.to, ch = CHARS[id], col = (ch && ch.rgb) || '255,214,110', p = SM.phase === 'arrive' ? 0 : SM.pt, e = x => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+  const bar = CH * .11 * e(p / .4);
+  c.fillStyle = 'rgba(4,2,8,.92)'; c.fillRect(0, 0, CW, bar); c.fillRect(0, CH - bar, CW, bar);
+  if (SM.phase !== 'card') return;
+  // close-up band (right side)
+  const bandH = CH * .5, cy = CH * .47, slide = e(p / .45);
+  c.save(); c.translate(CW * .62 + (1 - slide) * CW * .6, cy); c.rotate(-.06);
+  c.beginPath(); c.rect(-CW * .5, -bandH / 2, CW, bandH); c.clip();
+  c.fillStyle = 'rgba(10,6,20,.9)'; c.fillRect(-CW * .5, -bandH / 2, CW, bandH);
+  const ci = SM.card.ci;
+  if (ci) { const i = Math.min(ci.fr.length - 1, Math.floor(p * ci.fps)), f = ci.fr[i], im = ci.imgs[f.a];
+    if (im && im.complete && im.naturalWidth) { const sc = (bandH * 1.12) / ci.box[1], bw = ci.box[0] * sc, bh = ci.box[1] * sc; c.drawImage(im, f.x, f.y, f.sw || f.w, f.sh || f.h, -bw / 2 + f.ox * sc, -bh / 2 + f.oy * sc + bandH * .04, f.w * sc, f.h * sc); } }
+  else { const im = smPortrait(id); if (im.complete && im.naturalWidth) { const s = bandH / im.height * 1.1; c.drawImage(im, -im.width * s / 2, -im.height * s / 2, im.width * s, im.height * s); } }
+  const lg = c.createLinearGradient(-CW * .5, 0, -CW * .1, 0); lg.addColorStop(0, 'rgba(10,6,20,1)'); lg.addColorStop(1, 'rgba(10,6,20,0)'); c.fillStyle = lg; c.fillRect(-CW * .5, -bandH / 2, CW * .4, bandH);
+  c.fillStyle = 'rgb(' + col + ')'; c.fillRect(-CW * .5, -bandH / 2, CW, 4 * u); c.fillRect(-CW * .5, bandH / 2 - 4 * u, CW, 4 * u);
+  c.restore();
+  // text motion (left side, clear of the face)
+  const x0 = CW * .06, st = STORY.d, m = st && !o.boss ? storyMul(st.stage) : null;
+  const k1 = e((p - .2) / .35), k2 = e((p - .35) / .4), k3 = e((p - .6) / .4), k4 = e((p - .9) / .4);
+  c.textAlign = 'left';
+  c.globalAlpha = k1; c.font = '700 ' + (16 * u) + 'px "Chakra Petch",sans-serif'; c.fillStyle = o.boss ? '#ff6a6a' : '#ffc96a';
+  c.fillText((o.boss ? 'FINAL STAGE' : 'STAGE ' + (st.stage + 1)) + ' / ' + STORY_N() + '　―　' + (SMAP_PLACE[id] || ''), x0 - (1 - k1) * 60 * u, CH * .3);
+  c.globalAlpha = k2; const nm = (ch && ch.name) || id, fs = 74 * u * (1 + .5 * (1 - k2));
+  c.font = '800 ' + fs + 'px "Shippori Mincho B1",serif'; c.lineWidth = 8 * u; c.strokeStyle = 'rgba(8,4,14,.9)'; c.strokeText(nm, x0, CH * .44);
+  c.fillStyle = '#fff'; c.shadowColor = 'rgb(' + col + ')'; c.shadowBlur = 26 * u; c.fillText(nm, x0, CH * .44); c.shadowBlur = 0;
+  if (k2 > 0 && k2 < 1) { c.globalAlpha = (1 - k2) * .6; c.fillStyle = 'rgb(' + col + ')'; c.fillText(nm, x0 + 8 * u, CH * .44 + 3 * u); }   // RGB split ghost while it lands
+  c.globalAlpha = k3; c.font = '700 ' + (18 * u) + 'px "Noto Sans JP",sans-serif'; c.fillStyle = '#ddd'; c.fillText((ch && ch.role) || '', x0, CH * .52);
+  if (m) { c.font = '700 ' + (15 * u) + 'px "Chakra Petch",sans-serif'; c.fillStyle = '#ff9a8a'; c.fillText('ENEMY  HP ×' + m.hp.toFixed(2) + '　ATK ×' + m.atk.toFixed(1), x0, CH * .58); }
+  else if (o.boss) { c.font = '700 ' + (15 * u) + 'px "Chakra Petch",sans-serif'; c.fillStyle = '#ff6a6a'; c.fillText('HP ×5　ATK ×1.5　SUPER ARMOR　― 2人タッグで挑め', x0, CH * .58); }
+  // the line, typed out
+  const line = smLine(id);
+  if (line && k4 > 0) { c.globalAlpha = 1; const n = Math.floor(line.length * Math.min(1, (p - .9) / 1.6)); c.font = '700 ' + (20 * u) + 'px "Noto Sans JP",sans-serif'; c.fillStyle = '#fff'; c.textAlign = 'center';
+    c.lineWidth = 5 * u; c.strokeStyle = 'rgba(6,3,10,.9)'; const s = '「' + line.slice(0, n) + (n < line.length ? '' : '」'); c.strokeText(s, CW / 2, CH - CH * .11 - 18 * u); c.fillText(s, CW / 2, CH - CH * .11 - 18 * u); }
+  c.globalAlpha = 1;
+}
+
 /* ---------- STORY MODE ----------
    SUZUNE alone -> beat the 11 other fighters in a random order (each one you beat joins you) -> BOSS SHUTEN (pick 2) -> ending.
    Every stage the foe gets more health and hits harder. Progress is kept in localStorage. */
@@ -4715,6 +4905,7 @@ function prefetchPump() {
 }
 function prefetchStop() { PREF.on = false; PREF.q.length = 0; }
 function showScreen(id) {
+  if (id !== 'smap' && typeof SM !== 'undefined' && SM.on) smClose();
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id));
   if (id === null) prefetchStop();
   else if (id === 'title') prefetchFighters(['suzune']);
@@ -4863,20 +5054,20 @@ function setupUI() {
     showScreen('story'); $('#story').classList.remove('anim'); void $('#story').offsetWidth; $('#story').classList.add('anim');
   }
   function storyCard() {
-    G.scene = 'title'; const d = STORY.d, n = STORY_N();
+    G.scene = 'title'; const d = STORY.d;
+    const from = d.stage === 0 ? 'suzune' : d.order[Math.min(d.stage, d.order.length) - 1];
+    const reset = d.stage > 0 ? () => { if (confirm('ストーリーを最初からやり直すッスか？（仲間はSUZUNEだけに戻ります）')) { STORY.d = storyNew(); storySave(); storyCard(); } } : null;
+    bgmTrack('title', .7);
     if (storyIsBoss()) {
       prefetchFighters(['shuten'].concat(d.unlocked), true);
-      storyScreen({ kicker: `FINAL STAGE  ${n} / ${n}`, title: '鬼王 SHUTEN', img: portrait('shuten'), bg: bgPoster('shuten'),
-        text: `11人の戦士を退けたその先で、血の海から鬼王が目を覚ます——。<br><b>仲間から2人を選び、タッグで挑め！</b><br><span class="st-stat">体力 ×5　攻撃力 ×1.5　巨体・スーパーアーマー</span>`,
-        buttons: [['2人を選んで挑む', () => storyPick(true)], ['タイトルへ', storyToTitle, 1]] });
+      smOpen({ from, to: 'shuten', boss: true, onFight: () => storyPick(true), onTitle: storyToTitle, onReset: reset,
+        caption: '11人の戦士を退けたその先で、\n血の海から鬼王が目を覚ます——。' });
       return;
     }
-    const opp = d.order[d.stage], m = storyMul(d.stage);
+    const opp = d.order[d.stage];
     prefetchFighters([opp].concat(d.unlocked.slice().reverse()), true);
-    storyScreen({ kicker: `STAGE ${d.stage + 1} / ${n}`, title: `VS ${CHARS[opp].name}`, img: portrait(opp), bg: bgPoster(opp),
-      text: (d.stage === 0 ? '2029年、東京スカイデッキ。時空の歪みに呼ばれた戦士たちが集う——。<br>SUZUNEの戦いが、ここから始まるッス。<br>' : '') +
-        `<b>${CHARS[opp].name}</b>（${CHARS[opp].role || ''}）が立ちはだかる！<br><span class="st-stat">敵 体力 ×${m.hp.toFixed(2)}　攻撃力 ×${m.atk.toFixed(1)}</span>`,
-      buttons: [[d.unlocked.length > 1 ? 'キャラを選んで戦う' : 'SUZUNEで戦う', () => storyPick(false)], ['タイトルへ', storyToTitle, 1]].concat(d.stage > 0 ? [['最初から', () => { if (confirm('ストーリーを最初からやり直すッスか？（仲間はSUZUNEだけに戻ります）')) { STORY.d = storyNew(); storySave(); storyCard(); } }, 1]] : []) });
+    smOpen({ from, to: opp, single: d.unlocked.length === 1, onFight: () => storyPick(false), onTitle: storyToTitle, onReset: reset,
+      caption: d.stage === 0 ? '2029年、東京スカイデッキ。時空の歪みに呼ばれた戦士たちが集う——。\nSUZUNEの戦いが、ここから始まるッス。' : '' });
   }
   function storyPick(boss) {
     G.mode = 'cpu'; G.boss = boss; pickStep = 0; G.sel = [];
