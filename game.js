@@ -4739,7 +4739,7 @@ function smButtons() {
 }
 function smFrame(now) {
   if (!SM.on) return;
-  const dt = Math.min(.05, (now - SM.last) / 1000); SM.last = now; SM.t += dt; SM.pt += dt;
+  const dt = clamp((now - SM.last) / 1000, 0, .05); SM.last = now; SM.t += dt; SM.pt += dt;   // clamp: a rAF stamp can predate smOpen's performance.now(), never run time backwards
   const o = SM.opts, W2 = SM.walk;
   // ---- sequence ----
   if (SM.phase === 'win' && SM.pt > smWinDur()) { SM.phase = 'intro'; SM.pt = 0; }
@@ -4818,7 +4818,7 @@ function smChibi(c, P, V) {
   c.save(); c.fillStyle = 'rgba(0,0,0,.45)'; c.beginPath(); c.ellipse(x, y, 22 * V.s, 7 * V.s, 0, 0, TAU); c.fill(); c.restore();
   if (ch && ch.ok) {
     const win = SM.phase === 'win' && ch.a.win, an = win ? ch.a.win : ch.a[moving ? 'walk' : 'idle'] || ch.a.walk;
-    const fr = win ? an.fr[Math.min(an.fr.length - 1, Math.floor(SM.pt * an.fps))] : an.fr[Math.floor(SM.t * an.fps) % an.fr.length], im = ch.imgs[fr.src];   // win plays once
+    const fr = win ? an.fr[clamp(Math.floor(SM.pt * an.fps), 0, an.fr.length - 1)] : an.fr[Math.max(0, Math.floor(SM.t * an.fps)) % an.fr.length], im = ch.imgs[fr.src];   // win plays once
     if (im && im.complete && im.naturalWidth) { const k = ch.k * V.s; c.save(); c.translate(x, y); c.scale(W2.dir, 1); c.drawImage(im, fr.x, fr.y, fr.sw, fr.sh, fr.ox * k, fr.oy * k, fr.w * k, fr.h * k); c.restore(); }
     return;
   }
