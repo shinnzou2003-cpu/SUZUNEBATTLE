@@ -410,6 +410,40 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 .seg[hidden]{display:none}
 .card.locked{filter:grayscale(1) brightness(.3)}
 .card.locked::before{content:"LOCK";position:absolute;inset:0;z-index:3;display:grid;place-items:center;font:800 clamp(14px,2vw,22px) 'Chakra Petch',sans-serif;letter-spacing:.3em;color:rgba(255,255,255,.85)}
+#reward{position:fixed;inset:0;z-index:31;display:none;overflow:hidden;color:#fff;background:#07040c}
+#reward.on{display:block}
+#reward .rw-bg{position:absolute;inset:-20%;background:conic-gradient(from 0deg at 30% 55%,rgba(255,200,90,.0),rgba(255,200,90,.22) 8%,rgba(255,200,90,0) 16%,rgba(255,120,160,.16) 30%,rgba(255,200,90,0) 40%,rgba(255,200,90,.2) 56%,rgba(255,200,90,0) 66%,rgba(140,120,255,.16) 82%,rgba(255,200,90,0));animation:rwSpin 18s linear infinite;opacity:0;transition:opacity 1.2s}
+#reward.lit .rw-bg{opacity:1}
+@keyframes rwSpin{to{transform:rotate(360deg)}}
+#rwImg{position:absolute;left:-2vw;bottom:0;height:min(96vh,62vw);max-width:52vw;object-fit:cover;object-position:50% 20%;-webkit-mask-image:linear-gradient(90deg,#000 62%,transparent);mask-image:linear-gradient(90deg,#000 62%,transparent);opacity:0;transform:translateX(-6vw);transition:opacity .8s,transform 1s cubic-bezier(.2,.9,.2,1)}
+#reward.in #rwImg{opacity:1;transform:none}
+.rw-panel{position:absolute;right:4vw;top:50%;transform:translateY(-50%);width:min(52vw,640px);text-align:left}
+.rw-kick{margin:0;font:700 clamp(13px,1.8vw,20px) 'Chakra Petch',sans-serif;letter-spacing:.42em;color:#ffc96a;opacity:0;transform:translateX(30px);transition:.6s cubic-bezier(.2,.9,.2,1)}
+.rw-kick b{color:#fff}
+#reward.in .rw-kick{opacity:1;transform:none}
+.rw-amt{font:800 clamp(54px,11vw,150px)/1 'Chakra Petch',sans-serif;letter-spacing:.02em;margin:.12em 0 .05em;white-space:nowrap;color:#fff;opacity:0;transition:opacity .3s}
+#reward.roll .rw-amt{opacity:1}
+.rw-amt .rw-yen{font-size:.55em;margin-right:.08em;color:#ffc96a}
+#rwNum{display:inline-block;font-variant-numeric:tabular-nums;filter:blur(1.5px)}
+#reward.got #rwNum{filter:none;background:linear-gradient(180deg,#fff7d6,#ffc96a 55%,#ff9d3a);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;animation:rwPop .55s cubic-bezier(.2,1.6,.3,1)}
+#reward.got .rw-amt{filter:drop-shadow(0 0 22px rgba(255,190,80,.65))}
+@keyframes rwPop{0%{transform:scale(1.7)}100%{transform:none}}
+.rw-state{margin:0;font:700 clamp(14px,1.9vw,21px) var(--serif);color:#ddd;min-height:1.4em}
+.rw-code{margin:.7em 0 .3em;display:inline-block;padding:.35em .7em;border:1px solid rgba(255,201,106,.6);background:rgba(10,6,20,.75);font:700 clamp(17px,2.6vw,30px) 'Chakra Petch',monospace;letter-spacing:.14em;opacity:0;transform:translateY(10px);transition:.5s}
+.rw-code small{display:block;font:600 .42em 'Chakra Petch',sans-serif;letter-spacing:.3em;color:#ffc96a;margin-bottom:.2em}
+#reward.code .rw-code{opacity:1;transform:none}
+.rw-how{margin:.4em 0 .9em;font-size:clamp(12px,1.5vw,16px);line-height:1.7;color:#ddd;opacity:0;transition:opacity .6s}
+.rw-how b{color:#ffc96a}
+#reward.how .rw-how{opacity:1}
+#rwDone{visibility:hidden;opacity:0;transition:opacity .5s}
+#reward.done #rwDone{visibility:visible;opacity:1}
+.rw-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+#reward.got .rw-flash{animation:rwFlash .5s ease-out}
+@keyframes rwFlash{0%{opacity:.85}100%{opacity:0}}
+#reward.shake .rw-panel{animation:rwShake .35s}
+@keyframes rwShake{0%,100%{transform:translateY(-50%)}25%{transform:translate(-8px,calc(-50% + 5px))}50%{transform:translate(7px,calc(-50% - 4px))}75%{transform:translate(-4px,calc(-50% + 2px))}}
+@media (max-height:500px){.rw-amt{font-size:clamp(48px,9vw,110px)}.rw-how{margin-bottom:.5em}}
+@media (orientation:portrait){#rwImg{max-width:none;width:100vw;height:52vh;top:0;bottom:auto;left:0;-webkit-mask-image:linear-gradient(180deg,#000 60%,transparent);mask-image:linear-gradient(180deg,#000 60%,transparent)}.rw-panel{left:6vw;right:6vw;width:auto;top:auto;bottom:5vh;transform:none}#reward.shake .rw-panel{animation:none}}
 #storyEnd{position:fixed;inset:0;z-index:30;display:none;background:radial-gradient(ellipse at 50% 30%,#2a1430,#07040c 70%);overflow:hidden;color:#fff;text-align:center}
 #storyEnd.on{display:block}
 #seRoll{position:absolute;left:0;right:0;top:100%;display:flex;flex-direction:column;align-items:center;gap:22px;animation:seRoll 48s linear forwards}
@@ -513,6 +547,18 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
   </div>
 </section>
 <div id="storyEnd" aria-label="エンディング"><div id="seRoll"></div><p class="se-skip">タップでタイトルへ</p></div>
+<div id="reward" aria-label="クリア報酬">
+  <div class="rw-bg"></div><img id="rwImg" src="assets/title_suzune.webp" alt="">
+  <div class="rw-panel">
+    <p class="rw-kick">STORY CLEAR <b>REWARD</b></p>
+    <div class="rw-amt"><span class="rw-yen">¥</span><span id="rwNum">0,000</span></div>
+    <p class="rw-state" id="rwState">報酬額を決定中…</p>
+    <div class="rw-code" id="rwCode"></div>
+    <p class="rw-how" id="rwHow"></p>
+    <button class="pbtn" id="rwDone" type="button">タイトルへ</button>
+  </div>
+  <div class="rw-flash"></div>
+</div>
 
 <section class="screen" id="result" aria-label="結果">
   <img id="resImg" alt="">
@@ -592,6 +638,6 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 <div id="loading">読み込み中… <span id="loadPct">0%</span></div>
 
 <script>window.ASSETS={"su": "assets/suzune.webp", "ao": "assets/aoi.webp", "drone": "assets/drone.webp", "suci": "assets/suzune_cutin.webp", "aoci": "assets/aoi_cutin.webp", "ar": "assets/arca.webp", "arci": "assets/arca_cutin.webp", "arp": "assets/arca_pilot.webp", "arcard": "assets/arca_card.webp", "tsu": "assets/title_suzune.webp", "tao": "assets/title_aoi.webp", "tar": "assets/title_arca.webp", "tsa": "assets/title_sakura.webp", "sa": "assets/sakura.webp", "saci": "assets/sakura_cutin.webp", "sacard": "assets/sakura_card.webp", "mi": "assets/mio.webp", "mici": "assets/mio_cutin.webp", "micard": "assets/mio_card.webp", "ar2": "assets/aria.webp", "ar2ci": "assets/aria_cutin.webp", "ar2card": "assets/aria_card.webp", "tari": "assets/title_aria.webp", "en": "assets/enjo.webp", "enci": "assets/enjo_cutin.webp", "encard": "assets/enjo_card.webp", "enskull": "assets/enjo_skull.webp", "tenj": "assets/title_enjo.webp", "re": "assets/rei.webp", "reci": "assets/rei_cutin.webp", "recard": "assets/rei_card.webp", "trei": "assets/title_rei.webp", "ka": "assets/kanna.webp", "kaci": "assets/kanna_cutin.webp", "kacard": "assets/kanna_card.webp", "tkan": "assets/title_kanna.webp", "ic": "assets/ichika.webp", "icci": "assets/ichika_cutin.webp", "iccard": "assets/ichika_card.webp", "tich": "assets/title_ichika.webp", "is": "assets/isana.webp", "isci": "assets/isana_cutin.webp", "iscard": "assets/isana_card.webp", "tisa": "assets/title_isana.webp", "tmi": "assets/title_mio.webp", "nx": "assets/noxnix.webp", "nxci": "assets/noxnix_cutin.webp", "nxcard": "assets/noxnix_card.webp", "tnx": "assets/title_noxnix.webp", "sh": "assets/shuten.webp", "shci": "assets/shuten_cutin.webp", "shcard": "assets/shuten_card.webp"};</script>
-<script src="game.js?v=20261009a"></script>
+<script src="game.js?v=20261010a"></script>
 </body>
 </html>
