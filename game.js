@@ -4695,6 +4695,7 @@ function smLoad() {
   }
 }
 const SM_LINE_FALLBACK = { enjo: '煙女、エンジョ。胴元のお相手、してくださる？', isana: 'イサナだ。お宝の匂いがするねぇ……引き揚げさせてもらうよ。', noxnix: 'ねえ、今夜いちばん楽しいのはどこ？ ……ここ、みたいだね！', shuten: '我は鬼王、酒呑。' };
+const smWinDur = () => { const w = SM.chibi && SM.chibi.ok && SM.chibi.a.win; return w ? w.fr.length / w.fps + .3 : 0; };   // 0 until the sprite has loaded: skip straight to the walk
 const smLine = id => (SM.lines && SM.lines[id] && SM.lines[id].select) || SM_LINE_FALLBACK[id] || '';
 function smCutin(id) {   // the rival's close-up (the round-win cut-in clip)
   if (SM.ci[id]) return SM.ci[id];
@@ -4722,7 +4723,7 @@ function smOpen(opts) {   // opts: { from, to, boss, onFight, onTitle, onReset }
   const a = SMAP_NODES[opts.from] || SMAP_NODES.suzune, b = SMAP_NODES[opts.to];
   SM.from = a; SM.target = b; SM.cam = { x: a[0], y: a[1], z: 1.05 };
   SM.walk = { t: 0, dur: clamp(Math.hypot(b[0] - a[0], b[1] - a[1]) / 260, 1.6, 3.6), pos: a.slice(), dir: Math.sign(b[0] - a[0]) || 1 };
-  SM.phase = 'intro'; SM.pt = 0; SM.card = null; SM.btns = false;
+  SM.phase = opts.won ? 'win' : 'intro'; SM.pt = 0; SM.card = null; SM.btns = false;   // won: chibi SUZUNE celebrates on the cleared stage first
   if (!SM.fog.length) for (let i = 0; i < 9; i++) SM.fog.push({ x: Math.random() * SMAP_W, y: 80 + Math.random() * 700, r: 160 + Math.random() * 220, v: 6 + Math.random() * 10, a: .05 + Math.random() * .06 });
   document.getElementById('smBtns').innerHTML = ''; document.getElementById('smBtns').classList.remove('on');
   cancelAnimationFrame(SM.raf); SM.last = performance.now(); SM.raf = requestAnimationFrame(smFrame);
@@ -4741,6 +4742,7 @@ function smFrame(now) {
   const dt = Math.min(.05, (now - SM.last) / 1000); SM.last = now; SM.t += dt; SM.pt += dt;
   const o = SM.opts, W2 = SM.walk;
   // ---- sequence ----
+  if (SM.phase === 'win' && SM.pt > smWinDur()) { SM.phase = 'intro'; SM.pt = 0; }
   if (SM.phase === 'intro' && SM.pt > .7) { SM.phase = 'walk'; SM.pt = 0; }
   if (SM.phase === 'walk') {
     W2.t = Math.min(1, SM.pt / W2.dur); const e = W2.t < .5 ? 2 * W2.t * W2.t : 1 - Math.pow(-2 * W2.t + 2, 2) / 2;
@@ -4751,7 +4753,7 @@ function smFrame(now) {
   if (SM.phase === 'arrive' && SM.pt > .7) { SM.phase = 'card'; SM.pt = 0; SM.card = { id: o.to, ci: smCutin(o.to) }; voice(o.to === 'shuten' ? 'shuten' : o.to, 'select', { delay: .5 }); if (o.boss) playS('impact_big', .7, .8); }
   if (SM.phase === 'card' && SM.pt > 1.2 && !SM.btns) { SM.btns = true; smButtons(); }
   // ---- camera ----
-  const tgtZ = SM.phase === 'intro' ? 1.05 : SM.phase === 'walk' ? 1.35 : 2.1, follow = SM.phase === 'card' || SM.phase === 'arrive' ? SM.target : W2.pos;
+  const tgtZ = SM.phase === 'win' ? 1.6 : SM.phase === 'intro' ? 1.05 : SM.phase === 'walk' ? 1.35 : 2.1, follow = SM.phase === 'card' || SM.phase === 'arrive' ? SM.target : W2.pos;
   const k = 1 - Math.pow(.02, dt);
   SM.cam.z += (tgtZ - SM.cam.z) * k; SM.cam.x += (follow[0] + (SM.phase === 'card' ? 140 / SM.cam.z : 0) - SM.cam.x) * k; SM.cam.y += (follow[1] - SM.cam.y) * k;
   smDraw(dt);
@@ -4815,7 +4817,8 @@ function smChibi(c, P, V) {
   const W2 = SM.walk; if (!W2) return; const [x, y] = P(W2.pos[0], W2.pos[1]), moving = SM.phase === 'walk', ch = SM.chibi;
   c.save(); c.fillStyle = 'rgba(0,0,0,.45)'; c.beginPath(); c.ellipse(x, y, 22 * V.s, 7 * V.s, 0, 0, TAU); c.fill(); c.restore();
   if (ch && ch.ok) {
-    const an = ch.a[moving ? 'walk' : (SM.phase === 'card' ? 'idle' : 'idle')] || ch.a.walk, fr = an.fr[Math.floor(SM.t * an.fps) % an.fr.length], im = ch.imgs[fr.src];
+    const win = SM.phase === 'win' && ch.a.win, an = win ? ch.a.win : ch.a[moving ? 'walk' : 'idle'] || ch.a.walk;
+    const fr = win ? an.fr[Math.min(an.fr.length - 1, Math.floor(SM.pt * an.fps))] : an.fr[Math.floor(SM.t * an.fps) % an.fr.length], im = ch.imgs[fr.src];   // win plays once
     if (im && im.complete && im.naturalWidth) { const k = ch.k * V.s; c.save(); c.translate(x, y); c.scale(W2.dir, 1); c.drawImage(im, fr.x, fr.y, fr.sw, fr.sh, fr.ox * k, fr.oy * k, fr.w * k, fr.h * k); c.restore(); }
     return;
   }
@@ -4866,7 +4869,7 @@ function smCard(c, CW, CH, u) {   // arrival: letterbox, the rival's close-up in
 /* ---------- STORY MODE ----------
    SUZUNE alone -> beat the 11 other fighters in a random order (each one you beat joins you) -> BOSS SHUTEN (pick 2) -> ending.
    Every stage the foe gets more health and hits harder. Progress is kept in localStorage. */
-const STORY = { on: false, d: null };
+const STORY = { on: false, d: null, justWon: false };
 const STORY_ROSTER = () => Object.keys(CHARS).filter(id => !CHARS[id].boss);
 const STORY_N = () => STORY_ROSTER().length;   // 11 rivals + the boss = 12 stages
 function storyMul(stage) { return { hp: 1 + .15 * stage, atk: 1 + .1 * stage }; }
@@ -5056,17 +5059,18 @@ function setupUI() {
   function storyCard() {
     G.scene = 'title'; const d = STORY.d;
     const from = d.stage === 0 ? 'suzune' : d.order[Math.min(d.stage, d.order.length) - 1];
+    const won = STORY.justWon; STORY.justWon = false;   // only right after a cleared stage, not when the map is reopened
     const reset = d.stage > 0 ? () => { if (confirm('ストーリーを最初からやり直すッスか？（仲間はSUZUNEだけに戻ります）')) { STORY.d = storyNew(); storySave(); storyCard(); } } : null;
     bgmTrack('title', .7);
     if (storyIsBoss()) {
       prefetchFighters(['shuten'].concat(d.unlocked), true);
-      smOpen({ from, to: 'shuten', boss: true, onFight: () => storyPick(true), onTitle: storyToTitle, onReset: reset,
+      smOpen({ from, to: 'shuten', boss: true, won, onFight: () => storyPick(true), onTitle: storyToTitle, onReset: reset,
         caption: '11人の戦士を退けたその先で、\n血の海から鬼王が目を覚ます——。' });
       return;
     }
     const opp = d.order[d.stage];
     prefetchFighters([opp].concat(d.unlocked.slice().reverse()), true);
-    smOpen({ from, to: opp, single: d.unlocked.length === 1, onFight: () => storyPick(false), onTitle: storyToTitle, onReset: reset,
+    smOpen({ from, to: opp, won, single: d.unlocked.length === 1, onFight: () => storyPick(false), onTitle: storyToTitle, onReset: reset,
       caption: d.stage === 0 ? '2029年、東京スカイデッキ。時空の歪みに呼ばれた戦士たちが集う——。\nSUZUNEの戦いが、ここから始まるッス。' : '' });
   }
   function storyPick(boss) {
@@ -5093,7 +5097,7 @@ function setupUI() {
         return;
       }
       if (storyIsBoss()) { d.cleared = true; d.unlocked = STORY_ROSTER(); storySave(); storyEnding(); return; }
-      const got = d.order[d.stage]; if (!d.unlocked.includes(got)) d.unlocked.push(got); d.stage++; storySave();
+      const got = d.order[d.stage]; if (!d.unlocked.includes(got)) d.unlocked.push(got); d.stage++; storySave(); STORY.justWon = true;
       sfx.cutin(); voice(got, 'select', { delay: .3 });
       storyScreen({ kicker: `STAGE ${d.stage} CLEAR`, title: `${CHARS[got].name} が仲間になった！`, img: portrait(got), bg: bgPoster(got),
         text: `次のステージから <b>${CHARS[got].name}</b> を使えるッス。<br>仲間 ${d.unlocked.length} / ${STORY_N()}`,
