@@ -608,7 +608,7 @@ function duckFor(t0, dur) {
   } g.cancelScheduledValues(t0); g.setValueAtTime(g.value, t0);
   g.linearRampToValueAtTime(.42, t0 + .08); g.setValueAtTime(.42, t0 + dur); g.linearRampToValueAtTime(1, t0 + dur + .45);
 }
-const VOICE_REV = '20261007';   // bump when clips are re-recorded so browsers drop the cached ones (ISANA re-voiced 2026-10-06)
+const VOICE_REV = '20261009';   // bump when clips are re-recorded so browsers drop the cached ones (re_14 re-cut 2026-10-09)
 async function loadVoices() {
   if (!SND.ac) return;
   const ids = new Set(); Object.values(VOICE_MAP).forEach(m => Object.values(m).forEach(l => l.forEach(i => ids.add(i))));
