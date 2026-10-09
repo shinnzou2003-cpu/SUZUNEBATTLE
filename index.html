@@ -435,8 +435,18 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 .rw-how{margin:.4em 0 .9em;font-size:clamp(12px,1.5vw,16px);line-height:1.7;color:#ddd;opacity:0;transition:opacity .6s}
 .rw-how b{color:#ffc96a}
 #reward.how .rw-how{opacity:1}
-#rwDone{visibility:hidden;opacity:0;transition:opacity .5s}
-#reward.done #rwDone{visibility:visible;opacity:1}
+#rwNext{visibility:hidden;opacity:0;transition:opacity .5s}
+#reward.done #rwNext{visibility:visible;opacity:1}
+#reward .rw-p2{display:none}
+#reward.p2 .rw-p1{display:none}
+#reward.p2 .rw-p2{display:block;animation:stIn .5s cubic-bezier(.2,.9,.2,1)}
+#reward.p2 .rw-bg{opacity:.35}
+.rw-p2 .rw-kick{opacity:1;transform:none}
+.rw-p2 .rw-code{opacity:1;transform:none;font-size:clamp(20px,3.2vw,38px)}
+.rw-warn{margin:.5em 0 0;font:700 clamp(15px,2vw,22px) var(--serif);color:#fff}
+.rw-warn b{color:#ff6a7a}
+.rw-how2{margin:.5em 0 1em;font-size:clamp(12px,1.5vw,16px);line-height:1.75;color:#ddd}
+.rw-how2 b{color:#ffc96a}
 .rw-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
 #reward.got .rw-flash{animation:rwFlash .5s ease-out}
 @keyframes rwFlash{0%{opacity:.85}100%{opacity:0}}
@@ -549,12 +559,18 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 <div id="storyEnd" aria-label="エンディング"><div id="seRoll"></div><p class="se-skip">タップでタイトルへ</p></div>
 <div id="reward" aria-label="クリア報酬">
   <div class="rw-bg"></div><img id="rwImg" src="assets/title_suzune.webp" alt="">
-  <div class="rw-panel">
+  <div class="rw-panel rw-p1">
     <p class="rw-kick">STORY CLEAR <b>REWARD</b></p>
     <div class="rw-amt"><span class="rw-yen">¥</span><span id="rwNum">0,000</span></div>
     <p class="rw-state" id="rwState">報酬額を決定中…</p>
-    <div class="rw-code" id="rwCode"></div>
     <p class="rw-how" id="rwHow"></p>
+    <button class="pbtn" id="rwNext" type="button">次へ（受け取りコード）</button>
+  </div>
+  <div class="rw-panel rw-p2">
+    <p class="rw-kick">CLEAR <b>CODE</b></p>
+    <p class="rw-warn">⚠ このコードは<b>公開しないで</b>ッス！</p>
+    <div class="rw-code" id="rwCode"></div>
+    <p class="rw-how2" id="rwHow2"></p>
     <button class="pbtn" id="rwDone" type="button">タイトルへ</button>
   </div>
   <div class="rw-flash"></div>
@@ -638,6 +654,6 @@ body.portrait:not(.rotate-dismissed) #rotate{display:flex}
 <div id="loading">読み込み中… <span id="loadPct">0%</span></div>
 
 <script>window.ASSETS={"su": "assets/suzune.webp", "ao": "assets/aoi.webp", "drone": "assets/drone.webp", "suci": "assets/suzune_cutin.webp", "aoci": "assets/aoi_cutin.webp", "ar": "assets/arca.webp", "arci": "assets/arca_cutin.webp", "arp": "assets/arca_pilot.webp", "arcard": "assets/arca_card.webp", "tsu": "assets/title_suzune.webp", "tao": "assets/title_aoi.webp", "tar": "assets/title_arca.webp", "tsa": "assets/title_sakura.webp", "sa": "assets/sakura.webp", "saci": "assets/sakura_cutin.webp", "sacard": "assets/sakura_card.webp", "mi": "assets/mio.webp", "mici": "assets/mio_cutin.webp", "micard": "assets/mio_card.webp", "ar2": "assets/aria.webp", "ar2ci": "assets/aria_cutin.webp", "ar2card": "assets/aria_card.webp", "tari": "assets/title_aria.webp", "en": "assets/enjo.webp", "enci": "assets/enjo_cutin.webp", "encard": "assets/enjo_card.webp", "enskull": "assets/enjo_skull.webp", "tenj": "assets/title_enjo.webp", "re": "assets/rei.webp", "reci": "assets/rei_cutin.webp", "recard": "assets/rei_card.webp", "trei": "assets/title_rei.webp", "ka": "assets/kanna.webp", "kaci": "assets/kanna_cutin.webp", "kacard": "assets/kanna_card.webp", "tkan": "assets/title_kanna.webp", "ic": "assets/ichika.webp", "icci": "assets/ichika_cutin.webp", "iccard": "assets/ichika_card.webp", "tich": "assets/title_ichika.webp", "is": "assets/isana.webp", "isci": "assets/isana_cutin.webp", "iscard": "assets/isana_card.webp", "tisa": "assets/title_isana.webp", "tmi": "assets/title_mio.webp", "nx": "assets/noxnix.webp", "nxci": "assets/noxnix_cutin.webp", "nxcard": "assets/noxnix_card.webp", "tnx": "assets/title_noxnix.webp", "sh": "assets/shuten.webp", "shci": "assets/shuten_cutin.webp", "shcard": "assets/shuten_card.webp"};</script>
-<script src="game.js?v=20261010a"></script>
+<script src="game.js?v=20261010b"></script>
 </body>
 </html>

@@ -4675,7 +4675,7 @@ function rwEnd() {
 function stopStage() { document.querySelectorAll('.stage-vid').forEach(x => { try { x.pause(); } catch (e) { } }); }
 /* ---------- CLEAR REWARD (prize event) ----------
    event.json switches the event on/off and caps the amount by the pool that is left.
-   The clear code packs amount + day + a random id and a 24-bit check; verify.html decodes it.
+   The clear code packs amount (100-yen units) + JST day + a random id and a 24-bit check; verify.html decodes it.
    (It is a client-side check, so the organiser still confirms each claim by hand.) */
 const RW_B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ', RW_EPOCH = Date.UTC(2026, 0, 1);
 const RW_K = ['c', 'h', 'r', 'o', 'n', 'o', '-', 's', 'z', 'o', 'u', '-', '2', '0', '2', '9'].join('');
@@ -4685,7 +4685,7 @@ function rwCheck(p) {   // p: BigInt payload -> 24-bit check
   return h & 0xffffff;
 }
 function rwEncode(amount, day, rnd) {
-  const p = (BigInt(amount / 1000 | 0) << 32n) | (BigInt(day & 0xfff) << 20n) | BigInt(rnd & 0xfffff), v = (p << 24n) | BigInt(rwCheck(p));
+  const p = (BigInt(amount / 100 | 0) << 29n) | (BigInt(day & 0xfff) << 17n) | BigInt(rnd & 0x1ffff), v = (p << 24n) | BigInt(rwCheck(p));
   let s = ''; for (let i = 0; i < 12; i++) s = RW_B32[Number((v >> BigInt(5 * i)) & 31n)] + s;
   return 'CF-' + s.slice(0, 4) + '-' + s.slice(4, 8) + '-' + s.slice(8);
 }
@@ -4694,10 +4694,18 @@ function rwDecode(code) {
   c = c.replace(/[OIL]/g, m => m === 'O' ? '0' : '1');
   if (c.length !== 12) return { ok: false };
   let v = 0n; for (const ch of c) { const k = RW_B32.indexOf(ch); if (k < 0) return { ok: false }; v = (v << 5n) | BigInt(k); }
-  const p = v >> 24n, ok = Number(v & 0xffffffn) === rwCheck(p), amount = Number(p >> 32n) * 1000, day = Number((p >> 20n) & 0xfffn);
-  return { ok: ok && amount >= 1000 && amount <= 10000, amount, date: new Date(RW_EPOCH + day * 864e5), id: Number(p & 0xfffffn) };
+  const p = v >> 24n, ok = Number(v & 0xffffffn) === rwCheck(p), amount = Number(p >> 29n) * 100, day = Number((p >> 17n) & 0xfffn);
+  return { ok: ok && amount >= 100 && amount <= 10000, amount, date: new Date(RW_EPOCH + day * 864e5), id: Number(p & 0x1ffffn) };
 }
 window.rwDecode = rwDecode;
+// prize table: 3,000 yen and up is rarer (about 1 in 4), the top band about 1 in 33. event.json "tiers" overrides it.
+const RW_TIERS = [[100, 900, 35], [1000, 2900, 40], [3000, 4900, 15], [5000, 7900, 7], [8000, 10000, 3]];
+function rwRoll(ev, seed) {
+  const tiers = (ev && ev.tiers) || RW_TIERS, tot = tiers.reduce((a, t) => a + t[2], 0);
+  const r1 = (seed % 100000) / 100000 * tot, r2 = ((seed >>> 7) % 9973) / 9973;
+  let acc = 0; for (const [lo, hi, w] of tiers) { acc += w; if (r1 < acc) return lo + Math.floor(r2 * ((hi - lo) / 100 + 1)) * 100; }
+  return tiers[0][0];
+}
 /* ---------- STORY MAP: 2029 IF TOKYO ----------
    The story's stage select. The city map (GPT image) gets motion graphics drawn over it: drifting fog, twinkling lights,
    light running along the routes, beacons on the stages, embers over the demon castle. Chibi SUZUNE walks from the last
@@ -5149,30 +5157,32 @@ function setupUI() {
     if (!ev || !ev.active) return false;
     let saved = null; try { saved = JSON.parse(localStorage.getItem('cf_reward') || 'null'); } catch (e) { }
     if (saved && saved.ev !== ev.id) saved = null;
-    const lo = Math.max(1, (ev.min || 1000) / 1000 | 0), hi0 = (ev.max || 10000) / 1000 | 0, hi = Math.min(hi0, Math.floor((ev.remaining == null ? ev.pool : ev.remaining) / 1000));
-    if (!saved && hi < lo) return false;   // pool used up: plain ending
+    const left = ev.remaining == null ? ev.pool : ev.remaining, cap = Math.min(ev.max || 10000, Math.floor(left / 100) * 100);
+    if (!saved && cap < (ev.min || 100)) return false;   // pool used up: plain ending
     let r = saved;
     if (!r) {
       const rnd = (crypto.getRandomValues ? crypto.getRandomValues(new Uint32Array(1))[0] : Math.random() * 2 ** 32) >>> 0;
-      const amount = (lo + rnd % (hi - lo + 1)) * 1000, day = Math.floor((Date.now() + 9 * 36e5 - RW_EPOCH) / 864e5);   // JST day
+      const amount = Math.min(cap, rwRoll(ev, rnd)), day = Math.floor((Date.now() + 9 * 36e5 - RW_EPOCH) / 864e5);   // JST day
       r = { ev: ev.id, amount, code: rwEncode(amount, day, rnd >>> 4), at: Date.now() };
       try { localStorage.setItem('cf_reward', JSON.stringify(r)); } catch (e) { }
     }
     const el = $('#reward'), num = $('#rwNum'), st = $('#rwState'), fmt = n => n.toLocaleString('ja-JP'), T = [];
     const at = (ms, fn) => T.push(setTimeout(fn, ms));
-    el.className = 'on'; num.textContent = '0,000'; st.textContent = ''; $('#rwCode').innerHTML = ''; $('#rwHow').innerHTML = '';
+    el.className = 'on'; num.textContent = '0,000'; st.textContent = ''; $('#rwHow').innerHTML = '';
     bgmTrack('title', .5);
     at(100, () => { el.classList.add('in'); sfx.cutin && sfx.cutin(); });
     at(900, () => { el.classList.add('roll'); st.textContent = saved ? 'あなたのクリア報酬（1端末1回）' : '報酬額を決定中…'; });
     let spin = null;
-    at(950, () => { spin = setInterval(() => { num.textContent = fmt((1 + Math.random() * 10 | 0) * 1000 + (Math.random() * 1000 | 0)); tone(.025, 900 + Math.random() * 500, 700, .02, 'square'); }, 55); });
+    at(950, () => { spin = setInterval(() => { num.textContent = fmt((1 + Math.random() * 100 | 0) * 100); tone(.025, 900 + Math.random() * 500, 700, .02, 'square'); }, 55); });
     at(3600, () => { clearInterval(spin); num.textContent = fmt(r.amount); el.classList.add('got', 'lit', 'shake'); playS('impact_big', .9); quake && quake(10, .4);
       st.textContent = saved ? 'あなたのクリア報酬（1端末1回）' : 'STORY CLEAR 報酬、ゲットッス！'; voice('suzune', 'win', { delay: .3 }); });
     at(4000, () => el.classList.remove('shake'));
-    at(4700, () => { $('#rwCode').innerHTML = '<small>CLEAR CODE</small>' + r.code; el.classList.add('code'); tone(.12, 1200, 1800, .05, 'triangle'); });
-    at(5500, () => { $('#rwHow').innerHTML = `この画面をスクショして <b>${ev.tag || '#CHRONOFIGHTクリア'}</b> を付けて<br>@szounft の告知ポストを<b>引用ポスト</b>！ 報酬プール ¥${fmt(ev.pool || 20000)}・<b>早い者勝ち</b>（なくなり次第終了）`; el.classList.add('how'); });
-    at(7500, () => el.classList.add('done'));
-    $('#rwDone').onclick = () => { if (!el.classList.contains('done')) return; T.forEach(clearTimeout); clearInterval(spin); el.className = ''; storyToTitle(); };
+    at(4900, () => { $('#rwHow').innerHTML = `この画面をスクショして <b>${ev.tag || '#CHRONOFIGHTクリア'}</b> を付けて<br>@szounft の告知ポストを<b>引用ポスト</b>！<br>報酬プール ¥${fmt(ev.pool || 20000)}・<b>早い者勝ち</b>（なくなり次第終了）`; el.classList.add('how'); });
+    at(7000, () => el.classList.add('done'));
+    $('#rwCode').innerHTML = '<small>CLEAR CODE　¥' + fmt(r.amount) + '</small>' + r.code;
+    $('#rwHow2').innerHTML = '受け取りに必要なコードッス。<b>このページもスクショして保存</b>してね。<br>引用ポストのあと、SZOU（@szounft）からの<b>DMでこのコードを送って</b>もらえたら、確認してお支払いするッス！<br>※1端末1回・同じ端末で再クリアしても同じコードが出ます';
+    $('#rwNext').onclick = () => { if (!el.classList.contains('done')) return; el.classList.add('p2'); tone(.12, 1200, 1800, .05, 'triangle'); };
+    $('#rwDone').onclick = () => { T.forEach(clearTimeout); clearInterval(spin); el.className = ''; storyToTitle(); };
     return true;
   }
   function storyBadge() { const b = document.querySelector('.mbtn[data-story] small'); const d = storyLoad(); if (b) b.textContent = !d ? 'SUZUNEから始まる12人の物語' : d.cleared ? '★CLEAR　もう一度最初から挑める' : `つづきから　STAGE ${Math.min(d.stage + 1, STORY_N())} / ${STORY_N()}`; }

@@ -33,7 +33,7 @@ function rwCheck(p) {   // p: BigInt payload -> 24-bit check
   return h & 0xffffff;
 }
 function rwEncode(amount, day, rnd) {
-  const p = (BigInt(amount / 1000 | 0) << 32n) | (BigInt(day & 0xfff) << 20n) | BigInt(rnd & 0xfffff), v = (p << 24n) | BigInt(rwCheck(p));
+  const p = (BigInt(amount / 100 | 0) << 29n) | (BigInt(day & 0xfff) << 17n) | BigInt(rnd & 0x1ffff), v = (p << 24n) | BigInt(rwCheck(p));
   let s = ''; for (let i = 0; i < 12; i++) s = RW_B32[Number((v >> BigInt(5 * i)) & 31n)] + s;
   return 'CF-' + s.slice(0, 4) + '-' + s.slice(4, 8) + '-' + s.slice(8);
 }
@@ -42,10 +42,9 @@ function rwDecode(code) {
   c = c.replace(/[OIL]/g, m => m === 'O' ? '0' : '1');
   if (c.length !== 12) return { ok: false };
   let v = 0n; for (const ch of c) { const k = RW_B32.indexOf(ch); if (k < 0) return { ok: false }; v = (v << 5n) | BigInt(k); }
-  const p = v >> 24n, ok = Number(v & 0xffffffn) === rwCheck(p), amount = Number(p >> 32n) * 1000, day = Number((p >> 20n) & 0xfffn);
-  return { ok: ok && amount >= 1000 && amount <= 10000, amount, date: new Date(RW_EPOCH + day * 864e5), id: Number(p & 0xfffffn) };
+  const p = v >> 24n, ok = Number(v & 0xffffffn) === rwCheck(p), amount = Number(p >> 29n) * 100, day = Number((p >> 17n) & 0xfffn);
+  return { ok: ok && amount >= 100 && amount <= 10000, amount, date: new Date(RW_EPOCH + day * 864e5), id: Number(p & 0x1ffffn) };
 }
-
 const $ = s => document.querySelector(s), fmt = n => '¥' + n.toLocaleString('ja-JP');
 const load = () => { try { return JSON.parse(localStorage.getItem('cf_paid') || '[]'); } catch (e) { return []; } };
 const save = l => { try { localStorage.setItem('cf_paid', JSON.stringify(l)); } catch (e) { } };
