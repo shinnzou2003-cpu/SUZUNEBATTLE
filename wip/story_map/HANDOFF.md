@@ -41,3 +41,13 @@ python tools/shrink_atlas.py 0.75 anim/chibi.json
 - 元動画は `wip/story_map/chibi_src.mp4`（480p なら数MB）としてコミットしておく
 
 ## 3. ブランチ `add-chibi` に push して PR
+
+## 4. （同じPRでOK）マップ字幕用：全キャラの登場セリフを文字起こし
+マップ到着時に `select` ボイス（各キャラの `_14.mp3`）を流し、字幕を出す。今は ENJO・ISANA・NOX×NIX・SHUTEN しか文字がないので、全員分を Whisper で起こして `media/voice/lines.json` を作る。
+- 対象：`su ao ar sa mi ai en re ka ic is nx sh` の `_14.mp3`
+- id 対応：su=suzune ao=aoi ar=arca sa=sakura mi=mio ai=aria en=enjo re=rei ka=kanna ic=ichika is=isana nx=noxnix sh=shuten
+- 形式（日本語・句読点あり・1〜2文）：
+```json
+{ "suzune": { "select": "……" }, "aoi": { "select": "……" } }
+```
+- Whisper の誤変換（キャラ名・技名）は目視で直す
