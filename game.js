@@ -3509,6 +3509,7 @@ function makeTeams() {
 }
 const partnerOf = f => G.teams && G.teams[f.side].find(x => x !== f);
 async function startMatch() {
+  G.matchDiff = G.diff;   // the clear-reward event checks the difficulty each story win was played on
   if (!Array.isArray(G.picks[0])) G.picks = [[G.picks[0], G.picks[0] === 'suzune' ? 'aoi' : 'suzune'], [G.picks[1], G.picks[1] === 'arca' ? 'suzune' : 'arca']];
   const need = [...new Set(G.picks.flat())];
   const hiNow = wantHi(), stale = id => !ANIMS[id] || (!hiNow && ANIMS[id].hi);   // missing, or a hi set we no longer want
@@ -4843,7 +4844,8 @@ function smDraw(dt) {
     c.textAlign = 'center'; c.font = '700 ' + (19 * u) + 'px "Shippori Mincho B1",serif'; c.lineWidth = 5 * u; c.strokeStyle = 'rgba(6,3,10,.9)'; c.fillStyle = '#fff';
     c.globalAlpha = Math.min(1, SM.t / .8); SM.opts.caption.split('\n').forEach((l, i) => { c.strokeText(l, CW / 2, CH - 70 * u + i * 28 * u); c.fillText(l, CW / 2, CH - 70 * u + i * 28 * u); }); c.globalAlpha = 1;
   }
-  c.save(); c.textAlign = 'left';  c.textAlign = 'left'; c.font = '800 ' + (30 * u) + 'px "Shippori Mincho B1",serif'; c.fillStyle = '#fff'; c.shadowColor = 'rgba(255,200,120,.8)'; c.shadowBlur = 14 * u; c.fillText('2029 IF TOKYO', 22 * u, 44 * u); c.shadowBlur = 0;   if (st) { c.font = '700 ' + (14 * u) + 'px "Chakra Petch",sans-serif'; c.fillStyle = '#ffc96a'; c.fillText('STORY  STAGE ' + Math.min(st.stage + 1, STORY_N()) + ' / ' + STORY_N() + '　　仲間 ' + st.unlocked.length + ' / ' + STORY_N(), 24 * u, 68 * u); } c.restore();
+  c.save(); c.textAlign = 'left';  c.textAlign = 'left'; c.font = '800 ' + (30 * u) + 'px "Shippori Mincho B1",serif'; c.fillStyle = '#fff'; c.shadowColor = 'rgba(255,200,120,.8)'; c.shadowBlur = 14 * u; c.fillText('2029 IF TOKYO', 22 * u, 44 * u); c.shadowBlur = 0;   if (st) { c.font = '700 ' + (14 * u) + 'px "Chakra Petch",sans-serif'; c.fillStyle = '#ffc96a'; c.fillText('STORY  STAGE ' + Math.min(st.stage + 1, STORY_N()) + ' / ' + STORY_N() + '　　仲間 ' + st.unlocked.length + ' / ' + STORY_N(), 24 * u, 68 * u);
+    if (STORY.ev && STORY.ev.active) { const ok = st.minDiff != null && st.minDiff >= 1; c.font = '700 ' + (12.5 * u) + 'px "Chakra Petch",sans-serif'; c.fillStyle = ok ? '#7dffb0' : '#ff8a96'; c.fillText(ok ? '★ クリア賞金 対象（「ふつう」以上で進行中）' : '× クリア賞金 対象外（「やさしい」での勝利あり・最初からで再挑戦可）', 24 * u, 90 * u); } } c.restore();
 }
 function smPortrait(id) { SM.pi = SM.pi || {}; if (!SM.pi[id]) { const im = new Image(); im.src = id === 'shuten' ? 'assets/shuten_card.webp' : 'assets/title_' + id + '.webp'; SM.pi[id] = im; } return SM.pi[id]; }
 function smChibi(c, P, V) {
@@ -4916,7 +4918,7 @@ function storyLoad() {
 function storyNew() {
   const order = STORY_ROSTER().filter(id => id !== 'suzune');
   for (let i = order.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [order[i], order[j]] = [order[j], order[i]]; }
-  return { order, stage: 0, unlocked: ['suzune'], cleared: false };
+  return { order, stage: 0, unlocked: ['suzune'], cleared: false, minDiff: 2 };   // minDiff: lowest difficulty any win of this run used (prize event: 1 = ふつう or above)
 }
 function storySave() { try { localStorage.setItem('cf_story', JSON.stringify(STORY.d)); } catch (e) { } }
 const storyIsBoss = () => STORY.d && STORY.d.stage >= STORY.d.order.length;
@@ -5014,7 +5016,7 @@ function setupUI() {
       $('#selPrompt').textContent = storyIsBoss() ? `STORY 最終ステージ ― 鬼王に挑む${sl.n}人目を選んでください` : `STORY ${STORY.d.stage + 1} ― VS ${CHARS[opp].name}：使うキャラを選んでください`;
       $('#soloRow').hidden = true; $('#diffRow').hidden = false;
       document.querySelectorAll('.card').forEach(c => { const ok = STORY.d.unlocked.includes(c.dataset.char); c.classList.toggle('locked', !ok); if (G.sel.includes(c.dataset.char)) c.dataset.tag = 'YOU'; else delete c.dataset.tag; });
-      $('#selNote').textContent = `仲間 ${STORY.d.unlocked.length} / ${STORY_N()}　倒した相手は次のステージから使えるッス` + (storyIsBoss() ? '（ボス戦は2人タッグ）' : '');
+      $('#selNote').textContent = `仲間 ${STORY.d.unlocked.length} / ${STORY_N()}　倒した相手は次のステージから使えるッス` + (storyIsBoss() ? '（ボス戦は2人タッグ）' : '') + (STORY.ev && STORY.ev.active ? '　★クリア賞金は「ふつう」以上が対象' : '');
       return;
     }
     document.querySelectorAll('.card.locked').forEach(c => c.classList.remove('locked'));
@@ -5121,6 +5123,7 @@ function setupUI() {
   function storyToTitle() { stopStage(); storyExit(); G.scene = 'title'; showScreen('title'); bgmTrack('title', .8); storyBadge(); }
   window.storyAfterMatch = win => {
     const d = STORY.d;
+    if (win && d.minDiff != null) { d.minDiff = Math.min(d.minDiff, G.matchDiff == null ? G.diff : G.matchDiff, G.diff); storySave(); }
     setTimeout(() => {
       stopStage(); bgmTrack('title', .7);
       if (!win) {
@@ -5137,6 +5140,8 @@ function setupUI() {
         buttons: [[storyIsBoss() ? '最終ステージへ' : '次のステージへ', storyCard], ['タイトルへ', storyToTitle, 1]] });
     }, 900);
   };
+  const rwEligible = () => !!STORY.d && STORY.d.minDiff != null && STORY.d.minDiff >= 1;
+  const DIFF_NAME = ['やさしい', 'ふつう', 'むずかしい'];
   function storyEnding() {
     const box = $('#storyEnd'), roll = $('#seRoll'); roll.innerHTML = '';
     const add = (h, cls) => { const e = document.createElement('div'); e.className = cls || ''; e.innerHTML = h; roll.appendChild(e); };
@@ -5145,6 +5150,7 @@ function setupUI() {
     for (const id of STORY_ROSTER().concat('shuten')) add(`<img src="${portrait(id)}" alt=""><b>${CHARS[id].name}</b><small>${CHARS[id].role || ''}</small>`, 'se-cast');
     add('CHRONO FIGHT', 'se-head'); add('GAME / CHARACTERS / DIRECTION　SZOU', 'se-text'); add('Made with Claude × Topview MCP', 'se-text');
     add('THANK YOU FOR PLAYING', 'se-big'); add('全キャラ解放！ストーリーは何度でも挑戦できるッス', 'se-text');
+    if (STORY.ev && STORY.ev.active && !rwEligible()) add('※クリア賞金イベントは、全ステージを「ふつう」以上でクリアした場合が対象ッス。<br>次は「ふつう」以上で挑戦してみてね！', 'se-text');
     box.classList.add('on'); bgmTrack('title', .9); voice('suzune', 'win', { delay: .6 });
     const evP = fetch('event.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);   // fetch while the credits roll
     let fin = false;
@@ -5155,6 +5161,7 @@ function setupUI() {
   }
   function rewardShow(ev) {   // the clear-reward reveal: not skippable until the code and the rules are on screen
     if (!ev || !ev.active) return false;
+    if (!rwEligible()) return false;   // prize only for runs cleared entirely on ふつう or above
     let saved = null; try { saved = JSON.parse(localStorage.getItem('cf_reward') || 'null'); } catch (e) { }
     if (saved && saved.ev !== ev.id) saved = null;
     const left = ev.remaining == null ? ev.pool : ev.remaining, cap = Math.min(ev.max || 10000, Math.floor(left / 100) * 100);
@@ -5177,7 +5184,7 @@ function setupUI() {
     at(3600, () => { clearInterval(spin); num.textContent = fmt(r.amount); el.classList.add('got', 'lit', 'shake'); playS('impact_big', .9); quake && quake(10, .4);
       st.textContent = saved ? 'あなたのクリア報酬（1端末1回）' : 'STORY CLEAR 報酬、ゲットッス！'; voice('suzune', 'win', { delay: .3 }); });
     at(4000, () => el.classList.remove('shake'));
-    at(4900, () => { $('#rwHow').innerHTML = `この画面をスクショして <b>${ev.tag || '#CHRONOFIGHTクリア'}</b> を付けて<br>@szounft の告知ポストを<b>引用ポスト</b>！<br>報酬プール ¥${fmt(ev.pool || 20000)}・<b>早い者勝ち</b>（なくなり次第終了）`; el.classList.add('how'); });
+    at(4900, () => { $('#rwHow').innerHTML = `<span class="rw-diff">DIFFICULTY　${DIFF_NAME[STORY.d.minDiff] || 'ふつう'} 以上でクリア</span><br>`+`この画面をスクショして <b>${ev.tag || '#CHRONOFIGHTクリア'}</b> を付けて<br>@szounft の告知ポストを<b>引用ポスト</b>！<br>報酬プール ¥${fmt(ev.pool || 20000)}・<b>早い者勝ち</b>（なくなり次第終了）`; el.classList.add('how'); });
     at(7000, () => el.classList.add('done'));
     $('#rwCode').innerHTML = '<small>CLEAR CODE　¥' + fmt(r.amount) + '</small>' + r.code;
     $('#rwHow2').innerHTML = '受け取りに必要なコードッス。<b>このページもスクショして保存</b>してね。<br>引用ポストのあと、SZOU（@szounft）からの<b>DMでこのコードを送って</b>もらえたら、確認してお支払いするッス！<br>※1端末1回・同じ端末で再クリアしても同じコードが出ます';
@@ -5191,6 +5198,7 @@ function setupUI() {
     goFull(); audioInit();
     let d = storyLoad(); if (!d || d.cleared) d = storyNew();
     STORY.d = d; storySave(); if (!STORY.on) G.storyPrevSolo = G.solo; STORY.on = true; G.mode = 'cpu'; G.boss = false;
+    fetch('event.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(ev => { STORY.ev = ev; }).catch(() => { });
     storyCard();
   }));
   window.storyReset = () => { try { localStorage.removeItem('cf_story'); } catch (e) { } storyBadge(); };
