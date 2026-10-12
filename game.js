@@ -5252,7 +5252,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(e => console.warn('sw off', e));
     // very first visit: the files boot() already loaded went past the worker, so fetch them again once it takes over
     if (first) navigator.serviceWorker.addEventListener('controllerchange', () => {
-      const urls = new Set(performance.getEntriesByType('resource').map(r => r.name).filter(u => u.startsWith(location.origin) && !/\.mp4(\?|$)/.test(u)));
+      const urls = new Set(performance.getEntriesByType('resource').map(r => r.name).filter(u => u.startsWith(location.origin)));
       for (const u of urls) fetch(u, { priority: 'low' }).catch(() => { });
     }, { once: true });
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => { });
