@@ -4919,6 +4919,7 @@ function storyLoad() {
   let d = null; try { d = JSON.parse(localStorage.getItem('cf_story') || 'null'); } catch (e) { }
   const roster = STORY_ROSTER();
   if (!d || !Array.isArray(d.order) || !Array.isArray(d.unlocked)) d = null;
+  if (d && d.minDiff == null && d.stage === 0 && !d.cleared) d.minDiff = 2;   // an old save with no wins yet can still enter the prize event
   if (d) { d.order = d.order.filter(id => roster.includes(id)); for (const id of roster) if (id !== 'suzune' && !d.order.includes(id)) d.order.push(id); }   // new fighters slot in
   return d;
 }
