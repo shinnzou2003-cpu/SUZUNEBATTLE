@@ -5258,10 +5258,13 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   addEventListener('load', () => {
     const first = !navigator.serviceWorker.controller;
     navigator.serviceWorker.register('sw.js').catch(e => console.warn('sw off', e));
-    // very first visit: the files boot() already loaded went past the worker, so fetch them again once it takes over
+    // very first visit: the files boot() already loaded went past the worker, so fetch them again once it takes over.
+    // They join the background prefetch queue (2 at a time, title/select screens only, fighter atlases go first), so they
+    // never compete with a match that is loading; whatever is left when a match starts gets cached on the next launch.
     if (first) navigator.serviceWorker.addEventListener('controllerchange', () => {
       const urls = new Set(performance.getEntriesByType('resource').map(r => r.name).filter(u => u.startsWith(location.origin)));
-      for (const u of urls) fetch(u, { priority: 'low' }).catch(() => { });
+      PREF.q.push(...[...urls].filter(u => !PREF.done.has(u) && !PREF.q.includes(u)));
+      prefetchPump();
     }, { once: true });
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => { });
   });
