@@ -4699,6 +4699,13 @@ function rwDecode(code) {
   return { ok: ok && amount >= 100 && amount <= 10000, amount, date: new Date(RW_EPOCH + day * 864e5), id: Number(p & 0x1ffffn) };
 }
 window.rwDecode = rwDecode;
+// Play Store (TWA) build: the app opens ./?app=android. There the prize event is never fetched, so every event screen,
+// note and badge stays hidden (store policy on cash prizes). The web version is unchanged.
+const IN_APP = (() => {
+  const hit = new URLSearchParams(location.search).get('app') === 'android' || document.referrer.startsWith('android-app://');
+  try { if (hit) sessionStorage.setItem('cf_app', '1'); return hit || sessionStorage.getItem('cf_app') === '1'; } catch (e) { return hit; }
+})();
+const eventFetch = () => IN_APP ? Promise.resolve(null) : fetch('event.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
 // prize table: 3,000 yen and up is rarer (about 1 in 4), the top band about 1 in 33. event.json "tiers" overrides it.
 const RW_TIERS = [[100, 900, 35], [1000, 2900, 40], [3000, 4900, 15], [5000, 7900, 7], [8000, 10000, 3]];
 function rwRoll(ev, seed) {
@@ -5152,7 +5159,7 @@ function setupUI() {
     add('THANK YOU FOR PLAYING', 'se-big'); add('全キャラ解放！ストーリーは何度でも挑戦できるッス', 'se-text');
     if (STORY.ev && STORY.ev.active && !rwEligible()) add('※クリア賞金イベントは、全ステージを「ふつう」以上でクリアした場合が対象ッス。<br>次は「ふつう」以上で挑戦してみてね！', 'se-text');
     box.classList.add('on'); bgmTrack('title', .9); voice('suzune', 'win', { delay: .6 });
-    const evP = fetch('event.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);   // fetch while the credits roll
+    const evP = eventFetch();   // fetch while the credits roll
     let fin = false;
     const done = () => { if (fin) return; fin = true; clearTimeout(box._t); box.removeEventListener('click', done);
       evP.then(ev => { box.classList.remove('on'); if (!rewardShow(ev)) storyToTitle(); }); };
@@ -5198,7 +5205,7 @@ function setupUI() {
     goFull(); audioInit();
     let d = storyLoad(); if (!d || d.cleared) d = storyNew();
     STORY.d = d; storySave(); if (!STORY.on) G.storyPrevSolo = G.solo; STORY.on = true; G.mode = 'cpu'; G.boss = false;
-    fetch('event.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(ev => { STORY.ev = ev; }).catch(() => { });
+    eventFetch().then(ev => { STORY.ev = ev; });
     storyCard();
   }));
   window.storyReset = () => { try { localStorage.removeItem('cf_story'); } catch (e) { } storyBadge(); };
